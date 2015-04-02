@@ -1,0 +1,38 @@
+<div class="jumbotron" ng-if="stage == 'Standby'">
+  <p><strong style="color:red">{{error.other}}</strong>
+  </p>
+  <form>
+    <table width="100%">
+      <col width="35%" />
+      <col width="35%" />
+      <col width="30%" />
+      <tbody>
+        <tr>
+          <td>
+            <label style="width: 10em">Registered Name:</label>
+          </td>
+          <td>
+            <input ng-model="user.uname" />
+          </td>
+          <td><strong style="color:red">{{error.uname}}</strong>
+          </td>
+        </tr>
+        <tr>
+          <td>
+            <label style="width: 10em">Password:</label>
+          </td>
+          <td>
+            <input type="password" ng-model="user.password" />
+          </td>
+          <td><strong style="color:red">{{error.password}}</strong>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="3" align="center">
+            <button type="submit" ng-click="login()">Login</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </form>
+</div>

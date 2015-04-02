@@ -1,0 +1,53 @@
+'use strict';
+
+/**
+ * @ngdoc function
+ * @name mgmApp.controller:LoginCtrl
+ * @description
+ * # LoginCtrl
+ * Controller of the mgmApp
+ */
+angular.module('mgmApp')
+  .controller('LoginCtrl', function ($scope, MgmPublic) {
+    $scope.stage = 'Standby';
+
+    $scope.user = {
+      uname: '',
+      password: ''
+    };
+
+    $scope.error = {
+      uname: '',
+      password: '',
+      other: ''
+    };
+  
+    $scope.clearErrors = function(){
+      $scope.error.uname = '';
+      $scope.error.password = '';
+      $scope.error.other = '';
+    };
+
+    $scope.login = function () {
+      $scope.clearErrors();
+      var uname = $scope.user.uname.trim();
+      var pword = $scope.user.password.trim();
+      if(uname === ''){
+        $scope.error.uname = 'User name required';
+        return;
+      }
+      if(pword === ''){
+        $scope.error.password = 'Password required';
+        return;
+      }
+      console.log('login function' + $scope.user.uname);
+      MgmPublic.login(uname,pword).then(
+        function(){
+          console.log('success');
+        },
+        function(msg){
+          $scope.error.other = msg;
+        }
+      );
+    };
+  });

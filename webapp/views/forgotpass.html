@@ -1,0 +1,112 @@
+<div style="height: 400px">
+  <h1>Password Reset</h1>
+
+  <p>MGM uses reset codes for its password reset mechanism. To reset your passowrd you first request a reset code using your registered email. You can then use it to reset your password using your registered name. A password reset token is only valid for 24 hours.</p>
+  <div ng-if="stage != 'processing'">
+    <button class="btn" ng-click="needCode()">I need a reset code</button>
+    <button class="btn" ng-click="haveCode()">I have a reset code</button>
+    <p><strong style="color:red">{{error.other}}</strong>
+    </p>
+  </div>
+
+  <div class="jumbotron" ng-if="stage == 'NeedCode'">
+    <form>
+      <table width="100%">
+        <col width="35%" />
+        <col width="35%" />
+        <col width="30%" />
+        <tbody>
+          <tr>
+            <td>
+              <label>Email:</label>
+            </td>
+            <td>
+              <input ng-model="input.email" />
+            </td>
+            <td>
+              <strong style="color:red">{{error.email}}</strong>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="3" align="center">
+              <button type="submit" ng-click="getCode()">Request Email Code</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </form>
+  </div>
+
+  <div class="jumbotron" ng-if="stage == 'HaveCode'">
+    <form>
+      <table width="100%">
+        <col width="35%" />
+        <col width="35%" />
+        <col width="30%" />
+        <tbody>
+          <tr>
+            <td>
+              <label style="width: 10em">Registered Name:</label>
+            </td>
+            <td>
+              <input ng-model="input.uname" />
+            </td>
+            <td><strong style="color:red">{{error.uname}}</strong>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label style="width: 10em">Token:</label>
+            </td>
+            <td>
+              <input ng-model="input.token" />
+            </td>
+            <td><strong style="color:red">{{error.token}}</strong>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label style="width: 10em">Password:</label>
+            </td>
+            <td>
+              <input type="password" ng-model="input.password" />
+            </td>
+            <td><strong style="color:red">{{error.password}}</strong>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <label style="width: 10em">Confirm:</label>
+            </td>
+            <td>
+              <input type="password" ng-model="input.confirm" />
+            </td>
+          </tr>
+          <tr>
+            <td colspan="3" align="center">
+              <button type="submit" ng-click="resetPassword()">Submit Reset</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </form>
+  </div>
+
+  <div class="jumbotron" ng-if="stage == 'Processing'">
+    <p>
+      Processing
+    </p>
+  </div>
+
+  <div class="jumbotron" ng-if="stage == 'RequestComplete'">
+    <p>
+      Your reset code is on its way.
+    </p>
+  </div>
+
+  <div class="jumbotron" ng-if="stage == 'ResetComplete'">
+    <p>
+      Your password is reset.
+    </p>
+  </div>
+</div>
