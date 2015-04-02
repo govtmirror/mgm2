@@ -71,6 +71,11 @@ module.exports = function (grunt) {
         hostname: 'localhost',
         livereload: 35729
       },
+      proxies: [{
+        context: '/auth',
+        host: 'localhost',
+        port: '8080'
+      }],
       livereload: {
         options: {
           open: true,
@@ -85,6 +90,7 @@ module.exports = function (grunt) {
                 '/webapp/styles',
                 connect.static('./webapp/styles')
               ),
+              require('grunt-connect-proxy/lib/utils').proxyRequest,
               connect.static(appConfig.app)
             ];
           }
@@ -431,6 +437,7 @@ module.exports = function (grunt) {
     grunt.task.run([
       'clean:server',
       'wiredep',
+      'configureProxies:server',
       'concurrent:server',
       'autoprefixer:server',
       'connect:livereload',
