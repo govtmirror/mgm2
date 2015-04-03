@@ -36,7 +36,7 @@ func main() {
     fmt.Println("Error initializing simiangrid: ", err)
     return
   }
-    
+  
   fmt.Println("running")
     
   regionMgr := mgm.ClientManager{}

@@ -4,10 +4,11 @@ import (
   "net/url"
   "fmt"
   "github.com/satori/go.uuid"
+  "encoding/json"
 )
 
 func (sc simianConnector)EmailIsRegistered(email string) (exists bool, err error) {
-  m, err := sc.handle_request(simianInstance.url,
+  response, err := sc.handle_request(simianInstance.url,
     url.Values{
       "RequestMethod": {"GetUser"},
       "Email": {email},
@@ -17,15 +18,20 @@ func (sc simianConnector)EmailIsRegistered(email string) (exists bool, err error
     return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
-  if _, ok := m["Success"]; ok {
-    return true, nil
+  var m confirmRequest
+  err = json.Unmarshal(response, &m)
+  if err != nil {
+    return false, err
   }
-  return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", m["Message"].(string))}
+  if m.Success {
+    return  true, nil
+  }
+  return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
 func (sc simianConnector)CreateUserEntry(username string, email string) (uuid.UUID, error){
   userID := uuid.NewV4()
-  m, err := sc.handle_request(simianInstance.url,
+  response, err := sc.handle_request(simianInstance.url,
     url.Values{
       "RequestMethod": {"AddUser"},
       "UserID": {userID.String()},
@@ -38,26 +44,32 @@ func (sc simianConnector)CreateUserEntry(username string, email string) (uuid.UU
     return uuid.UUID{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
-  if _, ok := m["Success"]; ok {
-    return userID, nil
+  var m confirmRequest
+  err = json.Unmarshal(response, &m)
+  if err != nil {
+    return uuid.UUID{}, err
   }
-  return uuid.UUID{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m["Message"].(string))}
+  if m.Success {
+    return  userID, nil
+  }
+  return uuid.UUID{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
 func (sc simianConnector)CreateUserInventory(userID uuid.UUID, template string) (bool, error){
-  m, err := sc.handle_request(simianInstance.url,
+  response, err := sc.handle_request(simianInstance.url,
     url.Values{
       "RequestMethod": {"AddInventory"},
       "OwnerID": {userID.String()},
       "AvatarType": {template},
     })
   
+  var m confirmRequest
+  err = json.Unmarshal(response, &m)
   if err != nil {
-    return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    return false, err
   }
-  
-  if _, ok := m["Success"]; ok {
-    return true, nil
+  if m.Success {
+    return  true, nil
   }
-  return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", m["Message"].(string))}
+  return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }

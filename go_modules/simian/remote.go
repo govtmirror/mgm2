@@ -21,7 +21,7 @@ func (es *errorString) Error() string {
 
 var simianInstance *simianConnector = nil
 
-func (sc *simianConnector)handle_request(remoteUrl string, vals url.Values) (map[string]interface{}, error) {
+func (sc *simianConnector)handle_request(remoteUrl string, vals url.Values) ([]byte, error) {
   resp, err := http.PostForm(remoteUrl, vals)
   if err != nil {
     return nil, err
@@ -32,13 +32,19 @@ func (sc *simianConnector)handle_request(remoteUrl string, vals url.Values) (map
     return nil, err
   }
   
-  m := map[string]interface{}{}
-  err = json.Unmarshal(body, &m)
+  return body, nil
+}
+
+func (sc simianConnector)confirmRequest(response []byte) (bool, error){
+  var m confirmRequest
+  err := json.Unmarshal(response, &m)
   if err != nil {
-    return nil, err
+    return false, err
   }
-  
-  return m, nil
+  if m.Success {
+    return  true, nil
+  }
+  return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
 func Instance() (*simianConnector, error) {

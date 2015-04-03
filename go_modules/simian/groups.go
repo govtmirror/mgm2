@@ -4,10 +4,11 @@ import (
   "net/url"
   "fmt"
   "github.com/satori/go.uuid"
+  "encoding/json"
 )
 
-func (sc simianConnector)GetGroups() ( map[string]interface{}, error) {
-  m, err := sc.handle_request(simianInstance.url,
+func (sc simianConnector)GetGroups() ( []Group, error) {
+  response, err := sc.handle_request(simianInstance.url,
     url.Values{
       "RequestMethod": {"GetGenerics"},
       "Type": {"Group"},
@@ -17,14 +18,25 @@ func (sc simianConnector)GetGroups() ( map[string]interface{}, error) {
     return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
-  if _, ok := m["Success"]; ok {
-    return m["Entries"].(map[string]interface{}), nil
+  type req struct {
+    Success bool
+    Message string
+    Entries []Group
   }
-  return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m["Message"].(string))}
+  
+  var m req
+  err = json.Unmarshal(response, &m)
+  if err != nil {
+    return nil, err
+  }
+  if m.Success {
+    return  m.Entries, nil
+  }
+  return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc simianConnector)GetGroupByID(groupID uuid.UUID) ( interface{}, error) {
-  m, err := sc.handle_request(simianInstance.url,
+func (sc simianConnector)GetGroupByID(groupID uuid.UUID) ( Group, error) {
+  response, err := sc.handle_request(simianInstance.url,
     url.Values{
       "RequestMethod": {"GetGenerics"},
       "Type": {"Group"},
@@ -32,40 +44,61 @@ func (sc simianConnector)GetGroupByID(groupID uuid.UUID) ( interface{}, error) {
     })
   
   if err != nil {
-    return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    return Group{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
-  if _, ok := m["Success"]; ok {
-    entries :=  m["Entries"].(map[string]interface{})
-    var key string
-    for key, _ = range entries {
-      break
-    }
-    return entries[key], nil
+  type req struct {
+    Success bool
+    Message string
+    Entries []Group
   }
-  return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m["Message"].(string))}
+  
+  var m req
+  err = json.Unmarshal(response, &m)
+  if err != nil {
+    return Group{}, err
+  }
+  if m.Success {
+    return  m.Entries[0], nil
+  }
+  return Group{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc simianConnector)GetGroupMembers(groupID uuid.UUID) ( map[string]interface{}, error) {
-  m, err := sc.handle_request(simianInstance.url,
+func (sc simianConnector)GetGroupMembers(groupID uuid.UUID) ( []uuid.UUID, error) {
+  response, err := sc.handle_request(simianInstance.url,
     url.Values{
       "RequestMethod": {"GetGenerics"},
       "Type": {"GroupMember"},
-      "OwnerID": {groupID.String()},
+      "Key": {groupID.String()},
     })
   
   if err != nil {
     return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
-  if _, ok := m["Success"]; ok {
-    return m["Entries"].(map[string]interface{}), nil
+  type req struct {
+    Success bool
+    Message string
+    Entries []Generic
   }
-  return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m["Message"].(string))}
+  
+  var m req
+  err = json.Unmarshal(response, &m)
+  if err != nil {
+    return nil, err
+  }
+  if m.Success {
+    users := make([]uuid.UUID, len(m.Entries))
+    for index, el := range m.Entries {
+      users[index] = el.OwnerID
+    }
+    return  users, nil
+  }
+  return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc simianConnector)GetGroupRoles(groupID uuid.UUID) ( map[string]interface{}, error) {
-  m, err := sc.handle_request(simianInstance.url,
+func (sc simianConnector)GetGroupRoles(groupID uuid.UUID) ( []string, error) {
+  response, err := sc.handle_request(simianInstance.url,
     url.Values{
       "RequestMethod": {"GetGenerics"},
       "Type": {"GroupRole"},
@@ -76,12 +109,27 @@ func (sc simianConnector)GetGroupRoles(groupID uuid.UUID) ( map[string]interface
     return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
-  if _, ok := m["Success"]; ok {
-    return m["Entries"].(map[string]interface{}), nil
+  type req struct {
+    Success bool
+    Message string
+    Entries []Generic
   }
-  return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m["Message"].(string))}
+  
+  var m req
+  err = json.Unmarshal(response, &m)
+  if err != nil {
+    return nil, err
+  }
+  if m.Success {
+    roles := make([]string, len(m.Entries))
+    for index, el := range m.Entries {
+      roles[index] = el.Value
+    }
+    return  roles, nil
+  }
+  return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
-
+/*
 func (sc simianConnector)RemoveUserFromGroup(userID uuid.UUID, groupID uuid.UUID) ( bool, error) {
   //clear user role in group
   m, err := sc.handle_request(simianInstance.url,
@@ -262,3 +310,4 @@ func (sc simianConnector)GetActiveGroup(userID uuid.UUID) ( uuid.UUID, error) {
   }
   return uuid.UUID{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m["Message"].(string))}
 }
+*/

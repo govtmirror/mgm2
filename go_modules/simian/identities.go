@@ -5,24 +5,15 @@ import (
   "crypto/md5"
   "fmt"
   "encoding/hex"
+  "encoding/json"
   "github.com/satori/go.uuid"
 )
 
-/* Example using Auth
-  inst, _ := simian.Instance()
-  uuid, err := inst.Auth("test load_9", "password123")
-  if err != nil {
-    fmt.Println("Error authorizing: ", err);
-    return
-  }
-  fmt.Println(uuid)
-*/
-
-func (sc simianConnector)Auth(username string, password string) (uid uuid.UUID, err error) {
+func (sc simianConnector)Auth(username string, password string) (uuid.UUID, error) {
   hasher := md5.New()
   hasher.Write([]byte(password))
   
-  m, err := sc.handle_request(simianInstance.url,
+  response, err := sc.handle_request(simianInstance.url,
     url.Values{
       "RequestMethod": {"AuthorizeIdentity"}, 
       "Identifier": {username},
@@ -34,57 +25,61 @@ func (sc simianConnector)Auth(username string, password string) (uid uuid.UUID, 
     return uuid.UUID{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
-  if _, ok := m["Success"]; ok {
-    userID, _ := uuid.FromString(m["UserID"].(string))
+  type tmpStruct struct {
+    Success bool
+    Message string
+    UserID string
+  }
+  var m tmpStruct
+  err = json.Unmarshal(response, &m)
+  if err != nil {
+    return uuid.UUID{}, err
+  }
+  if m.Success {
+    userID, _ := uuid.FromString(m.UserID)
     return  userID, nil
   }
-  return uuid.UUID{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m["Message"].(string))}
+  return uuid.UUID{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
 func (sc simianConnector)EnableIdentity(username string, identityType string, credential string, userID uuid.UUID) (bool, error) {
-  m, err := sc.handle_request(simianInstance.url,
+  response, err := sc.handle_request(simianInstance.url,
     url.Values{
       "RequestMethod": {"AddIdentity"},
       "Identifier": {username},
       "Type": {identityType},
       "Credential": {credential},
       "UserID": {userID.String()},
-      "Enabled": {"true"},
+      "Enabled": {"1"},
     })
   
   if err != nil {
     return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
-  if _, ok := m["Success"]; ok {
-    return true, nil
-  }
-  return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", m["Message"].(string))}
+  return sc.confirmRequest(response)
 }
 
 func (sc simianConnector)DisableIdentity(username string, identityType string, credential string, userID uuid.UUID) (bool, error) {
-  m, err := sc.handle_request(simianInstance.url,
+  response, err := sc.handle_request(simianInstance.url,
     url.Values{
       "RequestMethod": {"AddIdentity"},
       "Identifier": {username},
       "Type": {identityType},
       "Credential": {credential},
       "UserID": {userID.String()},
-      "Enabled": {"false"},
+      "Enabled": {"0"},
     })
   
   if err != nil {
     return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
-  if _, ok := m["Success"]; ok {
-    return true, nil
-  }
-  return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", m["Message"].(string))}
+  return sc.confirmRequest(response)
 }
 
 func (sc simianConnector)InsertPasswordHash(username string, credential string, userID uuid.UUID) (bool, error) {
-  m, err := sc.handle_request(simianInstance.url,
+  response, err := sc.handle_request(simianInstance.url,
     url.Values{
       "RequestMethod": {"AddIdentity"},
       "Identifier": {username},
@@ -97,17 +92,14 @@ func (sc simianConnector)InsertPasswordHash(username string, credential string, 
     return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
-  if _, ok := m["Success"]; ok {
-    return true, nil
-  }
-  return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", m["Message"].(string))}
+  return sc.confirmRequest(response)
 }
 
 func (sc simianConnector)SetPassword(username string, password string, userID uuid.UUID) (bool, error) {
   hasher := md5.New()
   hasher.Write([]byte(password))
   
-  m, err := sc.handle_request(simianInstance.url,
+  response, err := sc.handle_request(simianInstance.url,
     url.Values{
       "RequestMethod": {"AddIdentity"},
       "Identifier": {username},
@@ -120,14 +112,11 @@ func (sc simianConnector)SetPassword(username string, password string, userID uu
     return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
-  if _, ok := m["Success"]; ok {
-    return true, nil
-  }
-  return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", m["Message"].(string))}
+  return sc.confirmRequest(response)
 }
 
-func (sc simianConnector)GetIdentities(userID uuid.UUID) ( map[string]interface{}, error) {
-  m, err := sc.handle_request(simianInstance.url,
+func (sc simianConnector)GetIdentities(userID uuid.UUID) ( []Identity, error) {
+  response, err := sc.handle_request(simianInstance.url,
     url.Values{
       "RequestMethod": {"GetIdentities"},
       "UserID": {userID.String()},
@@ -137,9 +126,18 @@ func (sc simianConnector)GetIdentities(userID uuid.UUID) ( map[string]interface{
     return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
-  if _, ok := m["Success"]; ok {
-    return m["Identities"].( map[string]interface{}), nil
+  type req struct {
+    Success bool
+    Message string
+    Identities []Identity
   }
-  return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m["Message"].(string))}
+  var m req
+  err = json.Unmarshal(response, &m)
+  if err != nil {
+    return nil, err
+  }
+  if m.Success {
+    return  m.Identities, nil
+  }
+  return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
-
