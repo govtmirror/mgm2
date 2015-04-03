@@ -10,21 +10,20 @@ import (
   "encoding/json"
 )
 
-type Configuration struct {
+//global config object
+var config = struct {
   SimianUrl string
-}
-
-const (
-  LINK_HOST = "127.0.0.1"
-  LINK_PORT = "8000"
-  CLIENT_PORT = "8080"
-)
+  SessionSecret string
+  WebPort string
+  OpensimPort string
+}{}
 
 func main() {
+  
   fmt.Println("Reading configuration file")
   file, _ := os.Open("conf.json")
   decoder := json.NewDecoder(file)
-  config := Configuration{}
+  //config := Configuration{}
   err := decoder.Decode(&config)
   if err != nil {
     fmt.Println("Error readig config file: ", err)
@@ -37,21 +36,22 @@ func main() {
     fmt.Println("Error initializing simiangrid: ", err)
     return
   }
-  
+    
   fmt.Println("running")
     
   regionMgr := mgm.ClientManager{}
     
   // listen for opensim connections
-  opensim := mgm.OpenSimListener{Host:LINK_HOST, Port:LINK_PORT}
+  opensim := mgm.OpenSimListener{config.OpensimPort}
   go opensim.Listen()
   
   // listen for client connections
-  fs := http.FileServer(http.Dir("/var/www/html/mgm"))
+  fs := http.FileServer(http.Dir("dist"))
   http.Handle("/", fs)
-  http.Handle("/ws", mgm.ClientHandler{regionMgr})
-  fmt.Println("Listening for clients on 127.0.0.1:" + CLIENT_PORT)
-  if err := http.ListenAndServe(":" + CLIENT_PORT, nil); err != nil {
+  http.Handle("/ws", mgm.ClientWebsocketHandler{regionMgr})
+  http.Handle("/auth", mgm.ClientAuthHandler{regionMgr})
+  fmt.Println("Listening for clients on :" + config.WebPort)
+  if err := http.ListenAndServe(":" + config.WebPort, nil); err != nil {
     log.Fatal("ListenAndServe:", err)
   }
 }

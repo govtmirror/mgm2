@@ -1,3 +1,6 @@
 {
-  "SimianUrl": "127.0.0.1"
+  "SimianUrl": "127.0.0.1",
+  "SessionSecret": "35FA4ACE5EF326AE5473AE14EF144",
+  "OpensimPort": "8000",
+  "WebPort": "8080"
 }
