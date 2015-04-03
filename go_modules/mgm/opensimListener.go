@@ -8,19 +8,18 @@ import (
 )
 
 type OpenSimListener struct {
-    Host string
     Port string
 }
 
 func (l* OpenSimListener) Listen() {
-    link, err := net.Listen("tcp", l.Host+":"+l.Port)
+    link, err := net.Listen("tcp", ":"+l.Port)
     if err != nil {
         fmt.Println("Error Listening:", err.Error())
         os.Exit(1)
     }
 
     defer link.Close()
-    fmt.Println("Listening for opensim on " + l.Host + ":" + l.Port)
+    fmt.Println("Listening for opensim on " + ":" + l.Port)
     for {
         
         conn, err := link.Accept()
