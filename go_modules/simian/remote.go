@@ -2,19 +2,13 @@ package simian
 
 import (
   "net/http"
+  "net/url"
   "fmt"
   "io/ioutil"
+  "encoding/json"
 )
 
-type SimianResponse struct {
-}
-
-type SimianRequest struct {
-  callback chan SimianResponse
-}
-
 type simianConnector struct {
-  requests chan SimianRequest
   url string
 }
 
@@ -26,6 +20,26 @@ func (es *errorString) Error() string {
 }
 
 var simianInstance *simianConnector = nil
+
+func (sc *simianConnector)handle_request(remoteUrl string, vals url.Values) (map[string]interface{}, error) {
+  resp, err := http.PostForm(remoteUrl, vals)
+  if err != nil {
+    return nil, err
+  }
+  
+  body, err := ioutil.ReadAll(resp.Body)
+  if err != nil {
+    return nil, err
+  }
+  
+  m := map[string]interface{}{}
+  err = json.Unmarshal(body, &m)
+  if err != nil {
+    return nil, err
+  }
+  
+  return m, nil
+}
 
 func Instance() (*simianConnector, error) {
   if simianInstance == nil {
@@ -56,6 +70,7 @@ func Initialize(simianUrl string) (error) {
   result := string(body)
   
   if result == "SimianGrid" {
+    simianInstance.url = fmt.Sprintf("http://%v/Grid/",simianUrl);
     fmt.Println("simian initialized")
     return nil
   }
