@@ -8,6 +8,8 @@ import (
   "log"
   "os"
   "encoding/json"
+  "github.com/gorilla/mux"
+  
 )
 
 //global config object
@@ -23,7 +25,7 @@ func main() {
   fmt.Println("Reading configuration file")
   file, _ := os.Open("conf.json")
   decoder := json.NewDecoder(file)
-  //config := Configuration{}
+
   err := decoder.Decode(&config)
   if err != nil {
     fmt.Println("Error readig config file: ", err)
@@ -40,17 +42,17 @@ func main() {
   fmt.Println("running")
     
   clientMgr := mgm.ClientManager{}
-  go clientMgr.Listen()
+  clientMgr.Initialize(config.SessionSecret)
     
   // listen for opensim connections
   opensim := mgm.OpenSimListener{config.OpensimPort}
   go opensim.Listen()
   
-  // listen for client connections
-  fs := http.FileServer(http.Dir("dist"))
-  http.Handle("/", fs)
-  http.Handle("/ws", mgm.ClientWebsocketHandler{clientMgr})
-  http.Handle("/auth/login", mgm.ClientAuthHandler{clientMgr})
+  r := mux.NewRouter()
+  r.HandleFunc("/ws", clientMgr.WebsocketHandler)
+  r.HandleFunc("/auth/login", clientMgr.LoginHandler)
+  
+  http.Handle("/", r)
   fmt.Println("Listening for clients on :" + config.WebPort)
   if err := http.ListenAndServe(":" + config.WebPort, nil); err != nil {
     log.Fatal("ListenAndServe:", err)
