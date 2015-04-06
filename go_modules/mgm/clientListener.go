@@ -67,12 +67,15 @@ func (ch ClientAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
     return
   }
   
-  response := clientAuthResponse{guid, "something secret", true}
+  token := uuid.NewV4()
+  response := clientAuthResponse{guid, token.String(), true}
   js, err := json.Marshal(response)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
+  
+  ch.ClientMgr.addAuthenticatedUser(clientAuth{guid, token, r.RemoteAddr})
   
   w.Header().Set("Content-Type", "application/jons")
   w.Write(js)

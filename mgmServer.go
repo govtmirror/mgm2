@@ -40,6 +40,7 @@ func main() {
   fmt.Println("running")
     
   clientMgr := mgm.ClientManager{}
+  go clientMgr.Listen()
     
   // listen for opensim connections
   opensim := mgm.OpenSimListener{config.OpensimPort}
