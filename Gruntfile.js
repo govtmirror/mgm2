@@ -73,17 +73,7 @@ module.exports = function (grunt) {
       },
       proxies: [
         {
-          context: '/auth/login',
-          host: 'localhost',
-          port: '8080'
-        },
-        {
-          context: '/auth/register',
-          host:'localhost',
-          port: '8080'
-        },
-        {
-          context: '/auth/reset',
+          context: '/auth',
           host: 'localhost',
           port: '8080'
         }

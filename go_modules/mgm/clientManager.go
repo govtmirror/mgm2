@@ -5,6 +5,7 @@ import (
   "github.com/gorilla/websocket"
   "github.com/gorilla/sessions"
   "github.com/satori/go.uuid"
+  "encoding/gob"
 )
 
 type ClientManager struct {
@@ -33,4 +34,9 @@ func (cm *ClientManager) NewClient(ws *websocket.Conn) *Client {
 
 func (cm *ClientManager) Initialize(sessionKey string){
   cm.store = sessions.NewCookieStore([]byte(sessionKey))
+  cm.store.Options = &sessions.Options{
+    Path: "/",
+    MaxAge: 3600 * 8,
+  }
+  gob.Register(uuid.UUID{})
 }

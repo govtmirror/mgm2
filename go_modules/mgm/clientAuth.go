@@ -23,6 +23,59 @@ func (cm ClientManager) WebsocketHandler(w http.ResponseWriter, r *http.Request)
   c.process()
 }
 
+func (cm ClientManager) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+  session, _ := cm.store.Get(r, "MGM")
+  session.Values["guid"] = ""
+  session.Values["address"] = ""
+  session.Save(r,w)
+}
+
+func (cm ClientManager) ResumeHandler(w http.ResponseWriter, r *http.Request) {
+  session, _ := cm.store.Get(r, "MGM")
+  
+  fmt.Println("Session resume attempt");
+  fmt.Println(session.Values);
+  
+  type clientAuthResponse struct {
+    Uuid uuid.UUID
+    Success bool
+  }
+  
+  if len(session.Values) == 0 {
+    response := clientAuthResponse{uuid.UUID{}, false}
+    js, err := json.Marshal(response)
+    if err != nil {
+      http.Error(w, err.Error(), http.StatusInternalServerError)
+      return
+    }
+    w.Header().Set("Content-Type", "application/jons")
+    w.Write(js)
+    return
+  }
+  
+  response := clientAuthResponse{session.Values["guid"].(uuid.UUID), true}
+  js, err := json.Marshal(response)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  
+  w.Header().Set("Content-Type", "application/jons")
+  w.Write(js)
+
+}
+
+func (cm ClientManager) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+  
+}
+
+func (cm ClientManager) PasswordResetHandler(w http.ResponseWriter, r *http.Request) {
+  
+}
+
+func (cm ClientManager) PasswordTokenHandler(w http.ResponseWriter, r *http.Request) {
+  
+}
 
 func (cm ClientManager) LoginHandler(w http.ResponseWriter, r *http.Request) {
   decoder := json.NewDecoder(r.Body)
@@ -54,13 +107,12 @@ func (cm ClientManager) LoginHandler(w http.ResponseWriter, r *http.Request) {
       http.Error(w, err.Error(), http.StatusInternalServerError)
       return
     }
-    w.Header().Set("Content-Type", "application/jons")
+    w.Header().Set("Content-Type", "application/json")
     w.Write(js)
     return
   }
   
-  token := uuid.NewV4()
-  response := clientAuthResponse{guid, token.String(), true}
+  response := clientAuthResponse{guid, "", true}
   js, err := json.Marshal(response)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -70,7 +122,14 @@ func (cm ClientManager) LoginHandler(w http.ResponseWriter, r *http.Request) {
   session, _ := cm.store.Get(r, "MGM")
   session.Values["guid"] = guid
   session.Values["address"] = r.RemoteAddr
-  session.Save(r,w)
+  err = session.Save(r,w)
+  if err != nil {
+    fmt.Println(err)
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  
+  fmt.Println("Session saved, returning success")
   
   w.Header().Set("Content-Type", "application/jons")
   w.Write(js)

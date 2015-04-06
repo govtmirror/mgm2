@@ -23,7 +23,7 @@
 
   <!-- Add your site or application content here -->
   <div class="header" ng-controller="NavCtrl">
-    <div ng-if="!auth.loggedIn" class="navbar navbar-default" role="navigation">
+    <div ng-if="!loggedIn" class="navbar navbar-default" role="navigation">
       <div class="container">
         <div class="navbar-header">
           <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#js-navbar-collapse">
@@ -53,7 +53,7 @@
         </div>
       </div>
     </div>
-    <div ng-if="auth.loggedIn" class="navbar navbar-default" role="navigation">
+    <div ng-if="loggedIn" class="navbar navbar-default" role="navigation">
       <div class="container">
         <div class="navbar-header">
 
@@ -70,11 +70,13 @@
         <div class="collapse navbar-collapse" id="js-navbar-collapse">
 
           <ul class="nav navbar-nav">
-            <li class="active"><a href="#/">Home</a>
+            <li class="active"><a href="#/">Account</a>
             </li>
             <li><a ng-href="#/about">About</a>
             </li>
             <li><a ng-href="#/">Contact</a>
+            </li>
+            <li><button>Log Out</button>
             </li>
           </ul>
         </div>

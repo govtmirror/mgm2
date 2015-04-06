@@ -50,7 +50,12 @@ func main() {
   
   r := mux.NewRouter()
   r.HandleFunc("/ws", clientMgr.WebsocketHandler)
+  r.HandleFunc("/auth", clientMgr.ResumeHandler)
   r.HandleFunc("/auth/login", clientMgr.LoginHandler)
+  r.HandleFunc("/auth/logout", clientMgr.LogoutHandler)
+  r.HandleFunc("/auth/register", clientMgr.RegisterHandler)
+  r.HandleFunc("/auth/passwordToken", clientMgr.PasswordTokenHandler)
+  r.HandleFunc("/auth/passwordReset", clientMgr.PasswordResetHandler)
   
   http.Handle("/", r)
   fmt.Println("Listening for clients on :" + config.WebPort)

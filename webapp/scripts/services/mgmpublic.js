@@ -8,7 +8,10 @@
  * Service in the mgmApp.
  */
 angular.module('mgmApp')
-  .service('MgmPublic', function ($q, $http) {
+  .service('MgmPublic', function ($q, $http, $rootScope) {
+
+    self = this;
+    self.loggedIn = false;
 
     this.login = function (username, password) {
       console.log('registerUser' + username + password);
@@ -20,9 +23,10 @@ angular.module('mgmApp')
           'username': username,
           'password': password
         }).success(function (data, status, headers, config) {
-          console.log("success function");
           if (data.Success) {
-            reject("login successfull");
+            self.loggedIn = true;
+            $rootScope.$broadcast("AuthChange");
+            resolve("login successfull");
           } else {
             reject(data.Message);
             console.log(data);
@@ -31,13 +35,9 @@ angular.module('mgmApp')
           console.log("an error occurred");
           reject("Error connecting to MGM");
         });
-
-
-
-
-
       });
     };
+
 
     this.registerUser = function (uname, email, gender, pword, reason) {
 
@@ -62,6 +62,10 @@ angular.module('mgmApp')
       */
     };
 
+    this.resumeSession = function () {
+
+    }
+
     this.requestResetCode = function (email) {
       console.log('reset requested for ' + email);
 
@@ -77,4 +81,16 @@ angular.module('mgmApp')
         reject('Not Implemented');
       });
     };
+
+    console.log("resuming session...");
+    //resume session functionality
+    $http.get("/auth").success(function (data, status, headers, config) {
+      console.log("resume session received: ");
+      console.log(data);
+      if (data.Success) {
+        console.log("session resume successfull");
+        self.loggedIn = true;
+        $rootScope.$broadcast("AuthChange");
+      };
+    });
   });

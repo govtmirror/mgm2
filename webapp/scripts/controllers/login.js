@@ -43,7 +43,7 @@ angular.module('mgmApp')
       console.log('login function' + $scope.user.uname);
       MgmPublic.login(uname,pword).then(
         function(){
-          console.log('success');
+          console.log('login success');
         },
         function(msg){
           $scope.error.other = msg;
