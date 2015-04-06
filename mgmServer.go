@@ -39,7 +39,7 @@ func main() {
   
   fmt.Println("running")
     
-  regionMgr := mgm.ClientManager{}
+  clientMgr := mgm.ClientManager{}
     
   // listen for opensim connections
   opensim := mgm.OpenSimListener{config.OpensimPort}
@@ -48,8 +48,8 @@ func main() {
   // listen for client connections
   fs := http.FileServer(http.Dir("dist"))
   http.Handle("/", fs)
-  http.Handle("/ws", mgm.ClientWebsocketHandler{regionMgr})
-  http.Handle("/auth/login", mgm.ClientAuthHandler{regionMgr})
+  http.Handle("/ws", mgm.ClientWebsocketHandler{clientMgr})
+  http.Handle("/auth/login", mgm.ClientAuthHandler{clientMgr})
   fmt.Println("Listening for clients on :" + config.WebPort)
   if err := http.ListenAndServe(":" + config.WebPort, nil); err != nil {
     log.Fatal("ListenAndServe:", err)
