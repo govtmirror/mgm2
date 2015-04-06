@@ -17,8 +17,8 @@ angular.module('mgmApp').controller('NavCtrl', function ($scope, $location, MgmP
   $scope.isActive = function (route) {
     return route === $location.path();
   };
-  
-  $scope.$on("authChange", function(){
-    
-  });
+
+  $scope.logout = function(){
+    MgmPublic.logout();
+  };
 });

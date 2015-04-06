@@ -25,9 +25,11 @@ func (cm ClientManager) WebsocketHandler(w http.ResponseWriter, r *http.Request)
 
 func (cm ClientManager) LogoutHandler(w http.ResponseWriter, r *http.Request) {
   session, _ := cm.store.Get(r, "MGM")
-  session.Values["guid"] = ""
-  session.Values["address"] = ""
+  delete(session.Values, "guid")
+  delete(session.Values,"address")
   session.Save(r,w)
+  w.Header().Set("Content-Type", "application/json")
+  w.Write([]byte("{\"Success\": true}"))
 }
 
 func (cm ClientManager) ResumeHandler(w http.ResponseWriter, r *http.Request) {
@@ -35,14 +37,15 @@ func (cm ClientManager) ResumeHandler(w http.ResponseWriter, r *http.Request) {
   
   fmt.Println("Session resume attempt");
   fmt.Println(session.Values);
+  fmt.Println(len(session.Values));
   
   type clientAuthResponse struct {
-    Uuid uuid.UUID
+    Uuid string
     Success bool
   }
   
   if len(session.Values) == 0 {
-    response := clientAuthResponse{uuid.UUID{}, false}
+    response := clientAuthResponse{"", false}
     js, err := json.Marshal(response)
     if err != nil {
       http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -53,14 +56,14 @@ func (cm ClientManager) ResumeHandler(w http.ResponseWriter, r *http.Request) {
     return
   }
   
-  response := clientAuthResponse{session.Values["guid"].(uuid.UUID), true}
+  response := clientAuthResponse{session.Values["guid"].(string), true}
   js, err := json.Marshal(response)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
   
-  w.Header().Set("Content-Type", "application/jons")
+  w.Header().Set("Content-Type", "application/json")
   w.Write(js)
 
 }
@@ -120,7 +123,7 @@ func (cm ClientManager) LoginHandler(w http.ResponseWriter, r *http.Request) {
   }
   
   session, _ := cm.store.Get(r, "MGM")
-  session.Values["guid"] = guid
+  session.Values["guid"] = guid.String()
   session.Values["address"] = r.RemoteAddr
   err = session.Save(r,w)
   if err != nil {

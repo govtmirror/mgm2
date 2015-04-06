@@ -38,6 +38,25 @@ angular.module('mgmApp')
       });
     };
 
+    this.logout = function(){
+      return $q(function (resolve, reject) {
+
+        console.log("Authenticating...");
+        $http.get("/auth/logout").success(function (data, status, headers, config) {
+          if (data.Success) {
+            self.loggedIn = false;
+            $rootScope.$broadcast("AuthChange");
+            resolve("login successfull");
+          } else {
+            reject(data.Message);
+            console.log(data);
+          };
+        }).error(function (data, status, headers, config) {
+          console.log("an error occurred");
+          reject("Error connecting to MGM");
+        });
+      });
+    }
 
     this.registerUser = function (uname, email, gender, pword, reason) {
 
