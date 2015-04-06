@@ -16,7 +16,7 @@ angular.module('mgmApp')
       return $q(function (resolve, reject) {
 
         console.log("Authenticating...");
-        $http.post("/auth", {
+        $http.post("/auth/login", {
           'username': username,
           'password': password
         }).success(function (data, status, headers, config) {

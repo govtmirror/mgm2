@@ -71,11 +71,23 @@ module.exports = function (grunt) {
         hostname: 'localhost',
         livereload: 35729
       },
-      proxies: [{
-        context: '/auth',
-        host: 'localhost',
-        port: '8080'
-      }],
+      proxies: [
+        {
+          context: '/auth/login',
+          host: 'localhost',
+          port: '8080'
+        },
+        {
+          context: '/auth/register',
+          host:'localhost',
+          port: '8080'
+        },
+        {
+          context: '/auth/reset',
+          host: 'localhost',
+          port: '8080'
+        }
+      ],
       livereload: {
         options: {
           open: true,
@@ -185,23 +197,23 @@ module.exports = function (grunt) {
     wiredep: {
       app: {
         src: ['<%= yeoman.app %>/index.html'],
-        ignorePath:  /\.\.\//
+        ignorePath: /\.\.\//
       },
       test: {
         devDependencies: true,
         src: '<%= karma.unit.configFile %>',
-        ignorePath:  /\.\.\//,
-        fileTypes:{
+        ignorePath: /\.\.\//,
+        fileTypes: {
           js: {
             block: /(([\s\t]*)\/{2}\s*?bower:\s*?(\S*))(\n|\r|.)*?(\/{2}\s*endbower)/gi,
-              detect: {
-                js: /'(.*\.js)'/gi
-              },
-              replace: {
-                js: '\'{{filePath}}\','
-              }
+            detect: {
+              js: /'(.*\.js)'/gi
+            },
+            replace: {
+              js: '\'{{filePath}}\','
             }
           }
+        }
       },
       sass: {
         src: ['<%= yeoman.app %>/styles/{,*/}*.{scss,sass}'],

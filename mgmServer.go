@@ -49,7 +49,7 @@ func main() {
   fs := http.FileServer(http.Dir("dist"))
   http.Handle("/", fs)
   http.Handle("/ws", mgm.ClientWebsocketHandler{regionMgr})
-  http.Handle("/auth", mgm.ClientAuthHandler{regionMgr})
+  http.Handle("/auth/login", mgm.ClientAuthHandler{regionMgr})
   fmt.Println("Listening for clients on :" + config.WebPort)
   if err := http.ListenAndServe(":" + config.WebPort, nil); err != nil {
     log.Fatal("ListenAndServe:", err)
