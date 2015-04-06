@@ -6,6 +6,7 @@ import (
   "net/http"
   "encoding/json"
   "../../go_modules/simian"
+  "github.com/satori/go.uuid"
 )
 
 var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
@@ -26,30 +27,53 @@ func (ch ClientWebsocketHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 }
 
 
-type ClientAuth struct {
-  Username string
-  Password string
-}
 
 type ClientAuthHandler struct {
   ClientMgr ClientManager
 }
 
 func (ch ClientAuthHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-  fmt.Println("New Auth connection")
   decoder := json.NewDecoder(r.Body)
-  var t ClientAuth   
+  
+  type clientAuthRequest struct {
+    Username string
+    Password string
+  }
+  
+  var t clientAuthRequest   
   err := decoder.Decode(&t)
   if err != nil {
     fmt.Println("Invalid auth request")
     return
   }
   
-  sim, _ := simian.Instance()
-  uuid,err := sim.Auth(t.Username,t.Password);
-  if err != nil {
-    fmt.Println(err)
+  type clientAuthResponse struct {
+    Uuid uuid.UUID
+    Message string
+    Success bool
   }
-  fmt.Println(uuid)
   
+  sim, _ := simian.Instance()
+  guid,err := sim.Auth(t.Username,t.Password);
+  if err != nil {
+    response := clientAuthResponse{uuid.UUID{}, err.Error(), false}
+    js, err := json.Marshal(response)
+    if err != nil {
+      http.Error(w, err.Error(), http.StatusInternalServerError)
+      return
+    }
+    w.Header().Set("Content-Type", "application/jons")
+    w.Write(js)
+    return
+  }
+  
+  response := clientAuthResponse{guid, "something secret", true}
+  js, err := json.Marshal(response)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  
+  w.Header().Set("Content-Type", "application/jons")
+  w.Write(js)
 }
