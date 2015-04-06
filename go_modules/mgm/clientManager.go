@@ -10,6 +10,7 @@ import (
 type ClientManager struct {
   authIn chan clientAuth
   authTest chan clientAuthRequest
+  authDel chan clientAuth
 }
 
 type clientAuth struct {
@@ -39,6 +40,10 @@ func (r ClientManager) isUserAuthenticated(client clientAuth) bool{
   return <- response
 }
 
+func (r ClientManager) removeAuthenticatedUser(client clientAuth){
+  r.authDel <- client
+}
+
 func (r ClientManager) Listen() {
   type authRecord struct {
     client clientAuth
@@ -63,6 +68,8 @@ func (r ClientManager) Listen() {
         msg.callback <- true
       }
       msg.callback <- false
+    case msg:= <- r.authDel:
+      delete(users ,msg.guid)
     case <- ticker.C:
       counter := 0
       for record := range users {
