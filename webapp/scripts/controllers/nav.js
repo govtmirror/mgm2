@@ -12,6 +12,11 @@ angular.module('mgmApp').controller('NavCtrl', function ($scope, $location, MgmP
   $scope.loggedIn = false;
   $scope.$on("AuthChange", function(){
     $scope.loggedIn = MgmPublic.loggedIn;
+    if($scope.loggedIn){
+      $location.url("/Account");
+    } else {
+      $location.url("/");
+    }
   });
   
   $scope.isActive = function (route) {
