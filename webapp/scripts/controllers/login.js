@@ -44,6 +44,8 @@ angular.module('mgmApp')
       MgmPublic.login(uname,pword).then(
         function(){
           console.log('login success');
+          $scope.user.uname = "";
+          $scope.user.password = "";
         },
         function(msg){
           $scope.error.other = msg;
