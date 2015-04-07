@@ -1,8 +1,9 @@
 package mgm
 
 import (
-    "fmt"
-    "github.com/gorilla/websocket"
+  "fmt"
+  "github.com/gorilla/websocket"
+  "net/http"
 )
 
 type Client struct {
@@ -37,4 +38,24 @@ func (c *Client) writer() {
         }
     }
     c.ws.Close()
+}
+
+var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
+
+func (cm ClientManager) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
+  fmt.Println("New connection on ws")
+  
+  session, _ := cm.store.Get(r, "MGM")
+  if len(session.Values) == 0 {
+    fmt.Println("Websocket closed, existing session missing");
+    return
+  }
+  
+  ws, err := upgrader.Upgrade(w, r, nil)
+  if err != nil {
+    fmt.Println(err)
+    return
+  }
+  c := cm.NewClient(ws)
+  c.process()
 }

@@ -1,27 +1,12 @@
 package mgm
 
 import (
-  "github.com/gorilla/websocket"
-  //"github.com/gorilla/sessions"
   "fmt"
   "net/http"
   "encoding/json"
   "../../go_modules/simian"
   "github.com/satori/go.uuid"
 )
-
-var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
-
-func (cm ClientManager) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
-  fmt.Println("New connection on ws")
-  ws, err := upgrader.Upgrade(w, r, nil)
-  if err != nil {
-    fmt.Println(err)
-    return
-  }
-  c := cm.NewClient(ws)
-  c.process()
-}
 
 func (cm ClientManager) LogoutHandler(w http.ResponseWriter, r *http.Request) {
   session, _ := cm.store.Get(r, "MGM")
@@ -34,11 +19,7 @@ func (cm ClientManager) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 
 func (cm ClientManager) ResumeHandler(w http.ResponseWriter, r *http.Request) {
   session, _ := cm.store.Get(r, "MGM")
-  
-  fmt.Println("Session resume attempt");
-  fmt.Println(session.Values);
-  fmt.Println(len(session.Values));
-  
+    
   type clientAuthResponse struct {
     Uuid string
     Success bool

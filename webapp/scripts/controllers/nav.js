@@ -13,9 +13,11 @@ angular.module('mgmApp').controller('NavCtrl', function ($scope, $location, MgmP
   $scope.$on("AuthChange", function(){
     $scope.loggedIn = MgmPublic.loggedIn;
     if($scope.loggedIn){
-      $location.url("/Account");
+      $location.url("/account");
+      console.log("redirecting to Account page");
     } else {
       $location.url("/");
+      console.log("redirecting to Home page");
     }
   });
   

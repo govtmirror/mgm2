@@ -76,6 +76,12 @@ module.exports = function (grunt) {
           context: '/auth',
           host: 'localhost',
           port: '8080'
+        },
+        {
+          context: '/ws',
+          host: 'localhost',
+          port: '8080',
+          ws: true
         }
       ],
       livereload: {
