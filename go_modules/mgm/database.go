@@ -14,7 +14,7 @@ type database struct {
 }
 
 func (st database) testConnection() error {
-  db, err := sql.Open("mysql", fmt.Sprintf("%v:%v@%v/%v", st.user, st.password, st.host, st.database))
+  db, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", st.user, st.password, st.host, st.database))
   if err != nil {
     return err
   }

@@ -19,6 +19,10 @@ type MgmConfig struct {
   SessionSecret string
   OpensimPort string
   WebPort string
+  DBUsername string
+  DBPassword string
+  DBHost string
+  DBDatabase string
 }
 
 type mgmCore struct{
@@ -44,11 +48,20 @@ func NewMGM(config MgmConfig) (*mgmCore, error){
     
     regionMgr := regionManager{}
     
-    //start listening for opensim connections
     opensim := openSimListener{config.OpensimPort, regionMgr}
-    go opensim.Listen()
     
     mgmInstance = &mgmCore{make(chan mgmRequest, 256), clientMgr, config}
+    
+    //populate interna structures from database
+    db := database{user: config.DBUsername, password: config.DBPassword, host: config.DBHost, database: config.DBDatabase}
+    err = db.testConnection()
+    if err != nil {
+      return nil, err
+    }
+    
+    go opensim.Listen()
+    
+    
   }
   return mgmInstance, nil
 }
