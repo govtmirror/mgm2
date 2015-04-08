@@ -5,7 +5,7 @@ import (
     "fmt"
 )
 
-type Region struct {
+type region struct {
     name string
     frames chan int
     locX uint
@@ -13,7 +13,7 @@ type Region struct {
     size uint
 }
 
-func (r *Region) Register(message map[string]interface{}) {
+func (r *region) Register(message map[string]interface{}) {
     r.name = message["name"].(string)
     r.locX = uint(message["locX"].(float64))
     r.locY = uint(message["locY"].(float64))
@@ -25,11 +25,11 @@ func (r *Region) Register(message map[string]interface{}) {
     fmt.Printf("Region %s registered with size %v at %v, %v.\n", r.name, r.size, r.locX, r.locY)
 }
 
-func (r *Region) Cleanup() {
+func (r *region) Cleanup() {
     close(r.frames)
 }
 
-func (r *Region) countFrames() {
+func (r *region) countFrames() {
     vals := []int{}
     start := time.Now()
     val, more := <- r.frames

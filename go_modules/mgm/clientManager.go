@@ -8,7 +8,7 @@ import (
   "net/http"
 )
 
-type ClientManager struct {
+type clientManager struct {
   authIn chan clientAuth
   authTest chan clientAuthRequest
   authDel chan clientAuth
@@ -28,13 +28,13 @@ type clientAuthRequest struct {
   callback chan <- bool
 }
 
-func (cm *ClientManager) NewClient(ws *websocket.Conn) *Client {
+func (cm clientManager) NewClient(ws *websocket.Conn) *client {
   fmt.Println("New client constructed")
-  client := &Client{send: make(chan []byte, 256), ws: ws}
+  client := &client{send: make(chan []byte, 256), ws: ws}
   return client
 }
 
-func (cm *ClientManager) Initialize(sessionKey string){
+func (cm *clientManager) Initialize(sessionKey string){
   cm.store = sessions.NewCookieStore([]byte(sessionKey))
   cm.store.Options = &sessions.Options{
     Path: "/",
@@ -42,7 +42,7 @@ func (cm *ClientManager) Initialize(sessionKey string){
   }
 }
 
-func (cm ClientManager) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
+func (cm clientManager) websocketHandler(w http.ResponseWriter, r *http.Request) {
   fmt.Println("New connection on ws")
   
   session, _ := cm.store.Get(r, "MGM")

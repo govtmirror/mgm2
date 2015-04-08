@@ -8,7 +8,7 @@ import (
   "github.com/satori/go.uuid"
 )
 
-func (cm ClientManager) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+func (cm clientManager) logoutHandler(w http.ResponseWriter, r *http.Request) {
   session, _ := cm.store.Get(r, "MGM")
   delete(session.Values, "guid")
   delete(session.Values,"address")
@@ -17,7 +17,7 @@ func (cm ClientManager) LogoutHandler(w http.ResponseWriter, r *http.Request) {
   w.Write([]byte("{\"Success\": true}"))
 }
 
-func (cm ClientManager) ResumeHandler(w http.ResponseWriter, r *http.Request) {
+func (cm clientManager) resumeHandler(w http.ResponseWriter, r *http.Request) {
   session, _ := cm.store.Get(r, "MGM")
     
   type clientAuthResponse struct {
@@ -49,19 +49,19 @@ func (cm ClientManager) ResumeHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (cm ClientManager) RegisterHandler(w http.ResponseWriter, r *http.Request) {
+func (cm clientManager) registerHandler(w http.ResponseWriter, r *http.Request) {
   
 }
 
-func (cm ClientManager) PasswordResetHandler(w http.ResponseWriter, r *http.Request) {
+func (cm clientManager) passwordResetHandler(w http.ResponseWriter, r *http.Request) {
   
 }
 
-func (cm ClientManager) PasswordTokenHandler(w http.ResponseWriter, r *http.Request) {
+func (cm clientManager) passwordTokenHandler(w http.ResponseWriter, r *http.Request) {
   
 }
 
-func (cm ClientManager) LoginHandler(w http.ResponseWriter, r *http.Request) {
+func (cm clientManager) loginHandler(w http.ResponseWriter, r *http.Request) {
   decoder := json.NewDecoder(r.Body)
   
   type clientAuthRequest struct {
