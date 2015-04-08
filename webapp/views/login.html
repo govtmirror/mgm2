@@ -1,7 +1,7 @@
 <div class="jumbotron" ng-if="stage == 'Standby'">
   <p><strong style="color:red">{{error.other}}</strong>
   </p>
-  <form>
+  <form ng-submit="login()">
     <table width="100%">
       <col width="35%" />
       <col width="35%" />
@@ -12,7 +12,7 @@
             <label style="width: 10em">Registered Name:</label>
           </td>
           <td>
-            <input ng-model="user.uname" />
+            <input ng-model="user.uname" type="text" name="username"/>
           </td>
           <td><strong style="color:red">{{error.uname}}</strong>
           </td>
@@ -22,14 +22,14 @@
             <label style="width: 10em">Password:</label>
           </td>
           <td>
-            <input type="password" ng-model="user.password" />
+            <input ng-model="user.password" type="password" name="password"/>
           </td>
           <td><strong style="color:red">{{error.password}}</strong>
           </td>
         </tr>
         <tr>
           <td colspan="3" align="center">
-            <button type="submit" ng-click="login()">Login</button>
+            <button type="submit">Login</button>
           </td>
         </tr>
       </tbody>
