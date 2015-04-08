@@ -42,23 +42,35 @@ func NewMGM(config MgmConfig) (*mgmCore, error){
       return nil, err
     }
     
-    //Instantiate our client manager with session keyMGM
-    clientMgr := clientManager{}
-    clientMgr.Initialize(config.SessionSecret)
+    regionMgr := newRegionManager()
+    go regionMgr.process()
     
-    regionMgr := regionManager{}
+    clientMgr := clientManager{}
+    clientMgr.init(config.SessionSecret,regionMgr)
     
     opensim := openSimListener{config.OpensimPort, regionMgr}
     
     mgmInstance = &mgmCore{make(chan mgmRequest, 256), clientMgr, config}
     
-    //populate interna structures from database
-    db := database{user: config.DBUsername, password: config.DBPassword, host: config.DBHost, database: config.DBDatabase}
+    //populate internal structures from database
+    db := database{
+      user: config.DBUsername, 
+      password: config.DBPassword, 
+      host: config.DBHost, 
+      database: config.DBDatabase,
+      rMgr: regionMgr,
+    }
     err = db.testConnection()
     if err != nil {
       return nil, err
     }
     
+    err = db.loadRegions()
+    if err != nil {
+      return nil, err
+    }
+    
+    //allow opensim connections
     go opensim.Listen()
     
     

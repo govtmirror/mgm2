@@ -4,9 +4,11 @@ import (
   "fmt"
   "github.com/gorilla/websocket"
   "encoding/json"
+  "github.com/satori/go.uuid"
 )
 
 type client struct {
+  guid uuid.UUID
   ws *websocket.Conn
   send chan []byte
 }
@@ -50,7 +52,12 @@ func (c *client) writer() {
   c.ws.Close()
 }
 
-type Request struct{
+type clientRequest struct{
   MessageType string
   Message json.RawMessage
+}
+
+type clientResponse struct {
+  MessageType string
+  Message interface{}
 }

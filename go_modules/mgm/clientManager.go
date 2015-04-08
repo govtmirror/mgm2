@@ -13,6 +13,7 @@ type clientManager struct {
   authTest chan clientAuthRequest
   authDel chan clientAuth
   store *sessions.CookieStore
+  regionMgr regionManager
 }
 
 var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
@@ -34,12 +35,13 @@ func (cm clientManager) NewClient(ws *websocket.Conn) *client {
   return client
 }
 
-func (cm *clientManager) Initialize(sessionKey string){
+func (cm *clientManager) init(sessionKey string, regionMgr regionManager){
   cm.store = sessions.NewCookieStore([]byte(sessionKey))
   cm.store.Options = &sessions.Options{
     Path: "/",
     MaxAge: 3600 * 8,
   }
+  cm.regionMgr = regionMgr
 }
 
 func (cm clientManager) websocketHandler(w http.ResponseWriter, r *http.Request) {
@@ -61,5 +63,6 @@ func (cm clientManager) websocketHandler(w http.ResponseWriter, r *http.Request)
   }
   
   c := cm.NewClient(ws)
+  cm.regionMgr.newClient <- c
   c.process()
 }
