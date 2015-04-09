@@ -1,4 +1,4 @@
-// Generated on 2015-03-25 using generator-angular 0.11.1
+// Generated on 2015-04-09 using generator-angular 0.11.1
 'use strict';
 
 // # Globbing
@@ -95,8 +95,8 @@ module.exports = function (grunt) {
                 connect.static('./bower_components')
               ),
               connect().use(
-                '/webapp/styles',
-                connect.static('./webapp/styles')
+                '/app/styles',
+                connect.static('./app/styles')
               ),
               require('grunt-connect-proxy/lib/utils').proxyRequest,
               connect.static(appConfig.app)

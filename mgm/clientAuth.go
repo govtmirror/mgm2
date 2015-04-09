@@ -4,7 +4,7 @@ import (
   "fmt"
   "net/http"
   "encoding/json"
-  "../../go_modules/simian"
+  "github.com/M-O-S-E-S/mgm2/simian"
   "github.com/satori/go.uuid"
 )
 

@@ -1,22 +1,19 @@
 'use strict';
 
-describe('Controller: GridCtrl', function () {
+describe('Controller: AccountCtrl', function () {
 
   // load the controller's module
   beforeEach(module('mgmApp'));
 
-  var GridCtrl,
+  var AccountCtrl,
     scope;
 
   // Initialize the controller and a mock scope
   beforeEach(inject(function ($controller, $rootScope) {
     scope = $rootScope.$new();
-    GridCtrl = $controller('GridCtrl', {
+    AccountCtrl = $controller('AccountCtrl', {
       $scope: scope
     });
   }));
 
-  it('should attach a list of awesomeThings to the scope', function () {
-    expect(scope.awesomeThings.length).toBe(3);
-  });
 });

@@ -1,7 +1,7 @@
 package mgm
 
 import (
-  "../simian"
+  "github.com/M-O-S-E-S/mgm2/simian"
   "fmt"
   "net/http"
   "log"

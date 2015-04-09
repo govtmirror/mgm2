@@ -1,7 +1,7 @@
 package main
 
 import (
-  "./go_modules/mgm"
+  "github.com/M-O-S-E-S/mgm2/mgm"
   "fmt"
   "os"
   "encoding/json"
