@@ -8,6 +8,12 @@ import (
   "net/http"
 )
 
+type client struct {
+  guid uuid.UUID
+  ws *websocket.Conn
+  send chan []byte
+}
+
 type clientManager struct {
   authIn chan clientAuth
   authTest chan clientAuthRequest

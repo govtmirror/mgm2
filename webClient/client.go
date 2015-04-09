@@ -7,12 +7,6 @@ import (
   "github.com/satori/go.uuid"
 )
 
-type client struct {
-  guid uuid.UUID
-  ws *websocket.Conn
-  send chan []byte
-}
-
 func (c *client) process() {
   //spin up reader and writer goroutines
   go c.writer()

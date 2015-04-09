@@ -1,7 +1,7 @@
 package main
 
 import (
-  "github.com/M-O-S-E-S/mgm2/mgm"
+  "github.com/M-O-S-E-S/mgm2/core"
   "fmt"
   "os"
   "encoding/json"
