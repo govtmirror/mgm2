@@ -7,8 +7,8 @@ import (
   "encoding/json"
 )
 
-func (sc simianConnector)GetUserByEmail(email string) (User, error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)GetUserByEmail(email string) (User, error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetUser"},
       "Email": {email},
@@ -29,8 +29,8 @@ func (sc simianConnector)GetUserByEmail(email string) (User, error) {
   return User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc simianConnector)GetUserByName(name string) (User, error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)GetUserByName(name string) (User, error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetUser"},
       "Name": {name},
@@ -51,8 +51,8 @@ func (sc simianConnector)GetUserByName(name string) (User, error) {
   return User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc simianConnector)GetUserByID(id uuid.UUID) (User, error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)GetUserByID(id uuid.UUID) (User, error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetUser"},
       "UserID": {id.String()},
@@ -69,8 +69,8 @@ func (sc simianConnector)GetUserByID(id uuid.UUID) (User, error) {
   return User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc simianConnector)GetUsers() ( []User, error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)GetUsers() ( []User, error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetUsers"},
       "NameQuery": {""},
@@ -87,8 +87,8 @@ func (sc simianConnector)GetUsers() ( []User, error) {
   return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc simianConnector)RemoveUser(userID uuid.UUID) ( bool, error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)RemoveUser(userID uuid.UUID) ( bool, error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"RemoveUser"},
       "UserID": {userID.String()},
@@ -101,8 +101,8 @@ func (sc simianConnector)RemoveUser(userID uuid.UUID) ( bool, error) {
   return sc.confirmRequest(response)
 }
 
-func (sc simianConnector)SetUserLastLocation(userID uuid.UUID, uri string) ( bool, error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)SetUserLastLocation(userID uuid.UUID, uri string) ( bool, error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddUserData"},
       "UserID": {userID.String()},
@@ -116,8 +116,8 @@ func (sc simianConnector)SetUserLastLocation(userID uuid.UUID, uri string) ( boo
   return sc.confirmRequest(response)
 }
 
-func (sc simianConnector)SetUserHomeLocation(userID uuid.UUID, uri string) ( bool, error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)SetUserHomeLocation(userID uuid.UUID, uri string) ( bool, error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddUserData"},
       "UserID": {userID.String()},
@@ -131,8 +131,8 @@ func (sc simianConnector)SetUserHomeLocation(userID uuid.UUID, uri string) ( boo
   return sc.confirmRequest(response)
 }
 
-func (sc simianConnector)UpdateUser(name string, email string, userID uuid.UUID, level int) ( bool, error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)UpdateUser(name string, email string, userID uuid.UUID, level int) ( bool, error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddUser"},
       "UserID": {userID.String()},

@@ -1,4 +1,4 @@
-package mgm
+package core
 
 import (
   "time"
@@ -6,46 +6,46 @@ import (
   "github.com/satori/go.uuid"
 )
 
-type region struct {
-  uuid uuid.UUID
-  name string
-  size uint
-  httpPort int
-  consolePort int
-  consoleUname uuid.UUID
-  consolePass uuid.UUID
-  locX uint
-  locY uint
-  externalAddress string
-  slaveAddress string
-  isRunning bool
-  status string
+type Region struct {
+  UUID uuid.UUID
+  Name string
+  Size uint
+  HttpPort int
+  ConsolePort int
+  ConsoleUname uuid.UUID
+  ConsolePass uuid.UUID
+  LocX uint
+  LocY uint
+  ExternalAddress string
+  SlaveAddress string
+  IsRunning bool
+  Status string
   
   frames chan int
 }
 
-func (r *region) Register(message map[string]interface{}) {
-  r.name = message["name"].(string)
-  r.locX = uint(message["locX"].(float64))
-  r.locY = uint(message["locY"].(float64))
-  r.size = uint(message["size"].(float64))
+func (r *Region) Register(message map[string]interface{}) {
+  r.Name = message["name"].(string)
+  r.LocX = uint(message["locX"].(float64))
+  r.LocY = uint(message["locY"].(float64))
+  r.Size = uint(message["size"].(float64))
     
   r.frames = make(chan int, 256)
   go r.countFrames()
     
-  fmt.Printf("Region %s registered with size %v at %v, %v.\n", r.name, r.size, r.locX, r.locY)
+  fmt.Printf("Region %s registered with size %v at %v, %v.\n", r.Name, r.Size, r.LocX, r.LocY)
 }
 
-func (r *region) Cleanup() {
+func (r *Region) Cleanup() {
   close(r.frames)
 }
 
-func (r *region) countFrames() {
+func (r *Region) countFrames() {
   vals := []int{}
   start := time.Now()
   val, more := <- r.frames
   if !more {
-    fmt.Printf("Region frame counter %v aborting, channel closed\n", r.name)   
+    fmt.Printf("Region frame counter %v aborting, channel closed\n", r.Name)   
     return
   }
   vals = append(vals,val)
@@ -64,6 +64,6 @@ func (r *region) countFrames() {
     last := vals[len(vals)-1]
     fps := float64(len(vals)) / ((float64(last) - float64(first))/1000.0)
     vals = vals[len(vals)-1:]
-    fmt.Printf("Region %v: %.2f fps\n", r.name, fps)
+    fmt.Printf("Region %v: %.2f fps\n", r.Name, fps)
   }
 }

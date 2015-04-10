@@ -8,8 +8,33 @@ import (
   "encoding/json"
 )
 
-type simianConnector struct {
+type SimianConnector struct {
   url string
+}
+
+func NewSimianConnector(simianUrl string) (*SimianConnector, error) {
+  sim := &SimianConnector{url: simianUrl}
+  
+  //Test a connection from simianInstance to
+  url := fmt.Sprintf("http://%v/Grid/", sim.url)
+  resp, err := http.Get(url)
+  if err != nil {
+    return nil, err
+  }
+  
+  body, err := ioutil.ReadAll(resp.Body)
+  if err != nil {
+    return nil, err
+  }
+  
+  result := string(body)
+  
+  if result != "SimianGrid" {
+    return nil, &errorString{fmt.Sprintf("Received %s instead of SimianGrid from Simian /Grid/ path")}
+  }
+    
+  sim.url = url
+  return sim, nil
 }
 
 type errorString struct {
@@ -19,9 +44,7 @@ func (es *errorString) Error() string {
   return es.s
 }
 
-var simianInstance *simianConnector = nil
-
-func (sc *simianConnector)handle_request(remoteUrl string, vals url.Values) ([]byte, error) {
+func (sc *SimianConnector)handle_request(remoteUrl string, vals url.Values) ([]byte, error) {
   resp, err := http.PostForm(remoteUrl, vals)
   if err != nil {
     return nil, err
@@ -35,7 +58,7 @@ func (sc *simianConnector)handle_request(remoteUrl string, vals url.Values) ([]b
   return body, nil
 }
 
-func (sc simianConnector)confirmRequest(response []byte) (bool, error){
+func (sc SimianConnector)confirmRequest(response []byte) (bool, error){
   var m confirmRequest
   err := json.Unmarshal(response, &m)
   if err != nil {
@@ -45,40 +68,4 @@ func (sc simianConnector)confirmRequest(response []byte) (bool, error){
     return  true, nil
   }
   return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
-}
-
-func Instance() (*simianConnector, error) {
-  if simianInstance == nil {
-    return nil, &errorString{"simian has not been initialized"}
-  }
-  return simianInstance, nil
-}
-
-func Initialize(simianUrl string) (error) {
-  if simianInstance == nil {
-    simianInstance = &simianConnector{url: simianUrl}
-  } else {
-    return &errorString{"simian has already been initialized"}
-  }
-  //Test a connection from simianInstance to
-  url := fmt.Sprintf("http://%v/Grid/", simianInstance.url)
-  fmt.Println("simian testing on ", url)
-  resp, err := http.Get(url)
-  if err != nil {
-    return err
-  }
-  
-  body, err := ioutil.ReadAll(resp.Body)
-  if err != nil {
-    return err
-  }
-  
-  result := string(body)
-  
-  if result == "SimianGrid" {
-    simianInstance.url = fmt.Sprintf("http://%v/Grid/",simianUrl);
-    fmt.Println("simian initialized")
-    return nil
-  }
-  return &errorString{fmt.Sprintf("Received %s instead of SimianGrid from Simian /Grid/ path")}
 }

@@ -1,98 +1,50 @@
-package mgm
+package core
 
-import (
-  "github.com/M-O-S-E-S/mgm2/simian"
-  "fmt"
-  "net/http"
-  "log"
-  "github.com/gorilla/mux"
-  
-)
+type Simian interface {
+}
+
+type Database interface {
+  TestConnection() error
+  GetAllRegions() error
+}
+
+type Opensim interface {
+  Listen()
+}
 
 type mgmRequest struct {
   request string
   listener chan<- []byte
 }
 
-type MgmConfig struct {
-  SimianUrl string
-  SessionSecret string
-  OpensimPort string
-  WebPort string
-  DBUsername string
-  DBPassword string
-  DBHost string
-  DBDatabase string
-}
-
 type mgmCore struct{
   requests chan mgmRequest
-  clientMgr clientManager
-  config MgmConfig
+  clientMgr ClientManager
 }
 
-var mgmInstance *mgmCore = nil
-
-func NewMGM(config MgmConfig) (*mgmCore, error){
-  if mgmInstance == nil {
-    //Make sure that simian is happy
-    fmt.Println("Initializing Simiangrid Connection")
-    err := simian.Initialize(config.SimianUrl)
-    if err != nil {
-      return nil, err
-    }
+func NewMGM(simian Simian, database Database, opensim Opensim) (*mgmCore, error){
     
-    regionMgr := newRegionManager()
-    go regionMgr.process()
+  regionMgr := newRegionManager()
+  go regionMgr.process()
     
-    clientMgr := clientManager{}
-    clientMgr.init(config.SessionSecret,regionMgr)
+  clientMgr := ClientManager{}
     
-    opensim := openSimListener{config.OpensimPort, regionMgr}
+  //opensim := openSimListener{config.OpensimPort, regionMgr}
     
-    mgmInstance = &mgmCore{make(chan mgmRequest, 256), clientMgr, config}
-    
-    //populate internal structures from database
-    db := database{
-      user: config.DBUsername, 
-      password: config.DBPassword, 
-      host: config.DBHost, 
-      database: config.DBDatabase,
-      rMgr: regionMgr,
-    }
-    err = db.testConnection()
-    if err != nil {
-      return nil, err
-    }
-    
-    err = db.loadRegions()
-    if err != nil {
-      return nil, err
-    }
-    
-    //allow opensim connections
-    go opensim.Listen()
-    
-    
+  mgmInstance := &mgmCore{make(chan mgmRequest, 256), clientMgr}
+  
+  err := database.TestConnection()
+  if err != nil {
+    return nil, err
   }
+    
+  err = database.GetAllRegions()
+  if err != nil {
+    return nil, err
+  }
+    
+  //allow opensim connections
+  //go opensim.Listen()
+    
   return mgmInstance, nil
-}
-
-func (mgm *mgmCore) Listen(){
-  fmt.Println("running")
-  
-  r := mux.NewRouter()
-  r.HandleFunc("/ws", mgm.clientMgr.websocketHandler)
-  r.HandleFunc("/auth", mgm.clientMgr.resumeHandler)
-  r.HandleFunc("/auth/login", mgm.clientMgr.loginHandler)
-  r.HandleFunc("/auth/logout", mgm.clientMgr.logoutHandler)
-  r.HandleFunc("/auth/register", mgm.clientMgr.registerHandler)
-  r.HandleFunc("/auth/passwordToken", mgm.clientMgr.passwordTokenHandler)
-  r.HandleFunc("/auth/passwordReset", mgm.clientMgr.passwordResetHandler)
-  
-  http.Handle("/", r)
-  fmt.Println("Listening for clients on :" + mgm.config.WebPort)
-  if err := http.ListenAndServe(":" + mgm.config.WebPort, nil); err != nil {
-    log.Fatal("ListenAndServe:", err)
-  }
 }

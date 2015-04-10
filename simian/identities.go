@@ -9,11 +9,11 @@ import (
   "github.com/satori/go.uuid"
 )
 
-func (sc simianConnector)Auth(username string, password string) (uuid.UUID, error) {
+func (sc SimianConnector)Auth(username string, password string) (uuid.UUID, error) {
   hasher := md5.New()
   hasher.Write([]byte(password))
   
-  response, err := sc.handle_request(simianInstance.url,
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AuthorizeIdentity"}, 
       "Identifier": {username},
@@ -42,8 +42,8 @@ func (sc simianConnector)Auth(username string, password string) (uuid.UUID, erro
   return uuid.UUID{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc simianConnector)EnableIdentity(username string, identityType string, credential string, userID uuid.UUID) (bool, error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)EnableIdentity(username string, identityType string, credential string, userID uuid.UUID) (bool, error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddIdentity"},
       "Identifier": {username},
@@ -60,8 +60,8 @@ func (sc simianConnector)EnableIdentity(username string, identityType string, cr
   return sc.confirmRequest(response)
 }
 
-func (sc simianConnector)DisableIdentity(username string, identityType string, credential string, userID uuid.UUID) (bool, error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)DisableIdentity(username string, identityType string, credential string, userID uuid.UUID) (bool, error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddIdentity"},
       "Identifier": {username},
@@ -78,8 +78,8 @@ func (sc simianConnector)DisableIdentity(username string, identityType string, c
   return sc.confirmRequest(response)
 }
 
-func (sc simianConnector)InsertPasswordHash(username string, credential string, userID uuid.UUID) (bool, error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)InsertPasswordHash(username string, credential string, userID uuid.UUID) (bool, error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddIdentity"},
       "Identifier": {username},
@@ -95,11 +95,11 @@ func (sc simianConnector)InsertPasswordHash(username string, credential string, 
   return sc.confirmRequest(response)
 }
 
-func (sc simianConnector)SetPassword(username string, password string, userID uuid.UUID) (bool, error) {
+func (sc SimianConnector)SetPassword(username string, password string, userID uuid.UUID) (bool, error) {
   hasher := md5.New()
   hasher.Write([]byte(password))
   
-  response, err := sc.handle_request(simianInstance.url,
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddIdentity"},
       "Identifier": {username},
@@ -115,8 +115,8 @@ func (sc simianConnector)SetPassword(username string, password string, userID uu
   return sc.confirmRequest(response)
 }
 
-func (sc simianConnector)GetIdentities(userID uuid.UUID) ( []Identity, error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)GetIdentities(userID uuid.UUID) ( []Identity, error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetIdentities"},
       "UserID": {userID.String()},

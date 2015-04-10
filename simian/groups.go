@@ -7,8 +7,8 @@ import (
   "encoding/json"
 )
 
-func (sc simianConnector)GetGroups() ( []Group, error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)GetGroups() ( []Group, error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetGenerics"},
       "Type": {"Group"},
@@ -35,8 +35,8 @@ func (sc simianConnector)GetGroups() ( []Group, error) {
   return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc simianConnector)GetGroupByID(groupID uuid.UUID) ( Group, error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)GetGroupByID(groupID uuid.UUID) ( Group, error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetGenerics"},
       "Type": {"Group"},
@@ -64,8 +64,8 @@ func (sc simianConnector)GetGroupByID(groupID uuid.UUID) ( Group, error) {
   return Group{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc simianConnector)GetGroupMembers(groupID uuid.UUID) ( []uuid.UUID, error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)GetGroupMembers(groupID uuid.UUID) ( []uuid.UUID, error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetGenerics"},
       "Type": {"GroupMember"},
@@ -97,8 +97,8 @@ func (sc simianConnector)GetGroupMembers(groupID uuid.UUID) ( []uuid.UUID, error
   return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc simianConnector)GetGroupRoles(groupID uuid.UUID) ( []string, error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)GetGroupRoles(groupID uuid.UUID) ( []string, error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetGenerics"},
       "Type": {"GroupRole"},
@@ -130,9 +130,9 @@ func (sc simianConnector)GetGroupRoles(groupID uuid.UUID) ( []string, error) {
   return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 /*
-func (sc simianConnector)RemoveUserFromGroup(userID uuid.UUID, groupID uuid.UUID) ( bool, error) {
+func (sc SimianConnector)RemoveUserFromGroup(userID uuid.UUID, groupID uuid.UUID) ( bool, error) {
   //clear user role in group
-  m, err := sc.handle_request(simianInstance.url,
+  m, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"RemoveGeneric"},
       "Type": {fmt.Sprintf("GroupRole%v", groupID.String())},
@@ -207,8 +207,8 @@ func (sc simianConnector)RemoveUserFromGroup(userID uuid.UUID, groupID uuid.UUID
   return true, nil
 }
 
-func (sc simianConnector)AddUserToGroup(userID uuid.UUID, groupID uuid.UUID) ( bool, error) {
-  m, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)AddUserToGroup(userID uuid.UUID, groupID uuid.UUID) ( bool, error) {
+  m, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddGeneric"},
       "OwnerID": {userID.String()},
@@ -246,7 +246,7 @@ func (sc simianConnector)AddUserToGroup(userID uuid.UUID, groupID uuid.UUID) ( b
 }
 
 func (sc simianConnector)GetRolesForUser(userID uuid.UUID, groupID uuid.UUID) ( map[string]interface{}, error) {
-  m, err := sc.handle_request(simianInstance.url,
+  m, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetGenerics"},
       "Type": {fmt.Sprintf("GroupRole%v",groupID.String())},
@@ -264,7 +264,7 @@ func (sc simianConnector)GetRolesForUser(userID uuid.UUID, groupID uuid.UUID) ( 
 }
 
 func (sc simianConnector)GetGroupsForUser(userID uuid.UUID) ( map[string]interface{}, error) {
-  m, err := sc.handle_request(simianInstance.url,
+  m, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetGenerics"},
       "Type": {"GroupMember"},
@@ -281,8 +281,8 @@ func (sc simianConnector)GetGroupsForUser(userID uuid.UUID) ( map[string]interfa
   return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m["Message"].(string))}
 }
 
-func (sc simianConnector)GetActiveGroup(userID uuid.UUID) ( uuid.UUID, error) {
-  m, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)GetActiveGroup(userID uuid.UUID) ( uuid.UUID, error) {
+  m, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetGenerics"},
       "Type": {"Group"},

@@ -1,15 +1,33 @@
-package mgm
+package webClient
 
 import (
   "fmt"
   "net/http"
   "encoding/json"
-  "github.com/M-O-S-E-S/mgm2/simian"
   "github.com/satori/go.uuid"
+  "github.com/gorilla/sessions"
 )
 
-func (cm clientManager) logoutHandler(w http.ResponseWriter, r *http.Request) {
-  session, _ := cm.store.Get(r, "MGM")
+type Authenticator interface {
+  Auth(string, string) (uuid.UUID, error)
+}
+
+type HttpConnector struct {
+  store *sessions.CookieStore
+  authenticator Authenticator
+}
+
+func NewHttpConnector(sessionKey string, authenticator Authenticator) (*HttpConnector){
+  store := sessions.NewCookieStore([]byte(sessionKey))
+  store.Options = &sessions.Options{
+    Path: "/",
+    MaxAge: 3600 * 8,
+  }
+  return &HttpConnector{store, authenticator}
+}
+
+func (hc HttpConnector) LogoutHandler(w http.ResponseWriter, r *http.Request) {
+  session, _ := hc.store.Get(r, "MGM")
   delete(session.Values, "guid")
   delete(session.Values,"address")
   session.Save(r,w)
@@ -17,8 +35,8 @@ func (cm clientManager) logoutHandler(w http.ResponseWriter, r *http.Request) {
   w.Write([]byte("{\"Success\": true}"))
 }
 
-func (cm clientManager) resumeHandler(w http.ResponseWriter, r *http.Request) {
-  session, _ := cm.store.Get(r, "MGM")
+func (hc HttpConnector) ResumeHandler(w http.ResponseWriter, r *http.Request) {
+  session, _ := hc.store.Get(r, "MGM")
     
   type clientAuthResponse struct {
     Uuid string
@@ -49,19 +67,19 @@ func (cm clientManager) resumeHandler(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func (cm clientManager) registerHandler(w http.ResponseWriter, r *http.Request) {
+func (hc HttpConnector) RegisterHandler(w http.ResponseWriter, r *http.Request) {
   
 }
 
-func (cm clientManager) passwordResetHandler(w http.ResponseWriter, r *http.Request) {
+func (hc HttpConnector) PasswordResetHandler(w http.ResponseWriter, r *http.Request) {
   
 }
 
-func (cm clientManager) passwordTokenHandler(w http.ResponseWriter, r *http.Request) {
+func (hc HttpConnector) PasswordTokenHandler(w http.ResponseWriter, r *http.Request) {
   
 }
 
-func (cm clientManager) loginHandler(w http.ResponseWriter, r *http.Request) {
+func (hc HttpConnector) LoginHandler(w http.ResponseWriter, r *http.Request) {
   decoder := json.NewDecoder(r.Body)
   
   type clientAuthRequest struct {
@@ -82,8 +100,7 @@ func (cm clientManager) loginHandler(w http.ResponseWriter, r *http.Request) {
     Success bool
   }
   
-  sim, _ := simian.Instance()
-  guid,err := sim.Auth(t.Username,t.Password);
+  guid,err := hc.authenticator.Auth(t.Username,t.Password);
   if err != nil {
     response := clientAuthResponse{uuid.UUID{}, err.Error(), false}
     js, err := json.Marshal(response)
@@ -103,7 +120,7 @@ func (cm clientManager) loginHandler(w http.ResponseWriter, r *http.Request) {
     return
   }
   
-  session, _ := cm.store.Get(r, "MGM")
+  session, _ := hc.store.Get(r, "MGM")
   session.Values["guid"] = guid.String()
   session.Values["address"] = r.RemoteAddr
   err = session.Save(r,w)

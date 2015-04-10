@@ -7,8 +7,8 @@ import (
   "encoding/json"
 )
 
-func (sc simianConnector)EmailIsRegistered(email string) (exists bool, err error) {
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)EmailIsRegistered(email string) (exists bool, err error) {
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetUser"},
       "Email": {email},
@@ -29,9 +29,9 @@ func (sc simianConnector)EmailIsRegistered(email string) (exists bool, err error
   return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc simianConnector)CreateUserEntry(username string, email string) (uuid.UUID, error){
+func (sc SimianConnector)CreateUserEntry(username string, email string) (uuid.UUID, error){
   userID := uuid.NewV4()
-  response, err := sc.handle_request(simianInstance.url,
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddUser"},
       "UserID": {userID.String()},
@@ -55,8 +55,8 @@ func (sc simianConnector)CreateUserEntry(username string, email string) (uuid.UU
   return uuid.UUID{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc simianConnector)CreateUserInventory(userID uuid.UUID, template string) (bool, error){
-  response, err := sc.handle_request(simianInstance.url,
+func (sc SimianConnector)CreateUserInventory(userID uuid.UUID, template string) (bool, error){
+  response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddInventory"},
       "OwnerID": {userID.String()},

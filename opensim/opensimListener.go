@@ -1,18 +1,30 @@
-package mgm
+package opensim
 
 import (
   "fmt"
   "net"
   "os"
-  "encoding/json"
+//  "encoding/json"
+  "github.com/satori/go.uuid"
 )
 
-type openSimListener struct {
-  Port string
-  regionMgr regionManager
+type Region interface {
 }
 
-func (l* openSimListener) Listen() {
+type RegionManager interface {
+  GetRegion(uuid.UUID) Region
+}
+
+type OpensimListener struct {
+  Port string
+  regionMgr RegionManager
+}
+
+func NewOpensimListener(port string, mgr RegionManager) (*OpensimListener, error){
+  return &OpensimListener{port, mgr}, nil
+}
+
+func (l* OpensimListener) Listen() {
   link, err := net.Listen("tcp", ":"+l.Port)
   if err != nil {
     fmt.Println("Error Listening:", err.Error())
@@ -32,12 +44,14 @@ func (l* openSimListener) Listen() {
   }
 }
 
-func (l* openSimListener) handleRequest(conn net.Conn){
+func (l* OpensimListener) handleRequest(conn net.Conn){
   fmt.Println("New Connection Received")
 
   defer conn.Close()
-    
-  r := region{} //Region is zeroed out
+
+  //we need some information from the region before we can process it
+  /*
+  r := l.regionMgr.GetRegion(uuid.UUID{})
     
   for {
     m := map[string]interface{}{}
@@ -57,4 +71,5 @@ func (l* openSimListener) handleRequest(conn net.Conn){
       fmt.Println(m)
     }      
   }
+  */
 }

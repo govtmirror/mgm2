@@ -1,37 +1,35 @@
-package mgm
+package core
 
 import (
   "github.com/satori/go.uuid"
-  "encoding/json"
-  "fmt"
 )
 
-type regionManager struct {
-  newRegions chan region
-  newClient chan *client
+type RegionManager struct {
+  NewRegions chan Region
+  NewClient chan *Client
 }
 
-func newRegionManager() regionManager{
-  return regionManager{
-    make(chan region, 16),
-    make(chan *client, 256),
+func newRegionManager() RegionManager{
+  return RegionManager{
+    make(chan Region, 16),
+    make(chan *Client, 256),
   }
 }
 
-func (rm * regionManager) newRegion() (*region){
-  r := &region{}
+func (rm * RegionManager) newRegion() (*Region){
+  r := &Region{}
   r.frames = make(chan int, 64)
   return r
 }
 
-func (rm * regionManager) process(){
-  regions := map[uuid.UUID]region{}
-  clients := map[uuid.UUID]*client{}
+func (rm * RegionManager) process(){
+  regions := map[uuid.UUID]Region{}
+  clients := map[uuid.UUID]*Client{}
   for {
     select{
-    case r := <- rm.newRegions:
-      regions[r.uuid] = r
-    case c := <- rm.newClient:
+    case r := <- rm.NewRegions:
+      regions[r.UUID] = r
+    case c := <- rm.NewClient:
       clients[c.guid] = c
       for k := range regions {
         notifyUserNewRegion(c,regions[k])
@@ -40,8 +38,8 @@ func (rm * regionManager) process(){
   }
 }
 
-func notifyUserNewRegion(c *client, r region){
-  type clientRegion struct {
+func notifyUserNewRegion(c *Client, r Region){
+  /*type clientRegion struct {
     UUID string
     Name string
     Size uint
@@ -69,5 +67,5 @@ func notifyUserNewRegion(c *client, r region){
     fmt.Println(err)
     return
   }
-  c.send <- data
+  c.send <- data*/
 }
