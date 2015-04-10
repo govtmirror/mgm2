@@ -1,71 +1,44 @@
 package core
 
 import (
-  "github.com/satori/go.uuid"
+  //"github.com/satori/go.uuid"
+  "fmt"
+  "time"
 )
 
 type RegionManager struct {
-  NewRegions chan Region
-  NewClient chan *Client
+
+  database Database
 }
 
-func newRegionManager() RegionManager{
-  return RegionManager{
-    make(chan Region, 16),
-    make(chan *Client, 256),
-  }
-}
-
-func (rm * RegionManager) newRegion() (*Region){
-  r := &Region{}
-  r.frames = make(chan int, 64)
-  return r
-}
-
-func (rm * RegionManager) process(){
-  regions := map[uuid.UUID]Region{}
-  clients := map[uuid.UUID]*Client{}
-  for {
-    select{
-    case r := <- rm.NewRegions:
-      regions[r.UUID] = r
-    case c := <- rm.NewClient:
-      clients[c.guid] = c
-      for k := range regions {
-        notifyUserNewRegion(c,regions[k])
-      }
-    }
-  }
-}
-
-func notifyUserNewRegion(c *Client, r Region){
-  /*type clientRegion struct {
-    UUID string
-    Name string
-    Size uint
-    LocX uint
-    LocY uint
-    IsRunning bool
-  }
+func (rm *RegionManager) Process(){
   
-  cr := &clientRegion{
-    r.uuid.String(),
-    r.name,
-    r.size,
-    r.locX,
-    r.locY,
-    r.isRunning,
-  }
-  
-  cm := &clientResponse{
-    "NewRegion",
-    cr,
-  }
-    
-  data, err := json.Marshal(cm)
-  if err != nil {
-    fmt.Println(err)
+}
+
+func (r *Region) countFrames() {
+  vals := []int{}
+  start := time.Now()
+  val, more := <- r.frames
+  if !more {
+    fmt.Printf("Region frame counter %v aborting, channel closed\n", r.Name)   
     return
   }
-  c.send <- data*/
+  vals = append(vals,val)
+  for {
+    val, more = <- r.frames
+    if !more {
+      return
+    }
+    vals = append(vals,val)
+    elapsed := time.Since(start).Seconds()
+    if elapsed < 5 {
+      continue
+    }
+    start = time.Now()
+    first := vals[0]
+    last := vals[len(vals)-1]
+    fps := float64(len(vals)) / ((float64(last) - float64(first))/1000.0)
+    vals = vals[len(vals)-1:]
+    fmt.Printf("Region %v: %.2f fps\n", r.Name, fps)
+  }
 }

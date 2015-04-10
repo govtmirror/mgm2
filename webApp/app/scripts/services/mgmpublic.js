@@ -11,6 +11,7 @@ angular.module('mgmApp')
   .service('MgmPublic', function ($q, $http, $rootScope) {
 
     self = this;
+    console.log("MgmPublic setting logged in to false");
     self.loggedIn = false;
 
     this.login = function (username, password) {
@@ -25,7 +26,7 @@ angular.module('mgmApp')
         }).success(function (data, status, headers, config) {
           if (data.Success) {
             self.loggedIn = true;
-            $rootScope.$broadcast("AuthChange");
+            $rootScope.$broadcast("AuthChange", true);
             resolve("login successfull");
           } else {
             reject(data.Message);
@@ -45,7 +46,7 @@ angular.module('mgmApp')
         $http.get("/auth/logout").success(function (data, status, headers, config) {
           if (data.Success) {
             self.loggedIn = false;
-            $rootScope.$broadcast("AuthChange");
+            $rootScope.$broadcast("AuthChange", false);
             resolve("login successfull");
           } else {
             reject(data.Message);
@@ -109,7 +110,7 @@ angular.module('mgmApp')
       if (data.Success) {
         console.log("session resume successfull");
         self.loggedIn = true;
-        $rootScope.$broadcast("AuthChange");
+        $rootScope.$broadcast("AuthChange", true);
       };
     });
   });

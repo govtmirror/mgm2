@@ -4,16 +4,23 @@ import (
   "fmt"
   "net/http"
   "github.com/gorilla/websocket"
-  "encoding/json"
-  //"github.com/satori/go.uuid"
+  "github.com/satori/go.uuid"
+  "github.com/M-O-S-E-S/mgm2/core"
 )
+
+type client struct {
+  ws *websocket.Conn
+  toClient chan []byte
+  fromClient chan []byte
+}
 
 type WebsocketConnector struct {
   httpConnector *HttpConnector
+  session chan<- core.UserSession
 }
 
-func NewWebsocketConnector(hc *HttpConnector) (*WebsocketConnector) {
-  return &WebsocketConnector{hc}
+func NewWebsocketConnector(hc *HttpConnector, session chan<- core.UserSession) (*WebsocketConnector) {
+  return &WebsocketConnector{hc, session}
 }
 
 var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
@@ -24,36 +31,24 @@ func (wc WebsocketConnector) WebsocketHandler(w http.ResponseWriter, r *http.Req
   session, _ := wc.httpConnector.store.Get(r, "MGM")
   // test if session exists
   if len(session.Values) == 0 {
-    fmt.Println("Websocket closed, existing session missing");
+    fmt.Println("Websocket closed, existing session missing")
     return
   }
   // test origin, etc for websocket security
   // not sure if necessary, we will be over https, and the session is valid
-  
+
   ws, err := upgrader.Upgrade(w, r, nil)
   if err != nil {
     fmt.Println(err)
     return
   }
   
-  c := newClient(ws)
-  //cm.regionMgr.NewClient <- c
-  c.process()
-}
-
-func newClient(ws *websocket.Conn) *client{
-  return &client{ws, make(chan []byte, 64)}
-}
-
-type client struct {
-  ws *websocket.Conn
-  send chan []byte
-}
-
-func (c *client) process() {
-  //spin up reader and writer goroutines
-  go c.writer()
+  guid, _ := uuid.FromString( session.Values["guid"].(string))
+  
+  c := client{ws, make(chan []byte, 64), make(chan []byte, 64)}
   go c.reader()
+  go c.writer()
+  wc.session <- core.UserSession{c.toClient, c.fromClient, guid}
 }
 
 func (c *client) reader() {
@@ -62,39 +57,19 @@ func (c *client) reader() {
     if err != nil {
       break
     }
-    type userRequest struct {
-      MessageType string
-      Message json.RawMessage
-    }
-    var m userRequest
-    err = json.Unmarshal(message, &m)
-    if err != nil {
-      fmt.Println("Error decoding message: ", err)
-      continue
-    }
-    fmt.Println("Message received with type: ", m.MessageType)
-    //c.send<-message
+    c.fromClient<-message
   }
-  fmt.Println("reader closing connection")
+  close(c.fromClient)
   c.ws.Close()
 }
 
 func (c *client) writer() {
-  for message := range c.send {
+  for message := range c.toClient {
     err := c.ws.WriteMessage(websocket.TextMessage, message)
     if err != nil {
       break
     }
   }
+  close(c.toClient)
   c.ws.Close()
-}
-
-type clientRequest struct{
-  MessageType string
-  Message json.RawMessage
-}
-
-type clientResponse struct {
-  MessageType string
-  Message interface{}
 }

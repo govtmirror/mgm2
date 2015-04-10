@@ -5,7 +5,7 @@ import (
   "github.com/M-O-S-E-S/mgm2/mysql"
   "github.com/M-O-S-E-S/mgm2/simian"
   "github.com/M-O-S-E-S/mgm2/webClient"
-  "github.com/M-O-S-E-S/mgm2/opensim"
+  //"github.com/M-O-S-E-S/mgm2/opensim"
   "fmt"
   "os"
   "encoding/json"
@@ -45,19 +45,18 @@ func main() {
     config.DBHost, 
   )
   sim, _ := simian.NewSimianConnector(config.SimianUrl)
-  os,_ := opensim.NewOpensimListener(config.OpensimPort, nil)
+  
+  //leave this out for now
+  //os,_ := opensim.NewOpensimListener(config.OpensimPort, nil)
   
   
-  //NewMGM(config MgmConfig, simian Simian, database Database, opensim Opensim)
-  mgmCore, err := core.NewMGM(sim, db, os)
-  if err != nil {
-    fmt.Println("Error instantiating MGMCore ", err)
-    return
-  }
-  fmt.Println(mgmCore)
+  //Hook up core processing...
+  //regionManager := core.RegionManager{nil, db}
+  sessionListener := make(chan core.UserSession, 64) 
+  core.UserManager(sessionListener, db, sim)
 
   httpCon := webClient.NewHttpConnector(config.SessionSecret, sim)
-  sockCon := webClient.NewWebsocketConnector(httpCon)
+  sockCon := webClient.NewWebsocketConnector(httpCon, sessionListener)
   
   r := mux.NewRouter()
   r.HandleFunc("/ws", sockCon.WebsocketHandler)
