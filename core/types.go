@@ -1,6 +1,9 @@
 package core
 
-import "github.com/satori/go.uuid"
+import (
+  "github.com/satori/go.uuid"
+  "encoding/json"
+)
 
 type Simian interface {
 }
@@ -15,7 +18,16 @@ type Opensim interface {
 }
 
 type User struct {
-  guid uuid.UUID
+  UserID uuid.UUID
+  Name string
+  Email string
+  AccessLevel uint8
+
+  HomeLocation json.RawMessage  `json:"-"`
+  LastLocation json.RawMessage `json:"-"`
+  LLAbout json.RawMessage `json:"-"`
+  LLInterests json.RawMessage `json:"-"`
+  LLPackedAppearance json.RawMessage `json:"-"`
 }
 
 type Region struct {

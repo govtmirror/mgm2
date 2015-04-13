@@ -2,6 +2,7 @@ package simian
 
 import (
   "github.com/satori/go.uuid"
+  "github.com/M-O-S-E-S/mgm2/core"
 )
 
 type confirmRequest struct {
@@ -12,26 +13,13 @@ type confirmRequest struct {
 type userRequest struct {
   Success bool
   Message string
-  User User
+  User core.User
 }
 
 type usersRequest struct {
   Success bool
   Message string
-  Users []User
-}
-
-type User struct {
-  AccessLevel int
-  Email string
-  UserID uuid.UUID
-  Cap uuid.UUID
-  Name string
-  LLPackedAppearance string
-  HomeLocation string
-  LastLocation string
-  LLInterests string
-  LLAbout string
+  Users []core.User
 }
 
 type Identity struct {

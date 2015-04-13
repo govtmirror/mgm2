@@ -5,9 +5,10 @@ import (
   "fmt"
   "github.com/satori/go.uuid"
   "encoding/json"
+  "github.com/M-O-S-E-S/mgm2/core"
 )
 
-func (sc SimianConnector)GetUserByEmail(email string) (User, error) {
+func (sc SimianConnector)GetUserByEmail(email string) (core.User, error) {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetUser"},
@@ -15,21 +16,21 @@ func (sc SimianConnector)GetUserByEmail(email string) (User, error) {
     })
   
   if err != nil {
-    return User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    return core.User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
 
   var m userRequest
   err = json.Unmarshal(response, &m)
   if err != nil {
-    return User{}, err
+    return core.User{}, err
   }
   if m.Success {
     return  m.User, nil
   }
-  return User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
+  return core.User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc SimianConnector)GetUserByName(name string) (User, error) {
+func (sc SimianConnector)GetUserByName(name string) (core.User, error) {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetUser"},
@@ -37,39 +38,41 @@ func (sc SimianConnector)GetUserByName(name string) (User, error) {
     })
   
   if err != nil {
-    return User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    return core.User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
   var m userRequest
   err = json.Unmarshal(response, &m)
   if err != nil {
-    return User{}, err
+    return core.User{}, err
   }
   if m.Success {
     return  m.User, nil
   }
-  return User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
+  return core.User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc SimianConnector)GetUserByID(id uuid.UUID) (User, error) {
+func (sc SimianConnector)GetUserByID(id uuid.UUID) (core.User, error) {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetUser"},
       "UserID": {id.String()},
     })
   
+  fmt.Println(string(response))
+
   var m userRequest
   err = json.Unmarshal(response, &m)
   if err != nil {
-    return User{}, err
+    return core.User{}, err
   }
   if m.Success {
     return  m.User, nil
   }
-  return User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
+  return core.User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc SimianConnector)GetUsers() ( []User, error) {
+func (sc SimianConnector)GetUsers() ( []core.User, error) {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetUsers"},

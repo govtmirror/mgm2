@@ -6,11 +6,12 @@ import (
   "github.com/gorilla/websocket"
   "github.com/satori/go.uuid"
   "github.com/M-O-S-E-S/mgm2/core"
+  "encoding/json"
 )
 
 type client struct {
   ws *websocket.Conn
-  toClient chan []byte
+  toClient chan interface{}
   fromClient chan []byte
 }
 
@@ -45,7 +46,7 @@ func (wc WebsocketConnector) WebsocketHandler(w http.ResponseWriter, r *http.Req
   
   guid, _ := uuid.FromString( session.Values["guid"].(string))
   
-  c := client{ws, make(chan []byte, 64), make(chan []byte, 64)}
+  c := client{ws, make(chan interface{}, 64), make(chan []byte, 64)}
   go c.reader()
   go c.writer()
   wc.session <- core.UserSession{c.toClient, c.fromClient, guid}
@@ -65,7 +66,15 @@ func (c *client) reader() {
 
 func (c *client) writer() {
   for message := range c.toClient {
-    err := c.ws.WriteMessage(websocket.TextMessage, message)
+
+    data, err := json.Marshal(message)
+    if err != nil {
+      fmt.Println("Error encoding message: ", err)
+      continue
+    }
+
+
+    err = c.ws.WriteMessage(websocket.TextMessage, data)
     if err != nil {
       break
     }

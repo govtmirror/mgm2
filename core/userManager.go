@@ -6,16 +6,16 @@ import (
 )
 
 type UserSession struct {
-  ToClient chan []byte
+  ToClient chan interface{}
   FromClient chan []byte
   Guid uuid.UUID
 }
 
-type Authenticator interface {
-
+type UserSource interface {
+  GetUserByID(uuid.UUID) (User, error)
 }
 
-func UserManager(sessionListener <-chan UserSession, dataStore Database,auth Authenticator){
+func UserManager(sessionListener <-chan UserSession, dataStore Database, userSource UserSource){
   
   //create notification hub
   
@@ -25,7 +25,7 @@ func UserManager(sessionListener <-chan UserSession, dataStore Database,auth Aut
     for {
       select {
         case s := <-sessionListener:
-          go userSession(s, dataStore)
+          go userSession(s, dataStore, userSource)
         
       }
     }
@@ -33,7 +33,19 @@ func UserManager(sessionListener <-chan UserSession, dataStore Database,auth Aut
   
 }
 
-func userSession(session UserSession, dataStore Database){
+func userSession(session UserSession, dataStore Database, userSource UserSource){
+  //perform client initialization
+  //request account information
+  accountData, err := userSource.GetUserByID(session.Guid)
+  if err != nil {
+    fmt.Println("Error lookin up user account: ", err)
+  }
+  session.ToClient <- accountData
+  fmt.Println(accountData)
+  //lookup what this user can control
+
+
+
   for {
     msg, more := <-session.FromClient
     if !more {
@@ -44,6 +56,12 @@ func userSession(session UserSession, dataStore Database){
     m := userRequest{}
     m.load(msg)
     switch m.MessageType {
+      case "GetAccount":
+
+      case "GetRegions":
+
+      case "GetUsers":
+
       default:
       fmt.Println("Error on message from client: ", m.MessageType)
     }
