@@ -7,18 +7,16 @@
  * # mgm
  * Service in the mgmApp.
  */
-angular.module('mgmApp').service('mgm', function ($location) {
+angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
   console.log("mgm service instantiated");
-
-  window.WebSocket = window.WebSocket || window.MozWebSocket;
 
   var remoteURL = "ws://" + $location.host() + ":" + $location.port() + "/ws";
 
   self = this;
-  
+
   this.connect = function () {
     console.log("Connecting to: " + remoteURL);
-    self.ws = new WebSocket(remoteURL);
+    self.ws = new ReconnectingWebSocket(remoteURL);
 
     self.ws.onopen = function () {
       console.log("Socket has been opened!");
@@ -33,9 +31,19 @@ angular.module('mgmApp').service('mgm', function ($location) {
       self.ws.send(JSON.stringify(testMessage));
     };
 
-    self.ws.onmessage = function (message) {
-      console.log("message received:");
-      console.log(message);
+    self.ws.onmessage = function (evt) {
+      console.log(evt.data);
+      var message = $.parseJSON(evt.data);
+      switch (message.MessageType) {
+      case "AccountData":
+        self.account = message.Message
+        $rootScope.$broadcast("AccountChange");
+        break
+
+      default:
+        console.log(message.data);
+      };
+
     }
 
     self.ws.onclose = function (message) {

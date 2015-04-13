@@ -42,7 +42,7 @@ func main() {
     fmt.Println("Error reading config file: ", err)
     return
   }
-  
+
   db := mysql.NewDatabase(
     config.MySQL.Username,
     config.MySQL.Password,

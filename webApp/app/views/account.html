@@ -1,1 +1,35 @@
-<p>This is the account view.</p>
+<table>
+  <tr>
+    <td>
+      <label>Avatar Name:</label>
+    </td>
+    <td>{{account.Name}}</td>
+  </tr>
+  <tr>
+    <td>
+      <label>Avatar User Level:</label>
+    </td>
+    <td>{{account.AccessLevel}}</td>
+  </tr>
+  <tr>
+    <td>
+      <label>User Email:</label>
+    </td>
+    <td>{{account.Email}}</td>
+  </tr>
+</table>
+<hr>
+<span>Reset Password</span>
+<form ng-submit="account.resetPassword()">
+  <label>Password:</label>
+  <input type="password" ng-model="account.password" />
+  <br>
+  <label>Confirm:</label>
+  <input type="password" ng-model="account.passwordConfirm" />
+  <br>
+  <button type="submit">Submit reset</button>
+</form>
+<hr>
+<p>Iar functions:</p>
+<button ng-click="iar.showLoad()">Load IAR</button>
+<button ng-click="iar.showSave()">Save IAR</button>

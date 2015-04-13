@@ -6,7 +6,7 @@ import (
 )
 
 type UserSession struct {
-  ToClient chan interface{}
+  ToClient chan EventDispatch
   FromClient chan []byte
   Guid uuid.UUID
 }
@@ -40,8 +40,9 @@ func userSession(session UserSession, dataStore Database, userSource UserSource)
   if err != nil {
     fmt.Println("Error lookin up user account: ", err)
   }
-  session.ToClient <- accountData
-  fmt.Println(accountData)
+  ed := EventDispatch{ AccountDataEvent, accountData}
+  session.ToClient <- ed
+  //fmt.Println(accountData)
   //lookup what this user can control
 
 

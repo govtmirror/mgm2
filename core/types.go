@@ -47,3 +47,13 @@ type Region struct {
   
   frames chan int
 }
+
+/* Enumeration for event types */
+const (
+  AccountDataEvent = iota
+)
+
+type EventDispatch struct {
+  EventType int
+  Event interface{}
+}

@@ -8,10 +8,17 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('AccountCtrl', function ($scope) {
-    $scope.awesomeThings = [
-      'HTML5 Boilerplate',
-      'AngularJS',
-      'Karma'
-    ];
+  .controller('AccountCtrl', function ($scope, mgm) {
+    $scope.account = {
+      UserID: "",
+      Name: "",
+      Email: "",
+      AccessLevel: 0
+    };
+
+    $scope.$on("AccountChange", function (event, data) {
+      $scope.account = mgm.account;
+      $scope.$apply();
+    });
+
   });

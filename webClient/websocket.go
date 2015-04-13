@@ -11,7 +11,7 @@ import (
 
 type client struct {
   ws *websocket.Conn
-  toClient chan interface{}
+  toClient chan core.EventDispatch
   fromClient chan []byte
 }
 
@@ -46,7 +46,7 @@ func (wc WebsocketConnector) WebsocketHandler(w http.ResponseWriter, r *http.Req
   
   guid, _ := uuid.FromString( session.Values["guid"].(string))
   
-  c := client{ws, make(chan interface{}, 64), make(chan []byte, 64)}
+  c := client{ws, make(chan core.EventDispatch, 64), make(chan []byte, 64)}
   go c.reader()
   go c.writer()
   wc.session <- core.UserSession{c.toClient, c.fromClient, guid}
@@ -67,12 +67,21 @@ func (c *client) reader() {
 func (c *client) writer() {
   for message := range c.toClient {
 
-    data, err := json.Marshal(message)
+    var msg struct {
+      MessageType string
+      Message interface{}
+    }
+    switch message.EventType {
+      case core.AccountDataEvent:
+        msg.MessageType = "AccountData"
+    }
+    msg.Message = message.Event
+
+    data, err := json.Marshal(msg)
     if err != nil {
       fmt.Println("Error encoding message: ", err)
       continue
     }
-
 
     err = c.ws.WriteMessage(websocket.TextMessage, data)
     if err != nil {

@@ -58,8 +58,6 @@ func (sc SimianConnector)GetUserByID(id uuid.UUID) (core.User, error) {
       "RequestMethod": {"GetUser"},
       "UserID": {id.String()},
     })
-  
-  fmt.Println(string(response))
 
   var m userRequest
   err = json.Unmarshal(response, &m)
