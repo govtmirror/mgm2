@@ -1,0 +1,11 @@
+[mgm]
+  SimianUrl = 127.0.0.1
+  SessionSecret = 35FA4ACE5EF326AE5474AE14EF143
+  OpensimPort = 8000
+  WebPort = 8080
+
+[MySQL]
+  Username = mgm
+  Password = mgm
+  Host = 127.0.0.1
+  Database = mgm

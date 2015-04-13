@@ -7,44 +7,49 @@ import (
   "github.com/M-O-S-E-S/mgm2/webClient"
   //"github.com/M-O-S-E-S/mgm2/opensim"
   "fmt"
-  "os"
-  "encoding/json"
   "net/http"
   "log"
   "github.com/gorilla/mux"
+  "code.google.com/p/gcfg"
 )
 
 type MgmConfig struct {
-  SimianUrl string
-  SessionSecret string
-  OpensimPort string
-  WebPort string
-  DBUsername string
-  DBPassword string
-  DBHost string
-  DBDatabase string
+  MGM struct {
+    SimianUrl string
+    SessionSecret string
+    OpensimPort string
+    WebPort string
+  }
+
+  MySQL struct {
+    Username string
+    Password string
+    Host string
+    Database string
+  }
 }
 
 func main() {
   config := MgmConfig{}
+  err := gcfg.ReadFileInto(&config, "conf.gcfg")
   
-  fmt.Println("Reading configuration file")
-  file, _ := os.Open("conf.json")
-  decoder := json.NewDecoder(file)
+  //fmt.Println("Reading configuration file")
+  //file, _ := os.Open("conf.json")
+  //decoder := json.NewDecoder(file)
 
-  err := decoder.Decode(&config)
+  //err := decoder.Decode(&config)
   if err != nil {
-    fmt.Println("Error readig config file: ", err)
+    fmt.Println("Error reading config file: ", err)
     return
   }
   
   db := mysql.NewDatabase(
-    config.DBUsername, 
-    config.DBPassword, 
-    config.DBDatabase,
-    config.DBHost, 
+    config.MySQL.Username,
+    config.MySQL.Password,
+    config.MySQL.Database,
+    config.MySQL.Host,
   )
-  sim, _ := simian.NewSimianConnector(config.SimianUrl)
+  sim, _ := simian.NewSimianConnector(config.MGM.SimianUrl)
   
   //leave this out for now
   //os,_ := opensim.NewOpensimListener(config.OpensimPort, nil)
@@ -55,7 +60,7 @@ func main() {
   sessionListener := make(chan core.UserSession, 64) 
   core.UserManager(sessionListener, db, sim)
 
-  httpCon := webClient.NewHttpConnector(config.SessionSecret, sim)
+  httpCon := webClient.NewHttpConnector(config.MGM.SessionSecret, sim)
   sockCon := webClient.NewWebsocketConnector(httpCon, sessionListener)
   
   r := mux.NewRouter()
@@ -68,8 +73,8 @@ func main() {
   r.HandleFunc("/auth/passwordReset", httpCon.PasswordResetHandler)
   
   http.Handle("/", r)
-  fmt.Println("Listening for clients on :" + config.WebPort)
-  if err := http.ListenAndServe(":" + config.WebPort, nil); err != nil {
+  fmt.Println("Listening for clients on :" + config.MGM.WebPort)
+  if err := http.ListenAndServe(":" + config.MGM.WebPort, nil); err != nil {
     log.Fatal("ListenAndServe:", err)
   }
 }

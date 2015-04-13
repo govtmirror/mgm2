@@ -4,4 +4,4 @@ dist
 .sass-cache
 bower_components
 .vagrant
-conf.json
+conf.gcfg
