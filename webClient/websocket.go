@@ -9,10 +9,41 @@ import (
   "encoding/json"
 )
 
+type clientResponse struct {
+  MessageType string
+  Message interface{}
+}
+
 type client struct {
   ws *websocket.Conn
-  toClient chan core.EventDispatch
+  toClient chan []byte
   fromClient chan []byte
+  guid uuid.UUID
+}
+
+func (c client) SendUserAccount(account core.User){
+  resp := clientResponse{ "AccountUpdate", account}
+  data, err := json.Marshal(resp)
+  if err == nil {
+    c.toClient <- data
+  }
+}
+
+func (c client) SendUserRegion(region core.Region){
+  resp := clientResponse{ "RegionUpdate", region}
+  data, err := json.Marshal(resp)
+  if err == nil {
+    c.toClient <- data
+  }
+}
+
+func (c client) GetGuid() uuid.UUID {
+  return c.guid
+}
+
+func (c client) Read() ([]byte, bool){
+  data, more := <- c.fromClient
+  return data, more
 }
 
 type WebsocketConnector struct {
@@ -46,10 +77,10 @@ func (wc WebsocketConnector) WebsocketHandler(w http.ResponseWriter, r *http.Req
   
   guid, _ := uuid.FromString( session.Values["guid"].(string))
   
-  c := client{ws, make(chan core.EventDispatch, 64), make(chan []byte, 64)}
+  c := client{ws, make(chan []byte, 64), make(chan []byte, 64), guid}
   go c.reader()
   go c.writer()
-  wc.session <- core.UserSession{c.toClient, c.fromClient, guid}
+  wc.session <- c
 }
 
 func (c *client) reader() {
@@ -67,23 +98,7 @@ func (c *client) reader() {
 func (c *client) writer() {
   for message := range c.toClient {
 
-    var msg struct {
-      MessageType string
-      Message interface{}
-    }
-    switch message.EventType {
-      case core.AccountDataEvent:
-        msg.MessageType = "AccountData"
-    }
-    msg.Message = message.Event
-
-    data, err := json.Marshal(msg)
-    if err != nil {
-      fmt.Println("Error encoding message: ", err)
-      continue
-    }
-
-    err = c.ws.WriteMessage(websocket.TextMessage, data)
+    err := c.ws.WriteMessage(websocket.TextMessage, message)
     if err != nil {
       break
     }

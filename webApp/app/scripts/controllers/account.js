@@ -9,12 +9,7 @@
  */
 angular.module('mgmApp')
   .controller('AccountCtrl', function ($scope, mgm) {
-    $scope.account = {
-      UserID: "",
-      Name: "",
-      Email: "",
-      AccessLevel: 0
-    };
+    $scope.account = mgm.account;
 
     $scope.$on("AccountChange", function (event, data) {
       $scope.account = mgm.account;

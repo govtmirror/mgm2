@@ -5,14 +5,6 @@ import (
   "encoding/json"
 )
 
-type Simian interface {
-}
-
-type Database interface {
-  TestConnection() error
-  GetAllRegions() error
-}
-
 type Opensim interface {
   Listen()
 }
@@ -44,16 +36,7 @@ type Region struct {
   SlaveAddress string
   IsRunning bool
   Status string
+  EstateName string
   
   frames chan int
-}
-
-/* Enumeration for event types */
-const (
-  AccountDataEvent = iota
-)
-
-type EventDispatch struct {
-  EventType int
-  Event interface{}
 }

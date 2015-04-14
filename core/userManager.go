@@ -1,21 +1,10 @@
 package core
 
 import (
-  "github.com/satori/go.uuid"
   "fmt"
 )
 
-type UserSession struct {
-  ToClient chan EventDispatch
-  FromClient chan []byte
-  Guid uuid.UUID
-}
-
-type UserSource interface {
-  GetUserByID(uuid.UUID) (User, error)
-}
-
-func UserManager(sessionListener <-chan UserSession, dataStore Database, userSource UserSource){
+func UserManager(sessionListener <-chan UserSession, dataStore Database, userConn UserConnector){
   
   //create notification hub
   
@@ -25,7 +14,7 @@ func UserManager(sessionListener <-chan UserSession, dataStore Database, userSou
     for {
       select {
         case s := <-sessionListener:
-          go userSession(s, dataStore, userSource)
+          go userSession(s, dataStore, userConn)
         
       }
     }
@@ -33,22 +22,28 @@ func UserManager(sessionListener <-chan UserSession, dataStore Database, userSou
   
 }
 
-func userSession(session UserSession, dataStore Database, userSource UserSource){
+func userSession(session UserSession, dataStore Database, userConn UserConnector){
   //perform client initialization
-  //request account information
-  accountData, err := userSource.GetUserByID(session.Guid)
+  // send initial account information
+  accountData, err := userConn.GetUserByID(session.GetGuid())
   if err != nil {
     fmt.Println("Error lookin up user account: ", err)
   }
-  ed := EventDispatch{ AccountDataEvent, accountData}
-  session.ToClient <- ed
-  //fmt.Println(accountData)
-  //lookup what this user can control
+  session.SendUserAccount(accountData)
+
+  //send regions this user may control
+  regions, err := dataStore.GetRegionsFor(session.GetGuid())
+  if err != nil {
+    fmt.Println("Error lookin up user account: ", err)
+  }
+  for _, r := range regions {
+    session.SendUserRegion(r)
+  }
 
 
 
   for {
-    msg, more := <-session.FromClient
+    msg, more := session.Read()
     if !more {
       fmt.Println("Client went away")
       return
@@ -58,9 +53,19 @@ func userSession(session UserSession, dataStore Database, userSource UserSource)
     m.load(msg)
     switch m.MessageType {
       case "GetAccount":
-
+        accountData, err = userConn.GetUserByID(session.GetGuid())
+        if err != nil {
+          fmt.Println("Error lookin up user account: ", err)
+        }
+        session.SendUserAccount(accountData)
       case "GetRegions":
-
+        regions, err := dataStore.GetRegionsFor(session.GetGuid())
+        if err != nil {
+          fmt.Println("Error lookin up user account: ", err)
+        }
+      for _, r := range regions {
+        session.SendUserRegion(r)
+      }
       case "GetUsers":
 
       default:

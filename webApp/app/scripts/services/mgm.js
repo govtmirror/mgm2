@@ -14,6 +14,15 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
 
   self = this;
 
+  self.account = {
+    UserID: "",
+    Name: "",
+    Email: "",
+    AccessLevel: 0
+  };
+
+  self.regions = {}
+
   this.connect = function () {
     console.log("Connecting to: " + remoteURL);
     self.ws = new ReconnectingWebSocket(remoteURL);
@@ -32,16 +41,19 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
     };
 
     self.ws.onmessage = function (evt) {
-      console.log(evt.data);
       var message = $.parseJSON(evt.data);
       switch (message.MessageType) {
-      case "AccountData":
+      case "AccountUpdate":
         self.account = message.Message
-        $rootScope.$broadcast("AccountChange");
+        $rootScope.$broadcast("AccountUpdate");
         break
-
+      case "RegionUpdate":
+        self.regions[message.Message.UUID] = message.Message;
+        $rootScope.$broadcast("RegionUpdate", message.Message);
+        break;
       default:
-        console.log(message.data);
+        console.log("Error parsing message:");
+        console.log(message);
       };
 
     }
