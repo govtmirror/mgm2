@@ -1,29 +1,46 @@
 package webClient
 
 import (
-  "fmt"
   "net/http"
   "encoding/json"
   "github.com/satori/go.uuid"
   "github.com/gorilla/sessions"
 )
 
+type Logger interface {
+  Trace(format string, v ...interface{})
+  Debug(format string, v ...interface{})
+  Info(format string, v ...interface{})
+  Warn(format string, v ...interface{})
+  Error(format string, v ...interface{})
+  Fatal(format string, v ...interface{})
+}
+
 type Authenticator interface {
   Auth(string, string) (uuid.UUID, error)
+}
+
+type notifier interface {
+
+}
+
+type database interface {
+
 }
 
 type HttpConnector struct {
   store *sessions.CookieStore
   authenticator Authenticator
+  logger Logger
 }
 
-func NewHttpConnector(sessionKey string, authenticator Authenticator) (*HttpConnector){
+func NewHttpConnector(sessionKey string, authenticator Authenticator, logger Logger) (*HttpConnector){
   store := sessions.NewCookieStore([]byte(sessionKey))
   store.Options = &sessions.Options{
     Path: "/",
     MaxAge: 3600 * 8,
   }
-  return &HttpConnector{store, authenticator}
+  return &HttpConnector{store, authenticator, logger}
 }
 
 func (hc HttpConnector) LogoutHandler(w http.ResponseWriter, r *http.Request) {
@@ -90,7 +107,7 @@ func (hc HttpConnector) LoginHandler(w http.ResponseWriter, r *http.Request) {
   var t clientAuthRequest   
   err := decoder.Decode(&t)
   if err != nil {
-    fmt.Println("Invalid auth request")
+    hc.logger.Error("Invalid auth request")
     return
   }
   
@@ -125,12 +142,12 @@ func (hc HttpConnector) LoginHandler(w http.ResponseWriter, r *http.Request) {
   session.Values["address"] = r.RemoteAddr
   err = session.Save(r,w)
   if err != nil {
-    fmt.Println(err)
+    hc.logger.Error("Error in httpConnector: %v", err)
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
   
-  fmt.Println("Session saved, returning success")
+  hc.logger.Info("Session saved, returning success")
   
   w.Header().Set("Content-Type", "application/jons")
   w.Write(js)

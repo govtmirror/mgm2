@@ -62,8 +62,8 @@ func main() {
   sessionListener := make(chan core.UserSession, 64) 
   core.UserManager(sessionListener, db, sim, logger)
 
-  httpCon := webClient.NewHttpConnector(config.MGM.SessionSecret, sim)
-  sockCon := webClient.NewWebsocketConnector(httpCon, sessionListener)
+  httpCon := webClient.NewHttpConnector(config.MGM.SessionSecret, sim, logger)
+  sockCon := webClient.NewWebsocketConnector(httpCon, sessionListener, logger)
   
   r := mux.NewRouter()
   r.HandleFunc("/ws", sockCon.WebsocketHandler)

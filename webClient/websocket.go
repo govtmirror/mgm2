@@ -1,7 +1,6 @@
 package webClient
 
 import (
-  "fmt"
   "net/http"
   "github.com/gorilla/websocket"
   "github.com/satori/go.uuid"
@@ -49,21 +48,21 @@ func (c client) Read() ([]byte, bool){
 type WebsocketConnector struct {
   httpConnector *HttpConnector
   session chan<- core.UserSession
+  logger Logger
 }
 
-func NewWebsocketConnector(hc *HttpConnector, session chan<- core.UserSession) (*WebsocketConnector) {
-  return &WebsocketConnector{hc, session}
+func NewWebsocketConnector(hc *HttpConnector, session chan<- core.UserSession, logger Logger) (*WebsocketConnector) {
+  return &WebsocketConnector{hc, session, logger}
 }
 
 var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 
 func (wc WebsocketConnector) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
-  fmt.Println("New connection on ws")
   
   session, _ := wc.httpConnector.store.Get(r, "MGM")
   // test if session exists
   if len(session.Values) == 0 {
-    fmt.Println("Websocket closed, existing session missing")
+    wc.logger.Info("Websocket closed, no existing session")
     return
   }
   // test origin, etc for websocket security
@@ -71,7 +70,7 @@ func (wc WebsocketConnector) WebsocketHandler(w http.ResponseWriter, r *http.Req
 
   ws, err := upgrader.Upgrade(w, r, nil)
   if err != nil {
-    fmt.Println(err)
+    wc.logger.Error("Error upgrading websocket: %v", err)
     return
   }
   
