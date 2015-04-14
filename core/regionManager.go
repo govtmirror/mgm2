@@ -1,9 +1,7 @@
 package core
 
 import (
-  //"github.com/satori/go.uuid"
-  "fmt"
-  "time"
+  //"time"
 )
 
 type RegionManager struct {
@@ -16,11 +14,11 @@ func (rm *RegionManager) Process(){
 }
 
 func (r *Region) countFrames() {
-  vals := []int{}
+  /*vals := []int{}
   start := time.Now()
   val, more := <- r.frames
   if !more {
-    fmt.Printf("Region frame counter %v aborting, channel closed\n", r.Name)   
+    r.logger.Info("Region frame counter %v aborting, channel closed\n", r.Name)
     return
   }
   vals = append(vals,val)
@@ -39,6 +37,6 @@ func (r *Region) countFrames() {
     last := vals[len(vals)-1]
     fps := float64(len(vals)) / ((float64(last) - float64(first))/1000.0)
     vals = vals[len(vals)-1:]
-    fmt.Printf("Region %v: %.2f fps\n", r.Name, fps)
-  }
+    r.logger.Info("Region %v: %.2f fps\n", r.Name, fps)
+  }*/
 }

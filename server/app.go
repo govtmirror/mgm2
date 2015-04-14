@@ -8,9 +8,9 @@ import (
   //"github.com/M-O-S-E-S/mgm2/opensim"
   "fmt"
   "net/http"
-  "log"
   "github.com/gorilla/mux"
   "code.google.com/p/gcfg"
+  "github.com/jcelliott/lumber"
 )
 
 type MgmConfig struct {
@@ -33,6 +33,8 @@ func main() {
   config := MgmConfig{}
   err := gcfg.ReadFileInto(&config, "conf.gcfg")
   
+  logger := lumber.NewConsoleLogger(lumber.DEBUG)
+
   //fmt.Println("Reading configuration file")
   //file, _ := os.Open("conf.json")
   //decoder := json.NewDecoder(file)
@@ -58,7 +60,7 @@ func main() {
   //Hook up core processing...
   //regionManager := core.RegionManager{nil, db}
   sessionListener := make(chan core.UserSession, 64) 
-  core.UserManager(sessionListener, db, sim)
+  core.UserManager(sessionListener, db, sim, logger)
 
   httpCon := webClient.NewHttpConnector(config.MGM.SessionSecret, sim)
   sockCon := webClient.NewWebsocketConnector(httpCon, sessionListener)
@@ -73,8 +75,8 @@ func main() {
   r.HandleFunc("/auth/passwordReset", httpCon.PasswordResetHandler)
   
   http.Handle("/", r)
-  fmt.Println("Listening for clients on :" + config.MGM.WebPort)
+  logger.Info("Listening for clients on :%v", config.MGM.WebPort)
   if err := http.ListenAndServe(":" + config.MGM.WebPort, nil); err != nil {
-    log.Fatal("ListenAndServe:", err)
+    logger.Fatal("ListenAndServe:", err)
   }
 }
