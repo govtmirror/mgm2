@@ -5,6 +5,7 @@ import (
   "github.com/M-O-S-E-S/mgm2/mysql"
   "github.com/M-O-S-E-S/mgm2/simian"
   "github.com/M-O-S-E-S/mgm2/webClient"
+  "github.com/M-O-S-E-S/mgm2/email"
   //"github.com/M-O-S-E-S/mgm2/opensim"
   "fmt"
   "net/http"
@@ -27,6 +28,8 @@ type MgmConfig struct {
     Host string
     Database string
   }
+
+  Email email.EmailConfig
 }
 
 func main() {
@@ -44,6 +47,8 @@ func main() {
     fmt.Println("Error reading config file: ", err)
     return
   }
+
+  mailer := email.NewClientMailer(config.Email)
 
   db := mysql.NewDatabase(
     config.MySQL.Username,

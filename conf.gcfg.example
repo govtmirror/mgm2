@@ -9,3 +9,11 @@
   Password = mgm
   Host = 127.0.0.1
   Database = mgm
+
+[Email]
+  Host = mailprovider.com
+  Port = 25
+  SSL = true
+  User = mailman
+  Password = password123
+  Sender = no-reply@provider.com
