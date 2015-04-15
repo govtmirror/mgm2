@@ -118,9 +118,15 @@ func (ce ClientEmailer) TestMessage (address string, message string) error{
 }
 
 
-func (ce ClientEmailer) SendPasswordResetEmail(name string, email string, token uuid.UUID) error {
+func (ce ClientEmailer) SendPasswordResetEmail(name string, email string) error {
+  msg := name + "\r\n\r\nYour password for MOSES has been reset.\r\n" +
+  "If you have reset your password at " + ce.serverUrl + " disregard this message."
+  return ce.sendSSLEmail(email, "MOSES Password Reset", msg)
+}
+
+func (ce ClientEmailer) SendPasswordTokenEmail(name string, email string, token uuid.UUID) error {
   msg := name + "\r\n\r\nYour password reset request has been processed.\r\n" +
   "Please visit " + ce.serverUrl + "/#/forgotpass, and using the forgot password button, complete the " +
-  "I have a reset code form using the following token: " + token.String()
+  "I have a reset code form using the following token within the next 24 hours: " + token.String()
   return ce.sendSSLEmail(email, "MOSES Password Recovery", msg)
 }

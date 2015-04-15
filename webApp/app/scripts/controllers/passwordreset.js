@@ -81,49 +81,49 @@ angular.module('mgmApp')
       var token = $scope.input.token.trim();
       var pword = $scope.input.password.trim();
       var confirm = $scope.input.confirm.trim();
-      
+
       // Validate user name
-      if(uname === ''){
+      if (uname === '') {
         $scope.error.uname = 'User name is required';
         return;
       }
-      if(uname.split(' ').length !== 2) {
+      if (uname.split(' ').length !== 2) {
         $scope.error.uname = '"firstname lastname" only';
         return;
       }
-      
+
       //Validate token format
-      if(token === ''){
+      if (token === '') {
         $scope.error.token = 'Token is required';
         return;
       }
       //token is a guid
-      if(! /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(token)){
+      if (!/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(token)) {
         $scope.error.token = 'Invalid token format';
         return;
       }
-      
+
       //Validate password and password confirmation
-      if(pword === ''){
+      if (pword === '') {
         $scope.error.password = 'Password is required';
         return;
       }
-      if(pword !== confirm){
+      if (pword !== confirm) {
         $scope.error.password = 'Passwords do not match';
         return;
       }
-      
+
       $scope.stage = 'Processing';
-      
+
       //submit password change to service
       MgmPublic.resetPassword(uname, token, pword).then(
-        function() {
+        function () {
           //success
           $scope.stage = 'ResetComplete';
         },
-        function(msg) {
+        function (msg) {
           $scope.error.other = msg;
-          $scope.stage = 'HavePassword';
+          $scope.stage = 'HaveCode';
         }
       );
     };

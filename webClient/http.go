@@ -6,7 +6,7 @@ import (
   "encoding/json"
   "github.com/satori/go.uuid"
   "github.com/gorilla/sessions"
-   "github.com/M-O-S-E-S/mgm2/core"
+  "github.com/M-O-S-E-S/mgm2/core"
 )
 
 type Logger interface {
@@ -21,15 +21,20 @@ type Logger interface {
 type Authenticator interface {
   Auth(string, string) (uuid.UUID, error)
   GetUserByEmail(string) (core.User, error)
+  GetUserByName(string) (core.User, error)
   GetIdentities(uuid.UUID) ([]core.Identity, error)
+  SetPassword(core.User, string) (bool, error)
 }
 
 type Mailer interface {
-  SendPasswordResetEmail(name string, email string, token uuid.UUID) error
+  SendPasswordTokenEmail(name string, email string, token uuid.UUID) error
+  SendPasswordResetEmail(name string, email string) error
 }
 
 type Database interface {
   CreatePasswordResetToken(uuid.UUID) (uuid.UUID, error)
+  ValidatePasswordToken(uuid.UUID, uuid.UUID) (bool, error)
+  ScrubPasswordToken(uuid.UUID) error
 }
 
 type HttpConnector struct {
@@ -95,11 +100,88 @@ func (hc HttpConnector) RegisterHandler(w http.ResponseWriter, r *http.Request) 
 }
 
 func (hc HttpConnector) PasswordResetHandler(w http.ResponseWriter, r *http.Request) {
+  type passwordReset struct {
+    Name string
+    Token uuid.UUID
+    Password string
+  }
+
+  if r.Method != "POST" {
+    http.Error(w, "Invalid Request", http.StatusInternalServerError)
+    return
+  }
+
+  var req passwordReset
+  decoder := json.NewDecoder(r.Body)
+  err := decoder.Decode(&req)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  if req.Password == "" {
+    http.Error(w, "Invalid Request, Password cannot be null", http.StatusInternalServerError)
+    return
+  }
+
+  user, err := hc.authenticator.GetUserByName(req.Name)
+  if err != nil {
+    http.Error(w, "Invalid Request, no user", http.StatusInternalServerError)
+    return
+  }
+
+  //test if account is still valid
+  ids, err := hc.authenticator.GetIdentities(user.UserID)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  for _, ident := range ids {
+    if ident.Enabled == false {
+      hc.logger.Error("Account is suspended")
+      return
+    }
+  }
+
+  isValid, err := hc.db.ValidatePasswordToken(user.UserID, req.Token)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  if !isValid {
+    http.Error(w, "Invalid Request, bad token", http.StatusInternalServerError)
+    return
+  }
+
+  setPass, err := hc.authenticator.SetPassword(user, req.Password)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  if !setPass {
+    http.Error(w, "Invalid Request, cant set", http.StatusInternalServerError)
+    return
+  }
+
+  err = hc.db.ScrubPasswordToken(req.Token)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
   
+  err = hc.mailer.SendPasswordResetEmail(user.Name, user.Email)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  w.Header().Set("Content-Type", "application/json")
+  w.Write([]byte("{\"Success\": true}"))
 }
 
 func (hc HttpConnector) PasswordTokenHandler(w http.ResponseWriter, r *http.Request) {
-  type emailRequest struct {
+  type tokenRequest struct {
     Email string
   }
 
@@ -108,7 +190,7 @@ func (hc HttpConnector) PasswordTokenHandler(w http.ResponseWriter, r *http.Requ
     return
   }
 
-  var req emailRequest
+  var req tokenRequest
   decoder := json.NewDecoder(r.Body)
   err := decoder.Decode(&req)
   if err != nil {
@@ -125,23 +207,17 @@ func (hc HttpConnector) PasswordTokenHandler(w http.ResponseWriter, r *http.Requ
     return
   }
 
-  hc.logger.Info("Email validated")
-
   user, err := hc.authenticator.GetUserByEmail(addr.Address)
   if err != nil {
     http.Error(w, "Invalid Request, presence", http.StatusInternalServerError)
     return
   }
 
-  hc.logger.Info("user found")
-
   ids, err := hc.authenticator.GetIdentities(user.UserID)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
-
-  hc.logger.Info("Identities received")
 
   for _, ident := range ids {
     if ident.Enabled == false {
@@ -157,7 +233,7 @@ func (hc HttpConnector) PasswordTokenHandler(w http.ResponseWriter, r *http.Requ
   }
   
   hc.logger.Info("Using %v for password reset token", token)
-  err = hc.mailer.SendPasswordResetEmail(user.Name, user.Email, token)
+  err = hc.mailer.SendPasswordTokenEmail(user.Name, user.Email, token)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
