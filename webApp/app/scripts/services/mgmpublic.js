@@ -39,7 +39,7 @@ angular.module('mgmApp')
       });
     };
 
-    this.logout = function(){
+    this.logout = function () {
       return $q(function (resolve, reject) {
 
         console.log("Authenticating...");
@@ -90,7 +90,23 @@ angular.module('mgmApp')
       console.log('reset requested for ' + email);
 
       return $q(function (resolve, reject) {
-        reject('Not Implemented');
+
+        console.log("Authenticating...");
+        $http.post("/auth/passwordToken", {
+          "Email": email
+        }).success(function (data, status, headers, config) {
+          if (data.Success) {
+            //self.loggedIn = false;
+            //$rootScope.$broadcast("AuthChange", false);
+            resolve("reset code successfully requested");
+          } else {
+            reject(data.Message);
+            console.log(data);
+          };
+        }).error(function (data, status, headers, config) {
+          console.log("an error occurred");
+          reject("Error connecting to MGM");
+        });
       });
     };
 

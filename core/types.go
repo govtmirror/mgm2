@@ -22,6 +22,14 @@ type User struct {
   LLPackedAppearance json.RawMessage `json:"-"`
 }
 
+type Identity struct {
+  Identifier string
+  Credential string
+  Type string
+  UserID uuid.UUID
+  Enabled bool
+}
+
 type Region struct {
   UUID uuid.UUID
   Name string

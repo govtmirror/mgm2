@@ -32,6 +32,20 @@ func (db Database) TestConnection() error {
   err = con.Ping()
   return err
 }
+
+func (db Database) CreatePasswordResetToken(userID uuid.UUID) (uuid.UUID, error){
+  con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
+  if err != nil {return uuid.UUID{}, err}
+  defer con.Close()
+
+  token := uuid.NewV4()
+  _, err = con.Exec("INSERT INTO jobs (type, user, data) VALUES(\"password_reset\", ?, ?)", userID.String(), token.String())
+  if err != nil {
+    return uuid.UUID{}, err
+  }
+  return token, nil
+}
+
 func (db Database) GetRegionsFor(guid uuid.UUID) ([]core.Region, error){
   con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
   if err != nil {return nil, err}

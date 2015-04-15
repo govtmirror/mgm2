@@ -7,6 +7,7 @@ import (
   "errors"
   "log"
   "fmt"
+  "github.com/satori/go.uuid"
 )
 
 type Logger interface {
@@ -27,18 +28,19 @@ type EmailConfig struct {
   Sender string
 }
 
-func NewClientMailer(config EmailConfig) ClientEmailer {
-  return ClientEmailer{config}
+func NewClientMailer(config EmailConfig, serverUrl string) ClientEmailer {
+  return ClientEmailer{config, serverUrl}
 }
 
 type ClientEmailer struct {
   config EmailConfig
+  serverUrl string
 }
 
-func (ce ClientEmailer) sendSSLEmail( address string, content string) error {
+func (ce ClientEmailer) sendSSLEmail( address string, subject string, content string) error {
   from  := mail.Address{"", ce.config.Sender}
   to    := mail.Address{"", address}
-  subj  := "MGM Email"
+  subj  := subject
   body  := content
 
   headers := make(map[string]string)
@@ -109,8 +111,16 @@ func (ce ClientEmailer) sendNonSSLEmail( address string, message string) error {
 func (ce ClientEmailer) TestMessage (address string, message string) error{
 
   if ce.config.SSL {
-    return ce.sendSSLEmail(address, message)
+    return ce.sendSSLEmail(address, "test email", message)
   } else {
     return ce.sendNonSSLEmail(address, message)
   }
+}
+
+
+func (ce ClientEmailer) SendPasswordResetEmail(name string, email string, token uuid.UUID) error {
+  msg := name + "\r\n\r\nYour password reset request has been processed.\r\n" +
+  "Please visit " + ce.serverUrl + "/#/forgotpass, and using the forgot password button, complete the " +
+  "I have a reset code form using the following token: " + token.String()
+  return ce.sendSSLEmail(email, "MOSES Password Recovery", msg)
 }

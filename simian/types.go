@@ -22,14 +22,6 @@ type usersRequest struct {
   Users []core.User
 }
 
-type Identity struct {
-  Identifier string
-  Credential uuid.UUID
-  Type string
-  UserID uuid.UUID
-  Enabled bool
-}
-
 type Group struct {
   OwnerID uuid.UUID
   Key string

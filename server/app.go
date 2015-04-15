@@ -20,6 +20,7 @@ type MgmConfig struct {
     SessionSecret string
     OpensimPort string
     WebPort string
+    PublicHostname string
   }
 
   MySQL struct {
@@ -48,7 +49,7 @@ func main() {
     return
   }
 
-  mailer := email.NewClientMailer(config.Email)
+  mailer := email.NewClientMailer(config.Email, config.MGM.PublicHostname)
 
   db := mysql.NewDatabase(
     config.MySQL.Username,
@@ -67,7 +68,7 @@ func main() {
   sessionListener := make(chan core.UserSession, 64) 
   core.UserManager(sessionListener, db, sim, logger)
 
-  httpCon := webClient.NewHttpConnector(config.MGM.SessionSecret, sim, logger)
+  httpCon := webClient.NewHttpConnector(config.MGM.SessionSecret, sim, db, mailer, logger)
   sockCon := webClient.NewWebsocketConnector(httpCon, sessionListener, logger)
   
   r := mux.NewRouter()

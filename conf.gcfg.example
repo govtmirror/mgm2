@@ -3,6 +3,7 @@
   SessionSecret = 35FA4ACE5EF326AE5474AE14EF143
   OpensimPort = 8000
   WebPort = 8080
+  PublicHostname = publicsite.com
 
 [MySQL]
   Username = mgm

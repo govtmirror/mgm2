@@ -7,6 +7,7 @@ import (
   "encoding/hex"
   "encoding/json"
   "github.com/satori/go.uuid"
+  "github.com/M-O-S-E-S/mgm2/core"
 )
 
 func (sc SimianConnector)Auth(username string, password string) (uuid.UUID, error) {
@@ -115,7 +116,7 @@ func (sc SimianConnector)SetPassword(username string, password string, userID uu
   return sc.confirmRequest(response)
 }
 
-func (sc SimianConnector)GetIdentities(userID uuid.UUID) ( []Identity, error) {
+func (sc SimianConnector)GetIdentities(userID uuid.UUID) ( []core.Identity, error) {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetIdentities"},
@@ -129,7 +130,7 @@ func (sc SimianConnector)GetIdentities(userID uuid.UUID) ( []Identity, error) {
   type req struct {
     Success bool
     Message string
-    Identities []Identity
+    Identities []core.Identity
   }
   var m req
   err = json.Unmarshal(response, &m)
