@@ -25,7 +25,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
   if err != nil {
     logger.Error("Error lookin up user account: ", err)
   }
-  session.SendUserAccount(accountData)
+  session.SendUserAccount(*accountData)
 
   //send regions this user may control
   regions, err := dataStore.GetRegionsFor(session.GetGuid())
@@ -51,7 +51,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
         if err != nil {
           logger.Error("Error lookin up user account: ", err)
         }
-        session.SendUserAccount(accountData)
+        session.SendUserAccount(*accountData)
       case "GetRegions":
         regions, err := dataStore.GetRegionsFor(session.GetGuid())
         if err != nil {

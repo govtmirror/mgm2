@@ -20,6 +20,7 @@ type Logger interface {
 
 type Authenticator interface {
   Auth(string, string) (uuid.UUID, error)
+  GetUserByID(uuid.UUID) (*core.User, error)
   GetUserByEmail(string) (*core.User, error)
   GetUserByName(string) (*core.User, error)
   GetIdentities(uuid.UUID) ([]core.Identity, error)
@@ -369,9 +370,20 @@ func (hc HttpConnector) LoginHandler(w http.ResponseWriter, r *http.Request) {
     return
   }
 
+  user, err := hc.authenticator.GetUserByID(guid)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  if user == nil {
+    http.Error(w, "User account dissappeared", http.StatusInternalServerError)
+    return
+  }
+
   session, _ := hc.store.Get(r, "MGM")
   session.Values["guid"] = guid.String()
   session.Values["address"] = r.RemoteAddr
+  session.Values["ulevel"] = user.AccessLevel
   err = session.Save(r,w)
   if err != nil {
     hc.logger.Error("Error in httpConnector: %v", err)

@@ -8,10 +8,11 @@ type UserSession interface {
   Read() ([]byte, bool)
 
   GetGuid() uuid.UUID
+  GetAccessLevel() uint8
 }
 
 type UserConnector interface {
-  GetUserByID(uuid.UUID) (User, error)
+  GetUserByID(uuid.UUID) (*User, error)
 }
 
 type Database interface {

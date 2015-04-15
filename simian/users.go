@@ -52,7 +52,7 @@ func (sc SimianConnector)GetUserByName(name string) (*core.User, error) {
   return nil, nil
 }
 
-func (sc SimianConnector)GetUserByID(id uuid.UUID) (core.User, error) {
+func (sc SimianConnector)GetUserByID(id uuid.UUID) (*core.User, error) {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetUser"},
@@ -62,12 +62,12 @@ func (sc SimianConnector)GetUserByID(id uuid.UUID) (core.User, error) {
   var m userRequest
   err = json.Unmarshal(response, &m)
   if err != nil {
-    return core.User{}, err
+    return nil, err
   }
   if m.Success {
-    return  m.User, nil
+    return  &m.User, nil
   }
-  return core.User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
+  return nil, nil
 }
 
 func (sc SimianConnector)GetUsers() ( []core.User, error) {
