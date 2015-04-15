@@ -42,6 +42,7 @@ func main() {
   err := gcfg.ReadFileInto(&config, "conf.gcfg")
   if err != nil {
     logger.Fatal("Error reading config file: %v", err)
+    return
   }
 
   //instantiate our email module

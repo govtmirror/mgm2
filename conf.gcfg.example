@@ -19,5 +19,5 @@
   Password = password123
   Sender = no-reply@provider.com
   Admin = admin@provider.com
-  //Admin = admin2@provider.com
-  //Admin = admin3@provider.com
+; Admin = admin2@provider.com
+; Admin = admin3@provider.com
