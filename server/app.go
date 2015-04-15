@@ -12,6 +12,7 @@ import (
   "github.com/gorilla/mux"
   "code.google.com/p/gcfg"
   "github.com/jcelliott/lumber"
+  "time"
 )
 
 type MgmConfig struct {
@@ -58,6 +59,7 @@ func main() {
     config.MySQL.Host,
   )
   sim, _ := simian.NewSimianConnector(config.MGM.SimianUrl)
+  go ExpirePasswordTokens(db)
   
   //leave this out for now
   //os,_ := opensim.NewOpensimListener(config.OpensimPort, nil)
@@ -84,5 +86,12 @@ func main() {
   logger.Info("Listening for clients on :%v", config.MGM.WebPort)
   if err := http.ListenAndServe(":" + config.MGM.WebPort, nil); err != nil {
     logger.Fatal("ListenAndServe:", err)
+  }
+}
+
+func ExpirePasswordTokens(db *mysql.Database){
+  for {
+    db.ExpirePasswordTokens()
+    time.Sleep(60 * time.Minute)
   }
 }

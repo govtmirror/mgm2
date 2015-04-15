@@ -80,6 +80,18 @@ func (db Database) ScrubPasswordToken(token uuid.UUID) error {
   return nil
 }
 
+func (db Database) ExpirePasswordTokens() error {
+  con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
+  if err != nil {return err}
+  defer con.Close()
+
+  _, err = con.Exec("DELETE FROM jobs WHERE type=\"password_reset\" AND timestamp >= DATE_SUB(NOW(), INTERVAL 1 DAY)")
+  if err != nil {
+    return err
+  }
+  return nil
+}
+
 func (db Database) GetRegionsFor(guid uuid.UUID) ([]core.Region, error){
   con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
   if err != nil {return nil, err}
