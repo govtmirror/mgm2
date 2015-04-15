@@ -91,15 +91,15 @@ angular.module('mgmApp')
 
       console.log('User input validated');
 
-      $scope.state = 'Processing';
+      $scope.stage = 'Processing';
       var uname = fname + ' ' + lname;
       var deferred = MgmPublic.registerUser(uname, email, gender, pword, $scope.registrant.reasons);
       deferred.then(
         function () {
-          $scope.state = 'Registered';
+          $scope.stage = 'Complete';
         },
         function (msg) {
-          
+
           $scope.error.other = msg;
         }
       );

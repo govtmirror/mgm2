@@ -26,6 +26,7 @@ type EmailConfig struct {
   User string
   Password string
   Sender string
+  Admin []string
 }
 
 func NewClientMailer(config EmailConfig, serverUrl string) ClientEmailer {
@@ -129,4 +130,21 @@ func (ce ClientEmailer) SendPasswordTokenEmail(name string, email string, token 
   "Please visit " + ce.serverUrl + "/#/forgotpass, and using the forgot password button, complete the " +
   "I have a reset code form using the following token within the next 24 hours: " + token.String()
   return ce.sendSSLEmail(email, "MOSES Password Recovery", msg)
+}
+
+func (ce ClientEmailer) SendRegistrationSuccessful(name string, email string) error {
+  msg := name + ":\r\nThank you for registering for a MOSES account.  If you are approved you will recieve an addtional email from us with information on how to use your account."
+  return ce.sendSSLEmail(email, "MOSES Registration Successful", msg)
+}
+
+func (ce ClientEmailer) SendUserRegistered(name string, email string) error {
+  var err error
+  for _, admin := range ce.config.Admin {
+    msg := "MOSES Admin\r\nA new user account application has been receieved with the name " + name + " and email " + email + ".\r\nPlease review the applicant in the pending users tab in your MGM instance."
+    err = ce.sendSSLEmail(admin, "New MOSES User Account", msg)
+    if err != nil {
+      return err
+    }
+  }
+  return nil
 }

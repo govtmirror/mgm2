@@ -8,7 +8,7 @@ import (
   "github.com/M-O-S-E-S/mgm2/core"
 )
 
-func (sc SimianConnector)GetUserByEmail(email string) (core.User, error) {
+func (sc SimianConnector)GetUserByEmail(email string) (*core.User, error) {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetUser"},
@@ -16,21 +16,21 @@ func (sc SimianConnector)GetUserByEmail(email string) (core.User, error) {
     })
   
   if err != nil {
-    return core.User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
 
   var m userRequest
   err = json.Unmarshal(response, &m)
   if err != nil {
-    return core.User{}, err
+    return nil, err
   }
   if m.Success {
-    return  m.User, nil
+    return  &m.User, nil
   }
-  return core.User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
+  return nil, nil
 }
 
-func (sc SimianConnector)GetUserByName(name string) (core.User, error) {
+func (sc SimianConnector)GetUserByName(name string) (*core.User, error) {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetUser"},
@@ -38,18 +38,18 @@ func (sc SimianConnector)GetUserByName(name string) (core.User, error) {
     })
   
   if err != nil {
-    return core.User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
   var m userRequest
   err = json.Unmarshal(response, &m)
   if err != nil {
-    return core.User{}, err
+    return nil, err
   }
   if m.Success {
-    return  m.User, nil
+    return  &m.User, nil
   }
-  return core.User{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
+  return nil, nil
 }
 
 func (sc SimianConnector)GetUserByID(id uuid.UUID) (core.User, error) {

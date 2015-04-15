@@ -58,7 +58,7 @@ func NewWebsocketConnector(hc *HttpConnector, session chan<- core.UserSession, l
 var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 
 func (wc WebsocketConnector) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
-  
+
   session, _ := wc.httpConnector.store.Get(r, "MGM")
   // test if session exists
   if len(session.Values) == 0 {
@@ -73,9 +73,9 @@ func (wc WebsocketConnector) WebsocketHandler(w http.ResponseWriter, r *http.Req
     wc.logger.Error("Error upgrading websocket: %v", err)
     return
   }
-  
+
   guid, _ := uuid.FromString( session.Values["guid"].(string))
-  
+
   c := client{ws, make(chan []byte, 64), make(chan []byte, 64), guid}
   go c.reader()
   go c.writer()

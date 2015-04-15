@@ -81,11 +81,11 @@
           </tr>
           <tr>
             <td>
-              <label>Applicant Gender:</label>
+              <label>Avatar Template:</label>
             </td>
             <td>
-              <input type="radio" name="gender" value="M" ng-model="registrant.gender">Male
-              <input type="radio" name="gender" value="F" ng-model="registrant.gender">Female
+              <input type="radio" name="gender" value="M" ng-model="registrant.gender">Default Male
+              <input type="radio" name="gender" value="F" ng-model="registrant.gender">Default Female
             </td>
             <td><strong style="color:red">{{error.gender}}</strong>
           </tr>
@@ -110,13 +110,17 @@
   </div>
 </div>
 
-<div id="processing_page" ng-if="stage == 'Processing'">
-  <p>Please wait while we process your request</p>
+<div id="processing_page" ng-if="stage == 'Processing'" align="center">
+  <h3>Application</h3>
+  <div class="jumbotron">
+    <p>Please wait while we process your request</p>
+  </div>
 </div>
 
-<div id="success_page" ng-if="stage == 'Registered'">
-  <div align="center">
-    <h3>Thank You</h3>
+<div id="success_page" ng-if="stage == 'Complete'" align="center">
+  <h3>Application</h3>
+  <div class="jumbotron">
+    <h3>Registration Complete</h3>
     <p>Thank you for your interest in participating on project MOSES. Your account is now pending approval from a MOSES Administrator. You will receive an email at your registered email address should your account and participation be approved.</p>
   </div>
 </div>

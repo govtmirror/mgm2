@@ -59,27 +59,26 @@ angular.module('mgmApp')
       });
     }
 
-    this.registerUser = function (uname, email, gender, pword, reason) {
-
-      console.log('registerUser' + uname + email + gender + pword + reason);
-
+    this.registerUser = function (uname, email, template, password, reason) {
       return $q(function (resolve, reject) {
-        reject('Not Implemented');
+        $http.post("/auth/register", {
+          "Name": uname,
+          "Email": email,
+          "Template": template,
+          "Password": password,
+          "Summary": reason,
+        }).success(function (data, status, headers, config) {
+          if (data.Success) {
+            resolve("Registration Successful");
+          } else {
+            reject(data.Message);
+            console.log(data);
+          };
+        }).error(function (data, status, headers, config) {
+          console.log("an error occurred");
+          reject("Error connecting to MGM");
+        });
       });
-
-
-
-      /*
-      for (var i = 0; i < users.length; i++) {
-        if (users[i].name == uname) {
-          $scope.error.other = 'User ' + uname + ' already exists on the grid';
-          return;
-        }
-        if (users[i].email == email) {
-          $scope.error.other = 'Email ' + email + 'already exists on the grid');
-        return;
-      }
-      */
     };
 
     this.requestResetCode = function (email) {

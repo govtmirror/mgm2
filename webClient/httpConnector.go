@@ -20,8 +20,8 @@ type Logger interface {
 
 type Authenticator interface {
   Auth(string, string) (uuid.UUID, error)
-  GetUserByEmail(string) (core.User, error)
-  GetUserByName(string) (core.User, error)
+  GetUserByEmail(string) (*core.User, error)
+  GetUserByName(string) (*core.User, error)
   GetIdentities(uuid.UUID) ([]core.Identity, error)
   SetPassword(core.User, string) (bool, error)
 }
@@ -29,12 +29,19 @@ type Authenticator interface {
 type Mailer interface {
   SendPasswordTokenEmail(name string, email string, token uuid.UUID) error
   SendPasswordResetEmail(name string, email string) error
+  SendRegistrationSuccessful(name string, email string) error
+  SendUserRegistered(name string, email string) error
 }
 
 type Database interface {
   CreatePasswordResetToken(uuid.UUID) (uuid.UUID, error)
   ValidatePasswordToken(uuid.UUID, uuid.UUID) (bool, error)
   ScrubPasswordToken(uuid.UUID) error
+
+  IsEmailUnique(string) (bool, error)
+  IsNameUnique(string) (bool, error)
+
+  AddPendingUser(name string, email string, template string, password string, summary string) error
 }
 
 type HttpConnector struct {
@@ -65,12 +72,12 @@ func (hc HttpConnector) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 
 func (hc HttpConnector) ResumeHandler(w http.ResponseWriter, r *http.Request) {
   session, _ := hc.store.Get(r, "MGM")
-    
+
   type clientAuthResponse struct {
     Uuid string
     Success bool
   }
-  
+
   if len(session.Values) == 0 {
     response := clientAuthResponse{"", false}
     js, err := json.Marshal(response)
@@ -82,21 +89,91 @@ func (hc HttpConnector) ResumeHandler(w http.ResponseWriter, r *http.Request) {
     w.Write(js)
     return
   }
-  
+
   response := clientAuthResponse{session.Values["guid"].(string), true}
   js, err := json.Marshal(response)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
-  
+
   w.Header().Set("Content-Type", "application/json")
   w.Write(js)
 
 }
 
 func (hc HttpConnector) RegisterHandler(w http.ResponseWriter, r *http.Request) {
-  
+
+  if r.Method != "POST" {
+    http.Error(w, "Invalid Request", http.StatusInternalServerError)
+    return
+  }
+
+  var reg registrant
+  decoder := json.NewDecoder(r.Body)
+  err := decoder.Decode(&reg)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  if ! reg.Validate() {
+    http.Error(w, "Invalid Request", http.StatusInternalServerError)
+    return
+  }
+
+  /* Test if names are unique in pending users*/
+  unique, err := hc.db.IsEmailUnique(reg.Email)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  if ! unique {
+    http.Error(w, "Credentials already exist", http.StatusInternalServerError)
+    return
+  }
+
+  unique, err = hc.db.IsNameUnique(reg.Name)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  if ! unique {
+    http.Error(w, "Credentials already exist", http.StatusInternalServerError)
+    return
+  }
+
+  /* Test if names are unique in registered users */
+  user, err := hc.authenticator.GetUserByEmail(reg.Email)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  if user != nil {
+    http.Error(w, "Credentials already exist", http.StatusInternalServerError)
+    return
+  }
+  user, err = hc.authenticator.GetUserByName(reg.Name)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  if user != nil {
+    http.Error(w, "Credentials already exist", http.StatusInternalServerError)
+    return
+  }
+
+  err = hc.db.AddPendingUser(reg.Name, reg.Email, reg.Template, reg.Password, reg.Summary)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  _ = hc.mailer.SendRegistrationSuccessful(reg.Name, reg.Email)
+  _ = hc.mailer.SendUserRegistered(reg.Name, reg.Email)
+
+  w.Header().Set("Content-Type", "application/json")
+  w.Write([]byte("{\"Success\": true}"))
 }
 
 func (hc HttpConnector) PasswordResetHandler(w http.ResponseWriter, r *http.Request) {
@@ -126,6 +203,10 @@ func (hc HttpConnector) PasswordResetHandler(w http.ResponseWriter, r *http.Requ
 
   user, err := hc.authenticator.GetUserByName(req.Name)
   if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  if user == nil {
     http.Error(w, "Invalid Request, no user", http.StatusInternalServerError)
     return
   }
@@ -154,7 +235,7 @@ func (hc HttpConnector) PasswordResetHandler(w http.ResponseWriter, r *http.Requ
     return
   }
 
-  setPass, err := hc.authenticator.SetPassword(user, req.Password)
+  setPass, err := hc.authenticator.SetPassword(*user, req.Password)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
@@ -169,7 +250,7 @@ func (hc HttpConnector) PasswordResetHandler(w http.ResponseWriter, r *http.Requ
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
-  
+
   err = hc.mailer.SendPasswordResetEmail(user.Name, user.Email)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -209,6 +290,10 @@ func (hc HttpConnector) PasswordTokenHandler(w http.ResponseWriter, r *http.Requ
 
   user, err := hc.authenticator.GetUserByEmail(addr.Address)
   if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  if user == nil {
     http.Error(w, "Invalid Request, presence", http.StatusInternalServerError)
     return
   }
@@ -231,7 +316,7 @@ func (hc HttpConnector) PasswordTokenHandler(w http.ResponseWriter, r *http.Requ
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
-  
+
   hc.logger.Info("Using %v for password reset token", token)
   err = hc.mailer.SendPasswordTokenEmail(user.Name, user.Email, token)
   if err != nil {
@@ -245,25 +330,25 @@ func (hc HttpConnector) PasswordTokenHandler(w http.ResponseWriter, r *http.Requ
 
 func (hc HttpConnector) LoginHandler(w http.ResponseWriter, r *http.Request) {
   decoder := json.NewDecoder(r.Body)
-  
+
   type clientAuthRequest struct {
     Username string
     Password string
   }
-  
-  var t clientAuthRequest   
+
+  var t clientAuthRequest
   err := decoder.Decode(&t)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
-  
+
   type clientAuthResponse struct {
     Uuid uuid.UUID
     Message string
     Success bool
   }
-  
+
   guid,err := hc.authenticator.Auth(t.Username,t.Password);
   if err != nil {
     response := clientAuthResponse{uuid.UUID{}, err.Error(), false}
@@ -276,14 +361,14 @@ func (hc HttpConnector) LoginHandler(w http.ResponseWriter, r *http.Request) {
     w.Write(js)
     return
   }
-  
+
   response := clientAuthResponse{guid, "", true}
   js, err := json.Marshal(response)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
-  
+
   session, _ := hc.store.Get(r, "MGM")
   session.Values["guid"] = guid.String()
   session.Values["address"] = r.RemoteAddr
@@ -293,9 +378,9 @@ func (hc HttpConnector) LoginHandler(w http.ResponseWriter, r *http.Request) {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
-  
+
   hc.logger.Info("Session saved, returning success")
-  
+
   w.Header().Set("Content-Type", "application/jons")
   w.Write(js)
 }

@@ -6,6 +6,8 @@ import (
   _ "github.com/go-sql-driver/mysql"
   "github.com/M-O-S-E-S/mgm2/core"
   "github.com/satori/go.uuid"
+  "crypto/md5"
+  "encoding/hex"
 )
 
 type RegionManager interface {
@@ -17,7 +19,6 @@ type Database struct {
   password string
   database string
   host string
-  //regionManager RegionManager
 }
 
 func NewDatabase(username string, password string, database string, host string) *Database{
@@ -31,6 +32,57 @@ func (db Database) TestConnection() error {
   
   err = con.Ping()
   return err
+}
+
+func (db Database) AddPendingUser(name string, email string, template string, password string, summary string) error {
+  con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
+  if err != nil {return err}
+  defer con.Close()
+
+  hasher := md5.New()
+  hasher.Write([]byte(password))
+  creds := hex.EncodeToString(hasher.Sum(nil))
+
+  _, err = con.Exec("INSERT INTO users (name, email, gender, password, summary) VALUES(?, ?, ?, ?, ?)",
+                   name, email, template, creds, summary)
+  if err != nil {
+    return err
+  }
+  return nil
+}
+
+func (db Database) IsEmailUnique(email string) (bool, error){
+  con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
+  if err != nil {return false, err}
+  defer con.Close()
+
+  row := con.QueryRow("SELECT email FROM users WHERE email=?", email)
+  var test string
+  err = row.Scan(&test)
+  if err != nil{
+    if err == sql.ErrNoRows {
+      return true, nil
+    }
+    return false, err
+  }
+  return false, nil
+}
+
+func (db Database) IsNameUnique(name string) (bool, error){
+  con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
+  if err != nil {return false, err}
+  defer con.Close()
+
+  row := con.QueryRow("SELECT name FROM users WHERE name=?", name)
+  var test string
+  err = row.Scan(&test)
+  if err != nil{
+    if err == sql.ErrNoRows {
+      return true, nil
+    }
+    return false, err
+  }
+  return false, nil
 }
 
 func (db Database) CreatePasswordResetToken(userID uuid.UUID) (uuid.UUID, error){

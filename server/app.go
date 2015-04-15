@@ -7,7 +7,6 @@ import (
   "github.com/M-O-S-E-S/mgm2/webClient"
   "github.com/M-O-S-E-S/mgm2/email"
   //"github.com/M-O-S-E-S/mgm2/opensim"
-  "fmt"
   "net/http"
   "github.com/gorilla/mux"
   "code.google.com/p/gcfg"
@@ -35,30 +34,30 @@ type MgmConfig struct {
 }
 
 func main() {
-  config := MgmConfig{}
-  err := gcfg.ReadFileInto(&config, "conf.gcfg")
-  
+  //instantiate our logger
   logger := lumber.NewConsoleLogger(lumber.DEBUG)
 
-  //fmt.Println("Reading configuration file")
-  //file, _ := os.Open("conf.json")
-  //decoder := json.NewDecoder(file)
-
-  //err := decoder.Decode(&config)
+  //read configuration file
+  config := MgmConfig{}
+  err := gcfg.ReadFileInto(&config, "conf.gcfg")
   if err != nil {
-    fmt.Println("Error reading config file: ", err)
-    return
+    logger.Fatal("Error reading config file: %v", err)
   }
 
+  //instantiate our email module
   mailer := email.NewClientMailer(config.Email, config.MGM.PublicHostname)
 
+  //create our database connector
   db := mysql.NewDatabase(
     config.MySQL.Username,
     config.MySQL.Password,
     config.MySQL.Database,
     config.MySQL.Host,
   )
+  //create our simian connector
   sim, _ := simian.NewSimianConnector(config.MGM.SimianUrl)
+
+  //start new goroutine exiring old password tokens
   go ExpirePasswordTokens(db)
   
   //leave this out for now
