@@ -22,6 +22,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
   };
 
   self.regions = {}
+  self.estates = {}
 
   this.connect = function () {
     console.log("Connecting to: " + remoteURL);
@@ -50,6 +51,10 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
       case "RegionUpdate":
         self.regions[message.Message.UUID] = message.Message;
         $rootScope.$broadcast("RegionUpdate", message.Message);
+        break;
+      case "EstateUpdate":
+        self.estates[message.Message.ID] = message.Message;
+        $rootScope.$broadcast("EstateUpdate", message.Message);
         break;
       default:
         console.log("Error parsing message:");

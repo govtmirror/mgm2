@@ -1,1 +1,79 @@
-<p>This is the grid view.</p>
+<div class="navbar navbar-default ng-scope">
+  <ul class="nav navbar-nav">
+    <li ng-class="{active: isActive('estates')}"><a href="#/grid/estates">Estates</a>
+    </li>
+    <li ng-class="{active: isActive('groups')}"><a href="#/grid/groups">Groups</a>
+    </li>
+    <li ng-class="{active: isActive('hosts')}"><a href="#/grid/hosts">Hosts</a>
+    </li>
+  </ul>
+</div>
+
+<div ng-if="isActive('estates')">
+  <table style="width: 100%;">
+    <tr>
+      <th>Name</th>
+      <th>Regions</th>
+      <th>Owner</th>
+      <th>Managers</th>
+      <th>
+        <button style="float: left;" ng-click="estate.showAddModal()" ng-if="auth.activeUser.accessLevel > 249" class="btn btn-secondary btn-sm">Add A New Estate</button>
+      </th>
+    </tr>
+    <tr ng-repeat="est in estates | orderBy:'name'" ng-class-odd="'odd'" ng-class-even="'even'">
+      <td>
+        <button ng-click="estate.remove(est)" style="float: right;">Remove</button>
+      </td>
+      <td>{{est.Name}}</td>
+      <td>{{est.Regions.length}}</td>
+      <td>{{est.Owner}}</td>
+      <td>{{est.Managers}}</td>
+
+    </tr>
+  </table>
+</div>
+<div ng-if="isActive('groups')">
+  <div>
+    <span style="float: left; width: 15em; padding-left: 1em;"><font size="4">Name</font></span>
+    <span style="float: left; width: 15em"><font size="4">Founder</font></span>
+    <span style="float: left; width: 25em"><font size="4">UUID</font></span>
+    <span style="float: left; width: 10em"><font size="4"># Members</font></span>
+    <span style="float: left; width: 40em"><font size="4">Roles</font></span>
+  </div>
+
+  <div>
+    <div style="width: 100%; overflow: auto;" ng-repeat="g in groups | orderBy: 'name' track by g.uuid" ng-class-odd="'odd'" ng-class-even="'even'">
+      <span style="float: left; width: 15em; padding-left: 1em;">{{g.name}}</span>
+      <span style="float: left; width: 15em">{{userName(g.FounderID)}}</span>
+      <span style="float: left; width: 25em">{{g.uuid}}</span>
+      <span style="float: left; width: 10em">{{g.members.length}}</span>
+      <span style="float: left; width: 40em"><font style="font-weight: bold">{{g.roles.length}}:</font> <font ng-repeat="r in g.roles | orderBy: 'name'">{{r.Name}}{{$last ? '' : ', '}}</font></span>
+    </div>
+  </div>
+
+</div>
+<div ng-if="isActive('hosts')" ng-if="auth.activeUser.accessLevel > 249">
+  <div>
+    <span style="float: left; width: 15em"><font size="4">Name</font></span>
+    <span style="float: left; width: 10em"><font size="4">Address</font></span>
+    <span style="float: left; width: 10em"><font size="4">Timestamp</font></span>
+    <span style="float: left; width: 5em"><font size="4">Regions</font></span>
+    <span style="float: left; width: 25em"><font size="4">CPU</font></span>
+    <span style="float: left; width: 10em"><font size="4">MEM</font></span>
+    <span style="float: left; width: 10em"><font size="4">Net</font></span>
+    <button ng-click="host.add()" class="btn btn-secondary btn-sm">Add Host</button>
+  </div>
+  <div>
+    <div style="width: 100%; overflow: auto;" ng-repeat="h in hosts | orderBy:'name' track by h.address" ng-class-odd="'odd'" ng-class-even="'even'">
+      <span style="float: left; width: 15em">{{h.name}} <button ng-click="host.remove(h)" style="float: right;">Remove</button></span>
+      <span style="float: left; width: 10em">{{h.address}}</span>
+      <span style="float: left; width: 10em">{{lastSeen(h.status.timestamp)}}</span>
+      <span style="float: left; width: 5em">{{regionCount(h.address)}}/{{h.capacity}}</span>
+      <span style="float: left; width: 25em">{{h.status.cpuPercent}}</span>
+      <span style="float: left; width: 10em">{{h.status.memPercent}}% {{(h.status.memKB/1024).toFixed(2)}}MB</span>
+      <span style="float: left; width: 10em">{{(h.status.netSentPer/1024).toFixed(2)}} / {{(h.status.netRecvPer/1024).toFixed(2)}} KBps</span>
+    </div>
+  </div>
+
+
+  </tab>
