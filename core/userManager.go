@@ -28,7 +28,12 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
   session.SendUserAccount(*accountData)
 
   //send regions this user may control
-  regions, err := dataStore.GetRegionsFor(session.GetGuid())
+  var regions []Region
+  if session.GetAccessLevel() > 250 {
+    regions, err = dataStore.GetAllRegions()
+  } else {
+    regions, err = dataStore.GetRegionsFor(session.GetGuid())
+  }
   if err != nil {
     logger.Error("Error lookin up user regions: ", err)
   }

@@ -18,6 +18,7 @@ type UserConnector interface {
 type Database interface {
   TestConnection() error
   GetRegionsFor(uuid.UUID) ([]Region, error)
+  GetAllRegions()([]Region, error)
 }
 
 type Logger interface {
