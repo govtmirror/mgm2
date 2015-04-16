@@ -9,11 +9,30 @@
  */
 angular.module('mgmApp')
   .controller('AccountCtrl', function ($scope, mgm) {
-    $scope.account = mgm.account;
 
-    $scope.$on("AccountChange", function (event, data) {
-      $scope.account = mgm.account;
-      $scope.$apply();
+    $scope.account = {
+      UserID: "",
+      Name: "",
+      AccessLevel: "",
+      Email: ""
+    };
+
+    for (var uuid in mgm.users) {
+      if (uuid === $scope.clientUserID) {
+        angular.copy(mgm.users[uuid], $scope.account);
+      }
+    }
+
+    $scope.$on("UserUpdate", function (event, user) {
+      if (user.UserID == $scope.clientUserID) {
+        //$scope.account = user;
+        //$scope.$apply();
+        console.log("Applying user to account");
+        angular.copy(user, $scope.account);
+        $scope.$apply();
+      };
     });
 
-  });
+
+
+  })

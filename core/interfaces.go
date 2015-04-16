@@ -14,6 +14,7 @@ type UserSession interface {
 
 type UserConnector interface {
   GetUserByID(uuid.UUID) (*User, error)
+  GetUsers() ([]User, error)
 }
 
 type Database interface {

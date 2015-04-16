@@ -20,15 +20,14 @@ func UserManager(sessionListener <-chan UserSession, dataStore Database, userCon
 
 func userSession(session UserSession, dataStore Database, userConn UserConnector, logger Logger){
   //perform client initialization
-  // send initial account information
-  user, err := userConn.GetUserByID(session.GetGuid())
+  // send user information first so client can map uuids to users
+  users, err := userConn.GetUsers()
   if err != nil {
     logger.Error("Error lookin up user account: ", err)
   }
-  if user == nil {
-    logger.Error("User account does not exist..")
+  for _, user := range users {
+    session.SendUser(user)
   }
-  session.SendUser(*user)
 
   //send regions this user may control
   var regions []Region
@@ -66,7 +65,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
     m.load(msg)
     switch m.MessageType {
       case "GetAccount":
-        user, err = userConn.GetUserByID(session.GetGuid())
+        user, err := userConn.GetUserByID(session.GetGuid())
         if err != nil {
           logger.Error("Error lookin up user account: ", err)
         }

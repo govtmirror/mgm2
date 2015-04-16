@@ -29,4 +29,20 @@ angular.module('mgmApp')
       }
     });
 
+    $scope.getUserNameFromID = function (uuid) {
+      if (uuid in mgm.users) {
+        return mgm.users[uuid].Name
+      }
+      return ""
+    }
+    $scope.getUserNamesFromIDs = function (uuids) {
+      var users = [];
+      for (var i = 0; i < uuids.length; i++) {
+        var uuid = uuids[i];
+        if (uuid in mgm.users) {
+          users.push(mgm.users[uuid].Name);
+        }
+      }
+      return users;
+    }
   });

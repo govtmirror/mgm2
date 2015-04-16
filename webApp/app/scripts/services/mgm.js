@@ -14,15 +14,9 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
 
   self = this;
 
-  self.account = {
-    UserID: "",
-    Name: "",
-    Email: "",
-    AccessLevel: 0
-  };
-
   self.regions = {}
   self.estates = {}
+  self.users = {}
 
   this.connect = function () {
     console.log("Connecting to: " + remoteURL);
@@ -45,8 +39,8 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
       var message = $.parseJSON(evt.data);
       switch (message.MessageType) {
       case "AccountUpdate":
-        self.account = message.Message
-        $rootScope.$broadcast("AccountUpdate");
+        self.users[message.Message.UserID] = message.Message;
+        $rootScope.$broadcast("UserUpdate", message.Message);
         break
       case "RegionUpdate":
         self.regions[message.Message.UUID] = message.Message;

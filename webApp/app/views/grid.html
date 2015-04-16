@@ -12,6 +12,7 @@
 <div ng-if="isActive('estates')">
   <table style="width: 100%;">
     <tr>
+      <th></th>
       <th>Name</th>
       <th>Regions</th>
       <th>Owner</th>
@@ -26,8 +27,8 @@
       </td>
       <td>{{est.Name}}</td>
       <td>{{est.Regions.length}}</td>
-      <td>{{est.Owner}}</td>
-      <td>{{est.Managers}}</td>
+      <td>{{getUserNameFromID(est.Owner)}}</td>
+      <td>{{getUserNamesFromIDs(est.Managers)}}</td>
 
     </tr>
   </table>

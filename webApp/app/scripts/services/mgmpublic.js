@@ -127,7 +127,8 @@ angular.module('mgmApp')
       if (data.Success) {
         console.log("session resume successfull");
         self.loggedIn = true;
-        $rootScope.$broadcast("AuthChange", true);
+        $rootScope.$broadcast("AuthChange", data.Uuid);
+        $rootScope.clientUserID = data.Uuid;
       };
     });
   });
