@@ -1,1 +1,10 @@
-<p>This is the regions view.</p>
+<table ng-repeat="(eName, regions) in estates|orderBy: eName" ng-class-odd="'odd'" ng-class-even="'even'">
+  <tr>
+    <td>
+      <h3>{{eName}}</h3>
+    </td>
+  </tr>
+  <tr ng-repeat="r in regions|orderBy: 'Name'">
+    <td>{{r.Name}}</td>
+  </tr>
+</table>
