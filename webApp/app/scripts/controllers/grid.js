@@ -20,12 +20,21 @@ angular.module('mgmApp')
     }
 
     $scope.estates = mgm.estates;
+    $scope.groups = mgm.groups;
 
     $scope.$on("EstateUpdate", function (event, estate) {
       if (!(estate.ID in $scope.estates)) {
         $scope.estates[estate.ID] = estate;
       } else {
         angular.copy(estate, $scope.estates[estate.ID]);
+      }
+    });
+
+    $scope.$on("GroupUpdate", function (event, group) {
+      if (!(group.ID in $scope.groups)) {
+        $scope.groups[group.ID] = group;
+      } else {
+        angular.copy(group, $scope.groups[group.ID]);
       }
     });
 

@@ -6,6 +6,7 @@ type UserSession interface {
   SendUser(User)
   SendRegion(Region)
   SendEstate(Estate)
+  SendGroup(Group)
   Read() ([]byte, bool)
 
   GetGuid() uuid.UUID
@@ -15,6 +16,8 @@ type UserSession interface {
 type UserConnector interface {
   GetUserByID(uuid.UUID) (*User, error)
   GetUsers() ([]User, error)
+
+  GetGroups() ([]Group, error)
 }
 
 type Database interface {

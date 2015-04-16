@@ -43,15 +43,20 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
     session.SendRegion(r)
   }
 
-  //if administrative, send Estate, Group, and Host dataManager
-  if session.GetAccessLevel() > 249 {
-    estates, err := dataStore.GetEstates()
-    if err != nil {
-      logger.Error("Error lookin up estates: ", err)
-    }
-    for _, e := range estates {
-      session.SendEstate(e)
-    }
+  //send Estate, Group, and Host dataManager
+  estates, err := dataStore.GetEstates()
+  if err != nil {
+    logger.Error("Error lookin up estates: ", err)
+  }
+  for _, e := range estates {
+    session.SendEstate(e)
+  }
+  groups, err := userConn.GetGroups()
+  if err != nil {
+    logger.Error("Error lookin up groups: ", err)
+  }
+  for _, g := range groups {
+    session.SendGroup(g)
   }
 
   for {

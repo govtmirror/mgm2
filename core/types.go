@@ -22,6 +22,14 @@ type User struct {
   LLPackedAppearance json.RawMessage `json:"-"`
 }
 
+type Group struct {
+  Name string
+  Founder uuid.UUID
+  ID uuid.UUID
+  Members []uuid.UUID
+  Roles []string
+}
+
 type Estate struct {
   Name string
   ID uint

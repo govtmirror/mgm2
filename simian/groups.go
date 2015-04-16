@@ -5,9 +5,10 @@ import (
   "fmt"
   "github.com/satori/go.uuid"
   "encoding/json"
+  "github.com/M-O-S-E-S/mgm2/core"
 )
 
-func (sc SimianConnector)GetGroups() ( []Group, error) {
+func (sc SimianConnector)GetGroups() ( []core.Group, error) {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetGenerics"},
@@ -18,10 +19,26 @@ func (sc SimianConnector)GetGroups() ( []Group, error) {
     return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
+  type simianGroupValues struct {
+    GroupID uuid.UUID
+    ShowInList bool
+    InsigniaID uuid.UUID
+    FounderID uuid.UUID
+    EveronePowers []int
+    OwnerRoleID uuid.UUID
+    OwnersPowers []int
+  }
+
+  type simianGroup struct {
+    OwnerID uuid.UUID
+    Name string `json:"Key"`
+    Value string
+  }
+
   type req struct {
     Success bool
     Message string
-    Entries []Group
+    Entries []simianGroup
   }
   
   var m req
@@ -30,12 +47,45 @@ func (sc SimianConnector)GetGroups() ( []Group, error) {
     return nil, err
   }
   if m.Success {
-    return  m.Entries, nil
+    blankID := uuid.UUID{}
+    groups := make([]core.Group,0)
+    for _, sg := range m.Entries {
+      sgv := simianGroupValues{}
+      err = json.Unmarshal([]byte(sg.Value), &sgv)
+      if err != nil {
+        fmt.Println(err)
+      }
+      if sgv.FounderID == blankID {
+        continue
+      }
+      group := core.Group{Members: make([]uuid.UUID,0), Roles: make([]string, 0)}
+      //map simian data into core.Group struct
+      group.Name = sg.Name
+      group.Founder = sgv.FounderID
+      group.ID = sg.OwnerID
+      //pre-populate Members and Roles
+      members, _ := sc.GetGroupMembers(group.ID)
+      group.Members = members
+      roles, _ := sc.GetGroupRoles(group.ID)
+      group.Roles = roles
+      groups = append(groups, group)
+    }
+    return groups, nil
   }
   return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc SimianConnector)GetGroupByID(groupID uuid.UUID) ( Group, error) {
+/*
+type Group struct {
+  Name string
+  Founder uuid.UUID
+  ID uuid.UUID
+  Members []uuid.UUID
+  Roles []string
+}
+*/
+
+func (sc SimianConnector)GetGroupByID(groupID uuid.UUID) ( *core.Group, error) {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"GetGenerics"},
@@ -44,24 +94,24 @@ func (sc SimianConnector)GetGroupByID(groupID uuid.UUID) ( Group, error) {
     })
   
   if err != nil {
-    return Group{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
   type req struct {
     Success bool
     Message string
-    Entries []Group
+    Entries []core.Group
   }
-  
+
   var m req
   err = json.Unmarshal(response, &m)
   if err != nil {
-    return Group{}, err
+    return nil, err
   }
   if m.Success {
-    return  m.Entries[0], nil
+    return  &m.Entries[0], nil
   }
-  return Group{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
+  return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
 func (sc SimianConnector)GetGroupMembers(groupID uuid.UUID) ( []uuid.UUID, error) {

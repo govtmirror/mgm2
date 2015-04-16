@@ -39,6 +39,14 @@ func (c client) SendEstate(estate core.Estate){
   }
 }
 
+func (c client) SendGroup(group core.Group){
+  resp := clientResponse{ "GroupUpdate", group}
+  data, err := json.Marshal(resp)
+  if err == nil {
+    c.toClient <- data
+  }
+}
+
 func (c client) GetGuid() uuid.UUID {
   return c.guid
 }

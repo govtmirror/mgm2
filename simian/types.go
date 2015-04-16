@@ -22,13 +22,6 @@ type usersRequest struct {
   Users []core.User
 }
 
-type Group struct {
-  OwnerID uuid.UUID
-  Key string
-  Value string
-  GroupID uuid.UUID
-}
-
 type Generic struct {
   OwnerID uuid.UUID
   Key uuid.UUID

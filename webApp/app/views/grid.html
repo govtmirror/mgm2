@@ -34,23 +34,28 @@
   </table>
 </div>
 <div ng-if="isActive('groups')">
-  <div>
-    <span style="float: left; width: 15em; padding-left: 1em;"><font size="4">Name</font></span>
-    <span style="float: left; width: 15em"><font size="4">Founder</font></span>
-    <span style="float: left; width: 25em"><font size="4">UUID</font></span>
-    <span style="float: left; width: 10em"><font size="4"># Members</font></span>
-    <span style="float: left; width: 40em"><font size="4">Roles</font></span>
-  </div>
+  <table style="width: 100%;">
+    <tr>
+      <th></th>
+      <th>Name</th>
+      <th>Founder</th>
+      <th># Members</th>
+      <th># Roles</th>
+      <th>
+        <button style="float: left;" ng-click="estate.showAddModal()" ng-if="auth.activeUser.accessLevel > 249" class="btn btn-secondary btn-sm">Add A New Estate</button>
+      </th>
+    </tr>
+    <tr ng-repeat="grp in groups | orderBy:'Name'" ng-class-odd="'odd'" ng-class-even="'even'">
+      <td>
+        <button ng-click="estate.remove(est)" style="float: right;">Remove</button>
+      </td>
+      <td>{{grp.Name}}</td>
+      <td>{{getUserNameFromID(grp.Founder)}}</td>
+      <td>{{grp.Members.length}}</td>
+      <td>{{grp.Roles.length}}</td>
 
-  <div>
-    <div style="width: 100%; overflow: auto;" ng-repeat="g in groups | orderBy: 'name' track by g.uuid" ng-class-odd="'odd'" ng-class-even="'even'">
-      <span style="float: left; width: 15em; padding-left: 1em;">{{g.name}}</span>
-      <span style="float: left; width: 15em">{{userName(g.FounderID)}}</span>
-      <span style="float: left; width: 25em">{{g.uuid}}</span>
-      <span style="float: left; width: 10em">{{g.members.length}}</span>
-      <span style="float: left; width: 40em"><font style="font-weight: bold">{{g.roles.length}}:</font> <font ng-repeat="r in g.roles | orderBy: 'name'">{{r.Name}}{{$last ? '' : ', '}}</font></span>
-    </div>
-  </div>
+    </tr>
+  </table>
 
 </div>
 <div ng-if="isActive('hosts')" ng-if="auth.activeUser.accessLevel > 249">
