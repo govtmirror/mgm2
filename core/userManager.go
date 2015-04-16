@@ -21,11 +21,14 @@ func UserManager(sessionListener <-chan UserSession, dataStore Database, userCon
 func userSession(session UserSession, dataStore Database, userConn UserConnector, logger Logger){
   //perform client initialization
   // send initial account information
-  accountData, err := userConn.GetUserByID(session.GetGuid())
+  user, err := userConn.GetUserByID(session.GetGuid())
   if err != nil {
     logger.Error("Error lookin up user account: ", err)
   }
-  session.SendUserAccount(*accountData)
+  if user == nil {
+    logger.Error("User account does not exist..")
+  }
+  session.SendUser(*user)
 
   //send regions this user may control
   var regions []Region
@@ -38,7 +41,18 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
     logger.Error("Error lookin up user regions: ", err)
   }
   for _, r := range regions {
-    session.SendUserRegion(r)
+    session.SendRegion(r)
+  }
+
+  //if administrative, send Estate, Group, and Host dataManager
+  if session.GetAccessLevel() > 249 {
+    estates, err := dataStore.GetEstates()
+    if err != nil {
+      logger.Error("Error lookin up estates: ", err)
+    }
+    for _, e := range estates {
+      session.SendEstate(e)
+    }
   }
 
   for {
@@ -52,18 +66,18 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
     m.load(msg)
     switch m.MessageType {
       case "GetAccount":
-        accountData, err = userConn.GetUserByID(session.GetGuid())
+        user, err = userConn.GetUserByID(session.GetGuid())
         if err != nil {
           logger.Error("Error lookin up user account: ", err)
         }
-        session.SendUserAccount(*accountData)
+        session.SendUser(*user)
       case "GetRegions":
         regions, err := dataStore.GetRegionsFor(session.GetGuid())
         if err != nil {
           logger.Error("Error lookin up user account: ", err)
         }
       for _, r := range regions {
-        session.SendUserRegion(r)
+        session.SendRegion(r)
       }
       case "GetUsers":
 

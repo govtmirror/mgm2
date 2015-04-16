@@ -3,8 +3,9 @@ package core
 import "github.com/satori/go.uuid"
 
 type UserSession interface {
-  SendUserAccount(User)
-  SendUserRegion(Region)
+  SendUser(User)
+  SendRegion(Region)
+  SendEstate(Estate)
   Read() ([]byte, bool)
 
   GetGuid() uuid.UUID
@@ -19,6 +20,8 @@ type Database interface {
   TestConnection() error
   GetRegionsFor(uuid.UUID) ([]Region, error)
   GetAllRegions()([]Region, error)
+
+  GetEstates()([]Estate, error)
 }
 
 type Logger interface {

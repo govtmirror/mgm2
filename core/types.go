@@ -22,6 +22,14 @@ type User struct {
   LLPackedAppearance json.RawMessage `json:"-"`
 }
 
+type Estate struct {
+  Name string
+  ID uint
+  Owner uuid.UUID
+  Managers []uuid.UUID
+  Regions []uuid.UUID
+}
+
 type Identity struct {
   Identifier string
   Credential string
@@ -34,13 +42,13 @@ type Region struct {
   UUID uuid.UUID
   Name string
   Size uint
-  HttpPort int
-  ConsolePort int
-  ConsoleUname uuid.UUID
-  ConsolePass uuid.UUID
+  HttpPort int            `json:"-"`
+  ConsolePort int         `json:"-"`
+  ConsoleUname uuid.UUID  `json:"-"`
+  ConsolePass uuid.UUID   `json:"-"`
   LocX uint
   LocY uint
-  ExternalAddress string
+  ExternalAddress string  `json:"-"`
   SlaveAddress string
   IsRunning bool
   Status string

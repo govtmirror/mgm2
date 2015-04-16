@@ -51,6 +51,7 @@ func (db Database) ValidatePasswordToken(userID uuid.UUID, token uuid.UUID) (boo
   defer con.Close()
 
   rows, err := con.Query("SELECT data FROM jobs WHERE type=\"password_reset\" AND user=? AND timestamp >= DATE_SUB(NOW(), INTERVAL 1 DAY)", userID.String())
+  defer rows.Close()
   if err != nil {
     return false, err
   }

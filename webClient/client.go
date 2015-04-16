@@ -15,7 +15,7 @@ type client struct {
   userLevel uint8
 }
 
-func (c client) SendUserAccount(account core.User){
+func (c client) SendUser(account core.User){
   resp := clientResponse{ "AccountUpdate", account}
   data, err := json.Marshal(resp)
   if err == nil {
@@ -23,8 +23,16 @@ func (c client) SendUserAccount(account core.User){
   }
 }
 
-func (c client) SendUserRegion(region core.Region){
+func (c client) SendRegion(region core.Region){
   resp := clientResponse{ "RegionUpdate", region}
+  data, err := json.Marshal(resp)
+  if err == nil {
+    c.toClient <- data
+  }
+}
+
+func (c client) SendEstate(estate core.Estate){
+  resp := clientResponse{ "EstateUpdate", estate}
   data, err := json.Marshal(resp)
   if err == nil {
     c.toClient <- data
