@@ -8,7 +8,16 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('UsersCtrl', function ($scope, mgm) {
+  .controller('UsersCtrl', function ($scope, $routeParams, mgm) {
+
+    $scope.section = $routeParams["section"];
+    if (!$scope.section) {
+      $scope.section = "active";
+    }
+
+    $scope.isActive = function (section) {
+      return this.section === section;
+    }
 
     $scope.users = mgm.users;
     $scope.$on("UserUpdate", function (event, user) {

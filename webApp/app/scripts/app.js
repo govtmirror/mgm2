@@ -54,7 +54,7 @@ angular
         templateUrl: 'views/map.html',
         controller: 'MapCtrl'
       })
-      .when('/users', {
+      .when('/users/:section?', {
         templateUrl: 'views/users.html',
         controller: 'UsersCtrl'
       })

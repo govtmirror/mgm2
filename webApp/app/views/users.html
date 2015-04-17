@@ -1,4 +1,15 @@
-<table>
+<div class="navbar navbar-default ng-scope" ng-if="auth.AccessLevel > 249">
+  <ul class="nav navbar-nav">
+    <li ng-class="{active: isActive('active')}"><a href="#/users/active">Active</a>
+    </li>
+    <li ng-class="{active: isActive('suspended')}"><a href="#/users/suspended">Suspended</a>
+    </li>
+    <li ng-class="{active: isActive('pending')}"><a href="#/users/pending">Pending</a>
+    </li>
+  </ul>
+</div>
+
+<table ng-if="isActive('active')">
   <tr>
     <th style="width: 80px"></th>
     <th>Name</th>
