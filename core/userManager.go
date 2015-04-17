@@ -58,12 +58,15 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
   for _, g := range groups {
     session.SendGroup(g)
   }
-  hosts, err := dataStore.GetHosts()
-  if err != nil {
-    logger.Error("Error lookin up hosts: ", err)
-  }
-  for _, h := range hosts {
-    session.SendHost(h)
+  //only administrative users need host access
+  if session.GetAccessLevel() > 250 {
+    hosts, err := dataStore.GetHosts()
+    if err != nil {
+      logger.Error("Error lookin up hosts: ", err)
+    }
+    for _, h := range hosts {
+      session.SendHost(h)
+    }
   }
 
   for {
