@@ -28,15 +28,6 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
 
     self.ws.onopen = function () {
       console.log("Socket has been opened!");
-      var testMessage = {
-        "MessageType": "TestMessage",
-        "Message": {
-          "first": 1,
-          "second": 2
-        }
-      };
-      console.log("Sending " + testMessage);
-      self.ws.send(JSON.stringify(testMessage));
     };
 
     self.ws.onmessage = function (evt) {
@@ -73,6 +64,9 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
         self.groups[message.Message.ID] = message.Message;
         $rootScope.$broadcast("GroupUpdate", message.Message);
         break;
+      case "ConfigUpdate":
+        $rootScope.$broadcast("ConfigUpdate", message.Message);
+        break;
       case "HostUpdate":
         message.Message.Status = JSON.parse(message.Message.Status);
         self.hosts[message.Message.Address] = message.Message;
@@ -94,4 +88,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
     self.ws.close();
   };
 
+  this.request = function (req) {
+    self.ws.send(JSON.stringify(req));
+  }
 });

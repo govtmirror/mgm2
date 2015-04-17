@@ -44,7 +44,7 @@ func (wc WebsocketConnector) WebsocketHandler(w http.ResponseWriter, r *http.Req
   guid := session.Values["guid"].(uuid.UUID)
   uLevel := session.Values["ulevel"].(uint8)
 
-  c := client{ws, make(chan []byte, 64), make(chan []byte, 64), guid, uLevel}
+  c := client{ws, make(chan []byte, 64), make(chan []byte, 64), guid, uLevel, wc.logger}
   go c.reader()
   go c.writer()
   wc.session <- c

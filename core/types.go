@@ -66,6 +66,13 @@ type Host struct {
   Slots uint
 }
 
+type ConfigOption struct {
+  Region uuid.UUID
+  Section string
+  Item string
+  Content string
+}
+
 type Region struct {
   UUID uuid.UUID
   Name string

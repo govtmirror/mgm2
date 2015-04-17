@@ -8,10 +8,21 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('ConfigCtrl', function ($scope) {
-    $scope.awesomeThings = [
-      'HTML5 Boilerplate',
-      'AngularJS',
-      'Karma'
-    ];
+  .controller('ConfigCtrl', function ($scope, mgm) {
+
+    mgm.request({
+      MessageType: "GetDefaultConfig"
+    });
+
+    $scope.regions = mgm.regions;
+    $scope.configs = {}
+
+    $scope.$on("ConfigUpdate", function (event, config) {
+      if (!(config.Section in $scope.configs)) {
+        $scope.configs[config.Section] = {}
+      }
+      $scope.configs[config.Section][config.Item] = config.Content;
+      $scope.$apply();
+    });
+
   });

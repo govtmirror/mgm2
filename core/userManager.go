@@ -90,26 +90,18 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
     m := userRequest{}
     m.load(msg)
     switch m.MessageType {
-      case "GetAccount":
-        user, err := userConn.GetUserByID(session.GetGuid())
-        if err != nil {
-          logger.Error("Error lookin up user account: ", err)
+      case "GetDefaultConfig":
+        if session.GetAccessLevel() > 249 {
+          cfgs, err := dataStore.GetDefaultConfigs()
+          if err != nil {
+            logger.Error("Error getting default configs: %v", err)
+          } else {
+            for _, cfg := range cfgs {
+              session.SendConfig(cfg)
+            }
+          }
         }
-        session.SendUser(*user)
-      case "GetRegions":
-        var regions []Region
-        if session.GetAccessLevel() > 250 {
-          regions, err = dataStore.GetRegions()
-        } else {
-          regions, err = dataStore.GetRegionsForUser(session.GetGuid())
-        }
-        if err != nil {
-          logger.Error("Error lookin up user regions: ", err)
-        }
-        for _, r := range regions {
-          session.SendRegion(r)
-        }
-      case "GetUsers":
+
 
       default:
       logger.Error("Error on message from client: ", m.MessageType)

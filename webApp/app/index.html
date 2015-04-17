@@ -80,9 +80,10 @@
             </li>
             <li ng-class="{active:isActive('/users')}"><a href="#/users">Users</a>
             </li>
-            <li ng-class="{active:isActive('/config')}"><a href="#/config">Config</a>
+            <li ng-class="{active:isActive('/config')}" ng-if="auth.AccessLevel > 249"><a href="#/config">Config</a>
             </li>
-            <li><button ng-click="logout()" class="btn btn-danger" style="margin-top: 7px">Log Out</button>
+            <li>
+              <button ng-click="logout()" class="btn btn-danger" style="margin-top: 7px">Log Out</button>
             </li>
           </ul>
         </div>

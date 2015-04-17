@@ -9,6 +9,7 @@ type UserSession interface {
   SendEstate(Estate)
   SendGroup(Group)
   SendHost(Host)
+  SendConfig(ConfigOption)
   Read() ([]byte, bool)
 
   GetGuid() uuid.UUID
@@ -31,6 +32,8 @@ type Database interface {
   GetHosts()([]Host, error)
 
   GetPendingUsers() ([]PendingUser, error)
+
+  GetDefaultConfigs()([]ConfigOption, error)
 }
 
 type Logger interface {
