@@ -49,8 +49,11 @@ angular.module('mgmApp')
 
 
     $scope.getUserNameFromID = function (uuid) {
-      if (uuid in mgm.users) {
-        return mgm.users[uuid].Name
+      if (uuid in mgm.activeUsers) {
+        return mgm.activeUsers[uuid].Name
+      }
+      if (uuid in mgm.pendingUsers) {
+        return mgm.pendingUsers[uuid].Name
       }
       return ""
     }
@@ -58,8 +61,9 @@ angular.module('mgmApp')
       var users = [];
       for (var i = 0; i < uuids.length; i++) {
         var uuid = uuids[i];
-        if (uuid in mgm.users) {
-          users.push(mgm.users[uuid].Name);
+        var name = $scope.getUserNameFromID(uuid);
+        if (name !== "") {
+          users.push(name);
         }
       }
       return users;

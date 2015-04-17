@@ -11,26 +11,42 @@ angular.module('mgmApp')
   .controller('RegionsCtrl', function ($scope, mgm) {
 
     var regions = {}
+    $scope.estates = {};
 
-    $scope.estates = {}
-
-    for (var uuid in mgm.regions) {
-      estateifyRegion(mgm.regions[uuid]);
+    for (var ID in mgm.estates) {
+      modUserEstates("", mgm.estates[ID])
     }
 
+    for (var uuid in mgm.regions) {
+      estateifyRegion("", mgm.regions[uuid]);
+    }
+
+    $scope.$on("EstateUpdate", modUserEstates);
     $scope.$on("RegionChange", estateifyRegion);
 
-    function estateifyRegion(region) {
+    function estateifyRegion(event, region) {
       if (region.UUID in regions) {
-        //this is an update to an existing region
-        angular.copy(region, regions[region.UUID]);
+        angular.copy(regions, regions[region.UUID]);
       } else {
-        //this is a new region
-        regions[region.UUID] = region;
-        if (!(region.EstateName in $scope.estates)) {
-          $scope.estates[region.EstateName] = [];
+        if (region.EstateName in $scope.estates) {
+          regions[region.UUID] = region;
+          $scope.estates[region.EstateName].push(region);
         }
-        $scope.estates[region.EstateName].push(region)
+      }
+    }
+
+    function modUserEstates(event, estate) {
+      if ($scope.auth.UUID === estate.Owner || $scope.auth.UUID in estate.Managers || $scope.auth.AccessLevel > 249) {
+        $scope.estates[estate.Name] = [];
+      } else {
+        if (estate.Name in $scope.estates) {
+          delete $scope.estates[estate.Name];
+          for (uuid in estate.Regions) {
+            if (uuid in regions) {
+              delete regions[uuid];
+            }
+          }
+        }
       }
     }
 

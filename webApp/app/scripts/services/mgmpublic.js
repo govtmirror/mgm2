@@ -11,7 +11,6 @@ angular.module('mgmApp')
   .service('MgmPublic', function ($q, $http, $rootScope) {
 
     self = this;
-    console.log("MgmPublic setting logged in to false");
     self.loggedIn = false;
 
     this.login = function (username, password) {
@@ -122,8 +121,6 @@ angular.module('mgmApp')
     console.log("resuming session...");
     //resume session functionality
     $http.get("/auth").success(function (data, status, headers, config) {
-      console.log("resume session received: ");
-      console.log(data);
       if (data.Success) {
         console.log("session resume successfull");
         self.loggedIn = true;

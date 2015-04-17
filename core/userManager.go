@@ -31,6 +31,8 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
     }
     session.SendUser(user)
   }
+  users = nil
+
   pendingUsers, err := dataStore.GetPendingUsers()
   if err != nil {
     logger.Error("Error lookin up pending user account: ", err)
@@ -38,20 +40,17 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
   for _, user := range pendingUsers {
     session.SendPendingUser(user)
   }
+  pendingUsers = nil
 
   //send regions this user may control
-  var regions []Region
-  if session.GetAccessLevel() > 249 {
-    regions, err = dataStore.GetRegions()
-  } else {
-    regions, err = dataStore.GetRegionsForUser(session.GetGuid())
-  }
+  regions, err := dataStore.GetRegions()
   if err != nil {
     logger.Error("Error lookin up user regions: ", err)
   }
   for _, r := range regions {
     session.SendRegion(r)
   }
+  regions = nil
 
   //send Estate, Group, and Host dataManager
   estates, err := dataStore.GetEstates()
@@ -61,6 +60,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
   for _, e := range estates {
     session.SendEstate(e)
   }
+  estates = nil
   groups, err := userConn.GetGroups()
   if err != nil {
     logger.Error("Error lookin up groups: ", err)
@@ -68,6 +68,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
   for _, g := range groups {
     session.SendGroup(g)
   }
+  groups = nil
   //only administrative users need host access
   if session.GetAccessLevel() > 249 {
     hosts, err := dataStore.GetHosts()

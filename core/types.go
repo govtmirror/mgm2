@@ -77,7 +77,7 @@ type Region struct {
   LocX uint
   LocY uint
   ExternalAddress string  `json:"-"`
-  SlaveAddress string
+  SlaveAddress string     `json:"-"`
   IsRunning bool
   Status string
   EstateName string
