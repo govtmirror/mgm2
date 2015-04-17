@@ -1,1 +1,19 @@
-<p>This is the users view.</p>
+<table>
+  <tr>
+    <th style="width: 80px"></th>
+    <th>Name</th>
+    <th>Email</th>
+  </tr>
+  <tr ng-repeat="usr in users | orderBy:'Name'">
+    <td><span ng-if="user.isSuspended(usr)" style="color:red">suspended</span>
+    </td>
+    <td>{{usr.Name}}</td>
+    <td>{{usr.Email}}</td>
+    <td>
+      <button ng-if="auth.AccessLevel > 249" style="float:right" ng-click="user.showGroups(u)">Groups</button>
+    </td>
+    <td>
+      <button ng-if="auth.AccessLevel > 249" style="float:right" ng-click="user.showManage(u)">Manage</button>
+    </td>
+  </tr>
+</table>

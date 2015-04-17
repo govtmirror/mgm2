@@ -128,7 +128,10 @@ angular.module('mgmApp')
         console.log("session resume successfull");
         self.loggedIn = true;
         $rootScope.$broadcast("AuthChange", data.Uuid);
-        $rootScope.clientUserID = data.Uuid;
-      };
+        $rootScope.auth = {
+          UUID: data.Uuid,
+          AccessLevel: data.AccessLevel
+        }
+      }
     });
   });

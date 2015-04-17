@@ -4,7 +4,7 @@
     </li>
     <li ng-class="{active: isActive('groups')}"><a href="#/grid/groups">Groups</a>
     </li>
-    <li ng-class="{active: isActive('hosts')}"><a href="#/grid/hosts">Hosts</a>
+    <li ng-class="{active: isActive('hosts')}" ng-if="auth.AccessLevel > 249"><a href="#/grid/hosts">Hosts</a>
     </li>
   </ul>
 </div>
@@ -18,10 +18,10 @@
       <th>Owner</th>
       <th>Managers</th>
       <th>
-        <button style="float: left;" ng-click="estate.showAddModal()" ng-if="auth.activeUser.accessLevel > 249" class="btn btn-secondary btn-sm">Add A New Estate</button>
+        <button style="float: left;" ng-click="estate.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-secondary btn-sm">Add A New Estate</button>
       </th>
     </tr>
-    <tr ng-repeat="est in estates | orderBy:'name'" ng-class-odd="'odd'" ng-class-even="'even'">
+    <tr ng-repeat="est in estates | orderBy:'Name'" ng-class-odd="'odd'" ng-class-even="'even'">
       <td>
         <button ng-click="estate.remove(est)" style="float: right;">Remove</button>
       </td>
@@ -42,7 +42,7 @@
       <th># Members</th>
       <th># Roles</th>
       <th>
-        <button style="float: left;" ng-click="estate.showAddModal()" ng-if="auth.activeUser.accessLevel > 249" class="btn btn-secondary btn-sm">Add A New Estate</button>
+        <button style="float: left;" ng-click="group.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-secondary btn-sm">Add A New Group</button>
       </th>
     </tr>
     <tr ng-repeat="grp in groups | orderBy:'Name'" ng-class-odd="'odd'" ng-class-even="'even'">
@@ -58,7 +58,7 @@
   </table>
 
 </div>
-<div ng-if="isActive('hosts')" ng-if="auth.activeUser.accessLevel > 249">
+<div ng-if="isActive('hosts')" ng-if="auth.AccessLevel > 249">
   <table style="width: 100%;">
     <tr>
       <th></th>
@@ -71,7 +71,7 @@
       <th>Mem</th>
       <th>Network</th>
       <th>
-        <button style="float: left;" ng-click="estate.showAddModal()" ng-if="auth.activeUser.accessLevel > 249" class="btn btn-secondary btn-sm">Add A New Estate</button>
+        <button style="float: left;" ng-click="host.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-secondary btn-sm">Add A New Host</button>
       </th>
     </tr>
     <tr ng-repeat="hst in hosts | orderBy:'Name'" ng-class-odd="'odd'" ng-class-even="'even'">

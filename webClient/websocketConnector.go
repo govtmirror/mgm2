@@ -41,8 +41,8 @@ func (wc WebsocketConnector) WebsocketHandler(w http.ResponseWriter, r *http.Req
     return
   }
 
-  guid, _ := uuid.FromString( session.Values["guid"].(string))
-  uLevel, _ := session.Values["ulevel"].(uint8)
+  guid := session.Values["guid"].(uuid.UUID)
+  uLevel := session.Values["ulevel"].(uint8)
 
   c := client{ws, make(chan []byte, 64), make(chan []byte, 64), guid, uLevel}
   go c.reader()

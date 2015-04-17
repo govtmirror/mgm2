@@ -7,6 +7,7 @@ import (
   "github.com/satori/go.uuid"
   "github.com/gorilla/sessions"
   "github.com/M-O-S-E-S/mgm2/core"
+  "encoding/gob"
 )
 
 type Logger interface {
@@ -45,6 +46,13 @@ type Database interface {
   AddPendingUser(name string, email string, template string, password string, summary string) error
 }
 
+type clientAuthResponse struct {
+  Uuid uuid.UUID
+  AccessLevel uint8
+  Message string
+  Success bool
+}
+
 type HttpConnector struct {
   store *sessions.CookieStore
   authenticator Authenticator
@@ -54,6 +62,8 @@ type HttpConnector struct {
 }
 
 func NewHttpConnector(sessionKey string, authenticator Authenticator, db Database, mailer Mailer, logger Logger) (*HttpConnector){
+  gob.Register(uuid.UUID{})
+
   store := sessions.NewCookieStore([]byte(sessionKey))
   store.Options = &sessions.Options{
     Path: "/",
@@ -74,13 +84,8 @@ func (hc HttpConnector) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 func (hc HttpConnector) ResumeHandler(w http.ResponseWriter, r *http.Request) {
   session, _ := hc.store.Get(r, "MGM")
 
-  type clientAuthResponse struct {
-    Uuid string
-    Success bool
-  }
-
   if len(session.Values) == 0 {
-    response := clientAuthResponse{"", false}
+    response := clientAuthResponse{}
     js, err := json.Marshal(response)
     if err != nil {
       http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -91,7 +96,7 @@ func (hc HttpConnector) ResumeHandler(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  response := clientAuthResponse{session.Values["guid"].(string), true}
+  response := clientAuthResponse{session.Values["guid"].(uuid.UUID), session.Values["ulevel"].(uint8), "", true}
   js, err := json.Marshal(response)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -344,15 +349,9 @@ func (hc HttpConnector) LoginHandler(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  type clientAuthResponse struct {
-    Uuid uuid.UUID
-    Message string
-    Success bool
-  }
-
   guid,err := hc.authenticator.Auth(t.Username,t.Password);
   if err != nil {
-    response := clientAuthResponse{uuid.UUID{}, err.Error(), false}
+    response := clientAuthResponse{Message: err.Error(),}
     js, err := json.Marshal(response)
     if err != nil {
       http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -360,13 +359,6 @@ func (hc HttpConnector) LoginHandler(w http.ResponseWriter, r *http.Request) {
     }
     w.Header().Set("Content-Type", "application/json")
     w.Write(js)
-    return
-  }
-
-  response := clientAuthResponse{guid, "", true}
-  js, err := json.Marshal(response)
-  if err != nil {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
     return
   }
 
@@ -381,7 +373,7 @@ func (hc HttpConnector) LoginHandler(w http.ResponseWriter, r *http.Request) {
   }
 
   session, _ := hc.store.Get(r, "MGM")
-  session.Values["guid"] = guid.String()
+  session.Values["guid"] = guid
   session.Values["address"] = r.RemoteAddr
   session.Values["ulevel"] = user.AccessLevel
   err = session.Save(r,w)
@@ -392,6 +384,13 @@ func (hc HttpConnector) LoginHandler(w http.ResponseWriter, r *http.Request) {
   }
 
   hc.logger.Info("Session saved, returning success")
+
+  response := clientAuthResponse{guid, user.AccessLevel, "", true}
+  js, err := json.Marshal(response)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
 
   w.Header().Set("Content-Type", "application/jons")
   w.Write(js)

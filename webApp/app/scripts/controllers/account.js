@@ -18,13 +18,13 @@ angular.module('mgmApp')
     };
 
     for (var uuid in mgm.users) {
-      if (uuid === $scope.clientUserID) {
+      if (uuid === $scope.auth.UUID) {
         angular.copy(mgm.users[uuid], $scope.account);
       }
     }
 
     $scope.$on("UserUpdate", function (event, user) {
-      if (user.UserID == $scope.clientUserID) {
+      if (user.UserID === $scope.auth.UUID) {
         //$scope.account = user;
         //$scope.$apply();
         console.log("Applying user to account");
