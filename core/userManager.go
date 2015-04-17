@@ -31,7 +31,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
 
   //send regions this user may control
   var regions []Region
-  if session.GetAccessLevel() > 250 {
+  if session.GetAccessLevel() > 249 {
     regions, err = dataStore.GetRegions()
   } else {
     regions, err = dataStore.GetRegionsForUser(session.GetGuid())
@@ -59,7 +59,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
     session.SendGroup(g)
   }
   //only administrative users need host access
-  if session.GetAccessLevel() > 250 {
+  if session.GetAccessLevel() > 249 {
     hosts, err := dataStore.GetHosts()
     if err != nil {
       logger.Error("Error lookin up hosts: ", err)
