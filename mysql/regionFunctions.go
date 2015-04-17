@@ -8,7 +8,7 @@ import (
   "github.com/satori/go.uuid"
 )
 
-func (db Database) GetAllRegions() ([]core.Region, error){
+func (db Database) GetRegions() ([]core.Region, error){
   con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
   if err != nil {return nil, err}
   defer con.Close()
@@ -51,7 +51,49 @@ func (db Database) GetAllRegions() ([]core.Region, error){
   return regions, nil
 }
 
-func (db Database) GetRegionsFor(guid uuid.UUID) ([]core.Region, error){
+func (db Database) GetRegionsOnHost(address string) ([]core.Region, error) {
+  con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
+  if err != nil {return nil, err}
+  defer con.Close()
+
+  rows, err := con.Query(
+    "Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, externalAddress, slaveAddress, isRunning, status from regions " +
+    "where slaveAddress=?", address)
+  defer rows.Close()
+  if err != nil {
+    fmt.Println(err)
+    return nil, err
+  }
+
+  regions := make([]core.Region, 0)
+  for rows.Next() {
+    r := core.Region{}
+    err = rows.Scan(
+      &r.UUID,
+      &r.Name,
+      &r.Size,
+      &r.HttpPort,
+      &r.ConsolePort,
+      &r.ConsoleUname,
+      &r.ConsolePass,
+      &r.LocX,
+      &r.LocY,
+      &r.ExternalAddress,
+      &r.SlaveAddress,
+      &r.IsRunning,
+      &r.Status,
+    )
+    if err != nil {
+      rows.Close()
+      fmt.Println(err)
+      return nil, err
+    }
+    regions = append(regions, r)
+  }
+  return regions, nil
+}
+
+func (db Database) GetRegionsForUser(guid uuid.UUID) ([]core.Region, error){
   con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
   if err != nil {return nil, err}
   defer con.Close()

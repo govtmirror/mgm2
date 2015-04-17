@@ -46,6 +46,15 @@ type Identity struct {
   Enabled bool
 }
 
+type Host struct {
+  Address string
+  Port uint           `json:"-"`
+  Hostname string
+  Regions []uuid.UUID
+  Status string
+  Slots uint
+}
+
 type Region struct {
   UUID uuid.UUID
   Name string

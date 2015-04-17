@@ -32,9 +32,9 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
   //send regions this user may control
   var regions []Region
   if session.GetAccessLevel() > 250 {
-    regions, err = dataStore.GetAllRegions()
+    regions, err = dataStore.GetRegions()
   } else {
-    regions, err = dataStore.GetRegionsFor(session.GetGuid())
+    regions, err = dataStore.GetRegionsForUser(session.GetGuid())
   }
   if err != nil {
     logger.Error("Error lookin up user regions: ", err)
@@ -58,6 +58,13 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
   for _, g := range groups {
     session.SendGroup(g)
   }
+  hosts, err := dataStore.GetHosts()
+  if err != nil {
+    logger.Error("Error lookin up hosts: ", err)
+  }
+  for _, h := range hosts {
+    session.SendHost(h)
+  }
 
   for {
     msg, more := session.Read()
@@ -76,13 +83,18 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
         }
         session.SendUser(*user)
       case "GetRegions":
-        regions, err := dataStore.GetRegionsFor(session.GetGuid())
-        if err != nil {
-          logger.Error("Error lookin up user account: ", err)
+        var regions []Region
+        if session.GetAccessLevel() > 250 {
+          regions, err = dataStore.GetRegions()
+        } else {
+          regions, err = dataStore.GetRegionsForUser(session.GetGuid())
         }
-      for _, r := range regions {
-        session.SendRegion(r)
-      }
+        if err != nil {
+          logger.Error("Error lookin up user regions: ", err)
+        }
+        for _, r := range regions {
+          session.SendRegion(r)
+        }
       case "GetUsers":
 
       default:

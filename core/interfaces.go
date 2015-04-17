@@ -7,6 +7,7 @@ type UserSession interface {
   SendRegion(Region)
   SendEstate(Estate)
   SendGroup(Group)
+  SendHost(Host)
   Read() ([]byte, bool)
 
   GetGuid() uuid.UUID
@@ -22,10 +23,11 @@ type UserConnector interface {
 
 type Database interface {
   TestConnection() error
-  GetRegionsFor(uuid.UUID) ([]Region, error)
-  GetAllRegions()([]Region, error)
-
+  GetRegionsForUser(uuid.UUID) ([]Region, error)
+  GetRegionsOnHost(string) ([]Region, error)
+  GetRegions()([]Region, error)
   GetEstates()([]Estate, error)
+  GetHosts()([]Host, error)
 }
 
 type Logger interface {

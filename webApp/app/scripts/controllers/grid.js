@@ -21,6 +21,7 @@ angular.module('mgmApp')
 
     $scope.estates = mgm.estates;
     $scope.groups = mgm.groups;
+    $scope.hosts = mgm.hosts;
 
     $scope.$on("EstateUpdate", function (event, estate) {
       if (!(estate.ID in $scope.estates)) {
@@ -38,6 +39,15 @@ angular.module('mgmApp')
       }
     });
 
+    $scope.$on("HostUpdate", function (event, host) {
+      if (!(host.Address in $scope.hosts)) {
+        $scope.hosts[host.Address] = host;
+      } else {
+        angular.copy(host, $scope.hosts[host.Address]);
+      }
+    });
+
+
     $scope.getUserNameFromID = function (uuid) {
       if (uuid in mgm.users) {
         return mgm.users[uuid].Name
@@ -53,5 +63,24 @@ angular.module('mgmApp')
         }
       }
       return users;
+    }
+
+    $scope.TimestampToDate = function (timestamp) {
+      if (timestamp == undefined || timestamp == "") {
+        return "~";
+      }
+      var last = new Date(timestamp * 1000);
+      var seconds = Math.floor(((new Date()).getTime() - last.getTime()) / 1000);
+
+      var numdays = Math.floor(seconds / 86400);
+      if (numdays > 0) {
+        return numdays + " days ago";
+      }
+      var numhours = Math.floor((seconds % 86400) / 3600);
+      if (numhours > 0) {
+        return numhours + " hours ago";
+      }
+      var numminutes = Math.floor(((seconds % 86400) % 3600) / 60);
+      return numminutes + " minutes ago";
     }
   });

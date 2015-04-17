@@ -18,6 +18,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
   self.estates = {}
   self.users = {}
   self.groups = {}
+  self.hosts = {}
 
   this.connect = function () {
     console.log("Connecting to: " + remoteURL);
@@ -54,6 +55,11 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
       case "GroupUpdate":
         self.groups[message.Message.ID] = message.Message;
         $rootScope.$broadcast("GroupUpdate", message.Message);
+        break;
+      case "HostUpdate":
+        message.Message.Status = JSON.parse(message.Message.Status);
+        self.hosts[message.Message.Address] = message.Message;
+        $rootScope.$broadcast("HostUpdate", message.Message);
         break;
       default:
         console.log("Error parsing message:");

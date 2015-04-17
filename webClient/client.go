@@ -47,6 +47,17 @@ func (c client) SendGroup(group core.Group){
   }
 }
 
+func (c client) SendHost(host core.Host){
+  if host.Status == "" {
+    host.Status = "{}"
+  }
+  resp := clientResponse{ "HostUpdate", host}
+  data, err := json.Marshal(resp)
+  if err == nil {
+    c.toClient <- data
+  }
+}
+
 func (c client) GetGuid() uuid.UUID {
   return c.guid
 }

@@ -59,27 +59,31 @@
 
 </div>
 <div ng-if="isActive('hosts')" ng-if="auth.activeUser.accessLevel > 249">
-  <div>
-    <span style="float: left; width: 15em"><font size="4">Name</font></span>
-    <span style="float: left; width: 10em"><font size="4">Address</font></span>
-    <span style="float: left; width: 10em"><font size="4">Timestamp</font></span>
-    <span style="float: left; width: 5em"><font size="4">Regions</font></span>
-    <span style="float: left; width: 25em"><font size="4">CPU</font></span>
-    <span style="float: left; width: 10em"><font size="4">MEM</font></span>
-    <span style="float: left; width: 10em"><font size="4">Net</font></span>
-    <button ng-click="host.add()" class="btn btn-secondary btn-sm">Add Host</button>
-  </div>
-  <div>
-    <div style="width: 100%; overflow: auto;" ng-repeat="h in hosts | orderBy:'name' track by h.address" ng-class-odd="'odd'" ng-class-even="'even'">
-      <span style="float: left; width: 15em">{{h.name}} <button ng-click="host.remove(h)" style="float: right;">Remove</button></span>
-      <span style="float: left; width: 10em">{{h.address}}</span>
-      <span style="float: left; width: 10em">{{lastSeen(h.status.timestamp)}}</span>
-      <span style="float: left; width: 5em">{{regionCount(h.address)}}/{{h.capacity}}</span>
-      <span style="float: left; width: 25em">{{h.status.cpuPercent}}</span>
-      <span style="float: left; width: 10em">{{h.status.memPercent}}% {{(h.status.memKB/1024).toFixed(2)}}MB</span>
-      <span style="float: left; width: 10em">{{(h.status.netSentPer/1024).toFixed(2)}} / {{(h.status.netRecvPer/1024).toFixed(2)}} KBps</span>
-    </div>
-  </div>
-
-
-  </tab>
+  <table style="width: 100%;">
+    <tr>
+      <th></th>
+      <th>Name</th>
+      <th>Address</th>
+      <th>Timestamp</th>
+      <th>Regions</th>
+      <th>Slots</th>
+      <th>CPU</th>
+      <th>Mem</th>
+      <th>Network</th>
+      <th>
+        <button style="float: left;" ng-click="estate.showAddModal()" ng-if="auth.activeUser.accessLevel > 249" class="btn btn-secondary btn-sm">Add A New Estate</button>
+      </th>
+    </tr>
+    <tr ng-repeat="hst in hosts | orderBy:'Name'" ng-class-odd="'odd'" ng-class-even="'even'">
+      <td></td>
+      <td>{{hst.Hostname}}</td>
+      <td>{{hst.Address}}</td>
+      <td>{{TimestampToDate(hst.Status.timestamp)}}</td>
+      <td>{{hst.Regions.length}}</td>
+      <td>{{hst.Slots}}</td>
+      <td>{{hst.Status.cpuPercent}}</td>
+      <td>{{hst.Status.memPercent}}% {{(hst.Status.memKB/1024).toFixed(2)}} MB</td>
+      <td>{{(hst.Status.netSentPer/1024).toFixed(2)}} / {{(hst.Status.netRecvPer/1024).toFixed(2)}} KBps</td>
+    </tr>
+  </table>
+</div>
