@@ -19,12 +19,35 @@ angular.module('mgmApp')
       return this.section === section;
     }
 
-    $scope.users = mgm.users;
+    $scope.activeUsers = mgm.activeUsers;
+    $scope.suspendedUsers = mgm.suspendedUsers;
     $scope.$on("UserUpdate", function (event, user) {
+      if (user.Suspended) {
+        console.log(user);
+      }
       if (!(user.UserID in $scope.users)) {
         $scope.users[user.UserID] = user;
       } else {
         angular.copy(user, $scope.users[user.UserID]);
+      }
+    });
+
+    $scope.pendingUsers = mgm.pendingUsers;
+    $scope.$on("UserUpdate", function (event, user) {
+      if (user.Suspended) {
+        if (user.UserID in $scope.activeUsers) {
+          delete $scope.activeUsers[user.UserID];
+          $scope.suspendedUsers[user.UserID] = user;
+        } else {
+          angular.copy(user, $scope.suspendedUsers[user.UserID]);
+        }
+      } else {
+        if (user.UserID in $scope.suspendedUsers) {
+          delete $scope.suspendedUsers[user.UserID];
+          $scope.activeUsers[user.UserID] = user;
+        } else {
+          angular.copy(user, $scope.activeUsers[user.UserID]);
+        }
       }
     });
   });

@@ -82,10 +82,27 @@ func (sc SimianConnector)GetUsers() ( []core.User, error) {
   if err != nil {
     return nil, err
   }
-  if m.Success {
-    return  m.Users, nil
+  if !m.Success {
+    return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
   }
-  return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
+  //lookup suspension status for each user
+  users := m.Users
+  for idx, user := range users {
+    ids, err := sc.GetIdentities(user.UserID)
+    if err != nil {
+      continue
+    }
+    isActive := false
+    for _, id := range ids {
+      if id.Enabled {
+        isActive = true
+      }
+    }
+    if !isActive {
+      users[idx].Suspended = true
+    }
+  }
+  return users, nil
 }
 
 func (sc SimianConnector)RemoveUser(userID uuid.UUID) ( bool, error) {

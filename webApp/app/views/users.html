@@ -8,16 +8,12 @@
     </li>
   </ul>
 </div>
-
 <table ng-if="isActive('active')">
   <tr>
-    <th style="width: 80px"></th>
     <th>Name</th>
     <th>Email</th>
   </tr>
-  <tr ng-repeat="usr in users | orderBy:'Name'">
-    <td><span ng-if="user.isSuspended(usr)" style="color:red">suspended</span>
-    </td>
+  <tr ng-repeat="usr in activeUsers | orderBy:'Name'">
     <td>{{usr.Name}}</td>
     <td>{{usr.Email}}</td>
     <td>
@@ -25,6 +21,35 @@
     </td>
     <td>
       <button ng-if="auth.AccessLevel > 249" style="float:right" ng-click="user.showManage(u)">Manage</button>
+    </td>
+  </tr>
+</table>
+<table ng-if="isActive('suspended')">
+  <tr>
+    <th>Name</th>
+    <th>Email</th>
+  </tr>
+  <tr ng-repeat="usr in suspendedUsers | orderBy:'Name'">
+    <td>{{usr.Name}}</td>
+    <td>{{usr.Email}}</td>
+    <td>
+      <button ng-if="auth.AccessLevel > 249" style="float:right" ng-click="user.showManage(u)">Restore</button>
+    </td>
+    <td>
+      <button ng-if="auth.AccessLevel > 249" style="float:right" ng-click="user.showManage(u)">Delete</button>
+    </td>
+  </tr>
+</table>
+<table ng-if="isActive('pending')">
+  <tr>
+    <th>Name</th>
+    <th>Email</th>
+  </tr>
+  <tr ng-repeat="usr in pendingUsers | orderBy:'Name'">
+    <td>{{usr.Name}}</td>
+    <td>{{usr.Email}}</td>
+    <td>
+      <button ng-if="auth.AccessLevel > 249" style="float:right" ng-click="user.showManage(u)">Review</button>
     </td>
   </tr>
 </table>

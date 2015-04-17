@@ -16,7 +16,14 @@ type client struct {
 }
 
 func (c client) SendUser(account core.User){
-  resp := clientResponse{ "AccountUpdate", account}
+  resp := clientResponse{ "UserUpdate", account}
+  data, err := json.Marshal(resp)
+  if err == nil {
+    c.toClient <- data
+  }
+}
+func (c client) SendPendingUser(account core.PendingUser){
+  resp := clientResponse{ "PendingUserUpdate", account}
   data, err := json.Marshal(resp)
   if err == nil {
     c.toClient <- data

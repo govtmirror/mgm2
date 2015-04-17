@@ -23,10 +23,20 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
   // send user information first so client can map uuids to users
   users, err := userConn.GetUsers()
   if err != nil {
-    logger.Error("Error lookin up user account: ", err)
+    logger.Error("Error lookin up activeuser account: ", err)
   }
   for _, user := range users {
+    if user.Suspended && session.GetAccessLevel() < 250 {
+      continue
+    }
     session.SendUser(user)
+  }
+  pendingUsers, err := dataStore.GetPendingUsers()
+  if err != nil {
+    logger.Error("Error lookin up pending user account: ", err)
+  }
+  for _, user := range pendingUsers {
+    session.SendPendingUser(user)
   }
 
   //send regions this user may control

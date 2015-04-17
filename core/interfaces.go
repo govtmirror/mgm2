@@ -4,6 +4,7 @@ import "github.com/satori/go.uuid"
 
 type UserSession interface {
   SendUser(User)
+  SendPendingUser(PendingUser)
   SendRegion(Region)
   SendEstate(Estate)
   SendGroup(Group)
@@ -28,6 +29,8 @@ type Database interface {
   GetRegions()([]Region, error)
   GetEstates()([]Estate, error)
   GetHosts()([]Host, error)
+
+  GetPendingUsers() ([]PendingUser, error)
 }
 
 type Logger interface {
