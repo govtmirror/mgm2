@@ -23,7 +23,7 @@ angular.module('mgmApp').controller('NavCtrl', function ($scope, $location, MgmP
   });
 
   $scope.isActive = function (route) {
-    return route === $location.path();
+    return $location.path().indexOf(route) == 0;
   };
 
   $scope.logout = function () {
