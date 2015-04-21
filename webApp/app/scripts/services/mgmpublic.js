@@ -122,17 +122,22 @@ angular.module('mgmApp')
       });
     };
 
-    console.log("resuming session...");
-    //resume session functionality
-    $http.get("/auth").success(function (data, status, headers, config) {
-      if (data.Success) {
-        console.log("session resume successfull");
-        self.loggedIn = true;
-        $rootScope.$broadcast("AuthChange", true);
-        $rootScope.auth = {
-          UUID: data.Uuid,
-          AccessLevel: data.AccessLevel
+    this.resumeSession = function () {
+      console.log("resuming session...");
+      //resume session functionality
+      $rootScope.auth = {};
+      $http.get("/auth").success(function (data, status, headers, config) {
+        if (data.Success) {
+          console.log("session resume successfull");
+          self.loggedIn = true;
+          $rootScope.$broadcast("AuthChange", true);
+          $rootScope.auth = {
+            UUID: data.Uuid,
+            AccessLevel: data.AccessLevel
+          }
+        } else {
+          $rootScope.$broadcast("ResumeFailed");
         }
-      }
-    });
+      });
+    }
   });

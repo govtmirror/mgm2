@@ -10,15 +10,16 @@
 angular.module('mgmApp')
   .controller('ConfigCtrl', function ($scope, $routeParams, $location, mgm) {
 
-    if ($scope.auth === undefined) {
+    if ($scope.auth === undefined || $scope.auth === {}) {
       mgm.pushLocation($location.url());
-      $location.url("/login");
+      $location.url("/loading");
     }
 
     $scope.regions = [];
     $scope.estates = mgm.estates;
-    $scope.currentEstate = "";
-    $scope.currentRegion = "";
+    $scope.currentEstate = undefined;
+    $scope.currentRegion = undefined;
+    $scope.config = {};
 
     //list regions when estate is selected
     $scope.displayEstate = function () {
@@ -37,6 +38,18 @@ angular.module('mgmApp')
       $scope.regions = regions;
     }
 
+    var requestConfig = function (uuid) {
+      $scope.config = {};
+      if (uuid === '') {
+        mgm.request({
+          "MessageType": "GetDefaultConfig"
+        });
+      }
+    }
+    $scope.$on('ConfigUpdate', function (event, cfg) {
+      console.log(cfg);
+    });
+
     $scope.displayConfig = function () {
       console.log('/config/' + $scope.currentEstate.ID + "/" + $scope.currentRegion.UUID);
       $location.url('/config/' + $scope.currentEstate.ID + "/" + $scope.currentRegion.UUID);
@@ -49,5 +62,9 @@ angular.module('mgmApp')
     }
     if ($routeParams['region'] !== undefined) {
       $scope.currentRegion = mgm.regions[$routeParams['region']];
+    }
+
+    if ($scope.currentRegion === undefined) {
+      requestConfig('');
     }
   });

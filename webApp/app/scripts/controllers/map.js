@@ -10,8 +10,8 @@
 angular.module('mgmApp')
   .controller('MapCtrl', function ($scope, $location) {
 
-    if ($scope.auth === undefined) {
+    if ($scope.auth === undefined || $scope.auth === {}) {
       mgm.pushLocation($location.url());
-      $location.url("/login");
+      $location.url("/loading");
     }
   });

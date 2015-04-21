@@ -8,11 +8,15 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('LoadingCtrl', function ($scope, $location, $timeout, mgm) {
+  .controller('LoadingCtrl', function ($scope, $location, $timeout, mgmPublic, mgm) {
 
     if ($scope.auth === undefined) {
-      $location.url("/login");
+      mgmPublic.resumeSession();
     }
+
+    $scope.$on("ResumeFailed", function (event) {
+      $location.url("/login");
+    });
 
     $scope.$on("SyncComplete", function (event, data) {
       var url = mgm.popLocation();

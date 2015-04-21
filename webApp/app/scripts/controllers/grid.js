@@ -10,9 +10,9 @@
 angular.module('mgmApp')
   .controller('GridCtrl', function ($scope, mgm, $location, $routeParams) {
 
-    if ($scope.auth === undefined) {
+    if ($scope.auth === undefined || $scope.auth === {}) {
       mgm.pushLocation($location.url());
-      $location.url("/login");
+      $location.url("/loading");
     }
 
     $scope.section = $routeParams["section"];

@@ -10,9 +10,9 @@
 angular.module('mgmApp')
   .controller('RegionsCtrl', function ($scope, $location, mgm) {
 
-    if ($scope.auth === undefined) {
+    if ($scope.auth === undefined || $scope.auth === {}) {
       mgm.pushLocation($location.url());
-      $location.url("/login");
+      $location.url("/loading");
     }
 
     var regions = {}
