@@ -8,7 +8,11 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('AccountCtrl', function ($scope, mgm) {
+  .controller('AccountCtrl', function ($scope, $location, mgm) {
+
+    if ($scope.auth === undefined) {
+      $location.url("/");
+    }
 
     $scope.account = {
       UserID: "",

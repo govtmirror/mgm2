@@ -8,7 +8,11 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('RegionsCtrl', function ($scope, mgm) {
+  .controller('RegionsCtrl', function ($scope, $location, mgm) {
+
+    if ($scope.auth === undefined) {
+      $location.url("/");
+    }
 
     var regions = {}
     $scope.estates = {};

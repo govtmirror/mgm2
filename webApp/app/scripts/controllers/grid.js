@@ -8,7 +8,12 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('GridCtrl', function ($scope, mgm, $routeParams) {
+  .controller('GridCtrl', function ($scope, mgm, $location, $routeParams) {
+
+    if ($scope.auth === undefined) {
+      $location.url("/");
+    }
+
     $scope.section = $routeParams["section"];
 
     if (!$scope.section) {

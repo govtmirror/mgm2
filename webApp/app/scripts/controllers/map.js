@@ -8,10 +8,9 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('MapCtrl', function ($scope) {
-    $scope.awesomeThings = [
-      'HTML5 Boilerplate',
-      'AngularJS',
-      'Karma'
-    ];
+  .controller('MapCtrl', function ($scope, $location) {
+
+    if ($scope.auth === undefined) {
+      $location.url("/");
+    }
   });

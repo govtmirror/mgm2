@@ -8,7 +8,11 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('UsersCtrl', function ($scope, $routeParams, mgm) {
+  .controller('UsersCtrl', function ($scope, $location, $routeParams, mgm) {
+
+    if ($scope.auth === undefined) {
+      $location.url("/");
+    }
 
     $scope.section = $routeParams["section"];
     if (!$scope.section) {

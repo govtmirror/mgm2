@@ -14,7 +14,6 @@ angular.module('mgmApp').controller('NavCtrl', function ($scope, $location, mgmP
     $scope.loggedIn = data;
     if ($scope.loggedIn) {
       mgm.connect();
-      mgm.pushLocation($location.url());
       $location.url("/loading");
     } else {
       $location.url("/");

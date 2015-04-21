@@ -10,7 +10,10 @@
 angular.module('mgmApp')
   .controller('ConfigCtrl', function ($scope, $routeParams, $location, mgm) {
 
-    console.log($routeParams);
+    if ($scope.auth === undefined) {
+      mgm.pushLocation($location.url());
+      $location.url("/");
+    }
 
     $scope.regions = [];
     $scope.estates = mgm.estates;

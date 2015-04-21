@@ -14,14 +14,28 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
 
   self = this;
 
-  self.regions = {}
-  self.estates = {}
-  self.activeUsers = {}
-  self.suspendedUsers = {}
-  self.pendingUsers = {}
-  self.groups = {}
-  self.hosts = {}
+  self.regions = {};
+  self.estates = {};
+  self.activeUsers = {};
+  self.suspendedUsers = {};
+  self.pendingUsers = {};
+  self.groups = {};
+  self.hosts = {};
   self.serverConnected = false;
+
+  $rootScope.$on("AuthChange", function (event, value) {
+    if (value === false) {
+      //we logged out
+      self.regions = {};
+      self.estates = {};
+      self.activeUsers = {};
+      self.suspendedUsers = {};
+      self.pendingUsers = {};
+      self.groups = {};
+      self.hosts = {};
+      self.serverConnected = false;
+    }
+  });
 
   this.connect = function () {
     $rootScope.$broadcast("SyncBegin");
