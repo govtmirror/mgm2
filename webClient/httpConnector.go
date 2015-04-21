@@ -72,6 +72,68 @@ func NewHttpConnector(sessionKey string, authenticator Authenticator, db Databas
   return &HttpConnector{store, authenticator, logger, db, mailer}
 }
 
+func (hc HttpConnector) LoginHandler(w http.ResponseWriter, r *http.Request) {
+  decoder := json.NewDecoder(r.Body)
+
+  type clientAuthRequest struct {
+    Username string
+    Password string
+  }
+
+  var t clientAuthRequest
+  err := decoder.Decode(&t)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  guid,err := hc.authenticator.Auth(t.Username,t.Password);
+  if err != nil {
+    response := clientAuthResponse{Message: err.Error(),}
+    js, err := json.Marshal(response)
+    if err != nil {
+      http.Error(w, err.Error(), http.StatusInternalServerError)
+      return
+    }
+    w.Header().Set("Content-Type", "application/json")
+    w.Write(js)
+    return
+  }
+
+  user, err := hc.authenticator.GetUserByID(guid)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+  if user == nil {
+    http.Error(w, "User account dissappeared", http.StatusInternalServerError)
+    return
+  }
+
+  session, _ := hc.store.Get(r, "MGM")
+  session.Values["guid"] = guid
+  session.Values["address"] = r.RemoteAddr
+  session.Values["ulevel"] = user.AccessLevel
+  err = session.Save(r,w)
+  if err != nil {
+    hc.logger.Error("Error in httpConnector: %v", err)
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  hc.logger.Info("Session saved, returning success")
+
+  response := clientAuthResponse{guid, user.AccessLevel, "", true}
+  js, err := json.Marshal(response)
+  if err != nil {
+    http.Error(w, err.Error(), http.StatusInternalServerError)
+    return
+  }
+
+  w.Header().Set("Content-Type", "application/jons")
+  w.Write(js)
+}
+
 func (hc HttpConnector) LogoutHandler(w http.ResponseWriter, r *http.Request) {
   session, _ := hc.store.Get(r, "MGM")
   delete(session.Values, "guid")
@@ -84,7 +146,7 @@ func (hc HttpConnector) LogoutHandler(w http.ResponseWriter, r *http.Request) {
 func (hc HttpConnector) ResumeHandler(w http.ResponseWriter, r *http.Request) {
   session, _ := hc.store.Get(r, "MGM")
 
-  if len(session.Values) == 0 {
+  if session.Values["guid"] == nil {
     response := clientAuthResponse{}
     js, err := json.Marshal(response)
     if err != nil {
@@ -332,66 +394,4 @@ func (hc HttpConnector) PasswordTokenHandler(w http.ResponseWriter, r *http.Requ
 
   w.Header().Set("Content-Type", "application/json")
   w.Write([]byte("{\"Success\": true}"))
-}
-
-func (hc HttpConnector) LoginHandler(w http.ResponseWriter, r *http.Request) {
-  decoder := json.NewDecoder(r.Body)
-
-  type clientAuthRequest struct {
-    Username string
-    Password string
-  }
-
-  var t clientAuthRequest
-  err := decoder.Decode(&t)
-  if err != nil {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
-    return
-  }
-
-  guid,err := hc.authenticator.Auth(t.Username,t.Password);
-  if err != nil {
-    response := clientAuthResponse{Message: err.Error(),}
-    js, err := json.Marshal(response)
-    if err != nil {
-      http.Error(w, err.Error(), http.StatusInternalServerError)
-      return
-    }
-    w.Header().Set("Content-Type", "application/json")
-    w.Write(js)
-    return
-  }
-
-  user, err := hc.authenticator.GetUserByID(guid)
-  if err != nil {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
-    return
-  }
-  if user == nil {
-    http.Error(w, "User account dissappeared", http.StatusInternalServerError)
-    return
-  }
-
-  session, _ := hc.store.Get(r, "MGM")
-  session.Values["guid"] = guid
-  session.Values["address"] = r.RemoteAddr
-  session.Values["ulevel"] = user.AccessLevel
-  err = session.Save(r,w)
-  if err != nil {
-    hc.logger.Error("Error in httpConnector: %v", err)
-    http.Error(w, err.Error(), http.StatusInternalServerError)
-    return
-  }
-
-  hc.logger.Info("Session saved, returning success")
-
-  response := clientAuthResponse{guid, user.AccessLevel, "", true}
-  js, err := json.Marshal(response)
-  if err != nil {
-    http.Error(w, err.Error(), http.StatusInternalServerError)
-    return
-  }
-
-  w.Header().Set("Content-Type", "application/jons")
-  w.Write(js)
 }

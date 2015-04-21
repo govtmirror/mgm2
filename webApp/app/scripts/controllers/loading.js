@@ -11,7 +11,7 @@ angular.module('mgmApp')
   .controller('LoadingCtrl', function ($scope, $location, $timeout, mgm) {
 
     if ($scope.auth === undefined) {
-      $location.url("/account");
+      $location.url("/login");
     }
 
     $scope.$on("SyncComplete", function (event, data) {

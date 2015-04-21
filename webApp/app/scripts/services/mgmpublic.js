@@ -14,7 +14,6 @@ angular.module('mgmApp')
     self.loggedIn = false;
 
     this.login = function (username, password) {
-      console.log('registerUser' + username + password);
 
       return $q(function (resolve, reject) {
 
@@ -25,6 +24,10 @@ angular.module('mgmApp')
         }).success(function (data, status, headers, config) {
           if (data.Success) {
             self.loggedIn = true;
+            $rootScope.auth = {
+              UUID: data.Uuid,
+              AccessLevel: data.AccessLevel
+            }
             $rootScope.$broadcast("AuthChange", true);
             resolve("login successfull");
           } else {
@@ -45,6 +48,7 @@ angular.module('mgmApp')
         $http.get("/auth/logout").success(function (data, status, headers, config) {
           if (data.Success) {
             self.loggedIn = false;
+            $rootScope.auth = {};
             $rootScope.$broadcast("AuthChange", false);
             resolve("login successfull");
           } else {
@@ -124,7 +128,7 @@ angular.module('mgmApp')
       if (data.Success) {
         console.log("session resume successfull");
         self.loggedIn = true;
-        $rootScope.$broadcast("AuthChange", data.Uuid);
+        $rootScope.$broadcast("AuthChange", true);
         $rootScope.auth = {
           UUID: data.Uuid,
           AccessLevel: data.AccessLevel

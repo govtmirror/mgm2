@@ -11,7 +11,8 @@ angular.module('mgmApp')
   .controller('UsersCtrl', function ($scope, $location, $routeParams, mgm) {
 
     if ($scope.auth === undefined) {
-      $location.url("/");
+      mgm.pushLocation($location.url());
+      $location.url("/login");
     }
 
     $scope.section = $routeParams["section"];

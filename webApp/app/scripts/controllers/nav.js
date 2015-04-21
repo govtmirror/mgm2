@@ -7,16 +7,21 @@
  * # NavCtrl
  * Controller of the mgmApp
  */
-angular.module('mgmApp').controller('NavCtrl', function ($scope, $location, mgmPublic, mgm) {
+angular.module('mgmApp').controller('NavCtrl', function ($scope, $location, $timeout, mgmPublic, mgm) {
 
   $scope.loggedIn = false;
   $scope.$on("AuthChange", function (event, data) {
+    console.log("auth changed to " + data);
     $scope.loggedIn = data;
     if ($scope.loggedIn) {
       mgm.connect();
-      $location.url("/loading");
+      $timeout(function () {
+        $location.url("/loading");
+      }, 0.1);
     } else {
-      $location.url("/");
+      $timeout(function () {
+        $location.url("/");
+      }, 0.1);
     }
   });
 

@@ -11,7 +11,7 @@ angular.module('mgmApp')
   .controller('AccountCtrl', function ($scope, $location, mgm) {
 
     if ($scope.auth === undefined) {
-      $location.url("/");
+      $location.url("/login");
     }
 
     $scope.account = {

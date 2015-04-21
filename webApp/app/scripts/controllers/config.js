@@ -12,7 +12,7 @@ angular.module('mgmApp')
 
     if ($scope.auth === undefined) {
       mgm.pushLocation($location.url());
-      $location.url("/");
+      $location.url("/login");
     }
 
     $scope.regions = [];

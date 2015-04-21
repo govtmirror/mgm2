@@ -11,6 +11,7 @@ angular.module('mgmApp')
   .controller('MapCtrl', function ($scope, $location) {
 
     if ($scope.auth === undefined) {
-      $location.url("/");
+      mgm.pushLocation($location.url());
+      $location.url("/login");
     }
   });

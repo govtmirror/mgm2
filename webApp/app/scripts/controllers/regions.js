@@ -11,8 +11,11 @@ angular.module('mgmApp')
   .controller('RegionsCtrl', function ($scope, $location, mgm) {
 
     if ($scope.auth === undefined) {
-      $location.url("/");
+      mgm.pushLocation($location.url());
+      $location.url("/login");
     }
+
+    console.log($scope.auth);
 
     var regions = {}
     $scope.estates = {};

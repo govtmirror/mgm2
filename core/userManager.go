@@ -82,6 +82,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
 
   //signal to the client that we have completed initial state sync
   session.SignalSyncComplete()
+  logger.Info("Sync Complete")
 
   for {
     msg, more := session.Read()
