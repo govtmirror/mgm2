@@ -10,6 +10,7 @@ type UserSession interface {
   SendGroup(Group)
   SendHost(Host)
   SendConfig(ConfigOption)
+  SignalSyncComplete()
   Read() ([]byte, bool)
 
   GetGuid() uuid.UUID

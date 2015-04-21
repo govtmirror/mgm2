@@ -24,6 +24,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
   self.serverConnected = false;
 
   this.connect = function () {
+    $rootScope.$broadcast("SyncBegin");
     console.log("Connecting to: " + remoteURL);
     self.ws = new ReconnectingWebSocket(remoteURL);
 
@@ -75,6 +76,9 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
         self.hosts[message.Message.Address] = message.Message;
         $rootScope.$broadcast("HostUpdate", message.Message);
         break;
+      case "SyncComplete":
+        $rootScope.$broadcast("SyncComplete");
+        break;
       default:
         console.log("Error parsing message:");
         console.log(message);
@@ -94,5 +98,13 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
 
   this.request = function (req) {
     self.ws.send(JSON.stringify(req));
+  }
+
+  var locationStack = new Array();
+  this.pushLocation = function (url) {
+    locationStack.push(url);
+  }
+  this.popLocation = function () {
+    return locationStack.pop();
   }
 });

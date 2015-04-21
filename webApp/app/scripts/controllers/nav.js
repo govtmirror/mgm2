@@ -7,14 +7,15 @@
  * # NavCtrl
  * Controller of the mgmApp
  */
-angular.module('mgmApp').controller('NavCtrl', function ($scope, $location, MgmPublic, mgm) {
+angular.module('mgmApp').controller('NavCtrl', function ($scope, $location, mgmPublic, mgm) {
 
   $scope.loggedIn = false;
   $scope.$on("AuthChange", function (event, data) {
     $scope.loggedIn = data;
     if ($scope.loggedIn) {
       mgm.connect();
-      $location.url("/account");
+      mgm.pushLocation($location.url());
+      $location.url("/loading");
     } else {
       $location.url("/");
     }
@@ -26,6 +27,6 @@ angular.module('mgmApp').controller('NavCtrl', function ($scope, $location, MgmP
 
   $scope.logout = function () {
     mgm.disconnect();
-    MgmPublic.logout();
+    mgmPublic.logout();
   };
 });

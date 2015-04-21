@@ -74,6 +74,14 @@ func (c client) SendHost(host core.Host){
   }
 }
 
+func (c client) SignalSyncComplete(){
+  resp := clientResponse{ "SyncComplete", nil}
+  data, err := json.Marshal(resp)
+  if err == nil {
+    c.writeData(data)
+  }
+}
+
 func(c client) writeData(data []byte){
   defer func() {
     if x := recover(); x != nil {

@@ -80,6 +80,9 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
     }
   }
 
+  //signal to the client that we have completed initial state sync
+  session.SignalSyncComplete()
+
   for {
     msg, more := session.Read()
     if !more {

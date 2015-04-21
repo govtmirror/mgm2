@@ -8,7 +8,7 @@
  * Service in the mgmApp.
  */
 angular.module('mgmApp')
-  .service('MgmPublic', function ($q, $http, $rootScope) {
+  .service('mgmPublic', function ($q, $http, $rootScope) {
 
     self = this;
     self.loggedIn = false;

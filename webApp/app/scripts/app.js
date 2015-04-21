@@ -62,6 +62,10 @@ angular
         templateUrl: 'views/config.html',
         controller: 'ConfigCtrl'
       })
+      .when('/loading', {
+        templateUrl: 'views/loading.html',
+        controller: 'LoadingCtrl'
+      })
       .otherwise({
         redirectTo: '/'
       });

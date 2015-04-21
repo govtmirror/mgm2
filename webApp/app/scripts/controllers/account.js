@@ -17,17 +17,14 @@ angular.module('mgmApp')
       Email: ""
     };
 
-    for (var uuid in mgm.users) {
+    for (var uuid in mgm.activeUsers) {
       if (uuid === $scope.auth.UUID) {
-        angular.copy(mgm.users[uuid], $scope.account);
+        angular.copy(mgm.activeUsers[uuid], $scope.account);
       }
     }
 
     $scope.$on("UserUpdate", function (event, user) {
       if (user.UserID === $scope.auth.UUID) {
-        //$scope.account = user;
-        //$scope.$apply();
-        console.log("Applying user to account");
         angular.copy(user, $scope.account);
         $scope.$apply();
       };

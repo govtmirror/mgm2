@@ -8,7 +8,7 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('PasswordresetCtrl', function ($scope, MgmPublic) {
+  .controller('PasswordresetCtrl', function ($scope, mgmPublic) {
     $scope.stage = '';
 
     $scope.input = {
@@ -61,7 +61,7 @@ angular.module('mgmApp')
 
       $scope.stage = 'Processing';
 
-      MgmPublic.requestResetCode(email).then(
+      mgmPublic.requestResetCode(email).then(
         function () {
           //success
           $scope.stage = 'RequestComplete';
@@ -116,7 +116,7 @@ angular.module('mgmApp')
       $scope.stage = 'Processing';
 
       //submit password change to service
-      MgmPublic.resetPassword(uname, token, pword).then(
+      mgmPublic.resetPassword(uname, token, pword).then(
         function () {
           //success
           $scope.stage = 'ResetComplete';

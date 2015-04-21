@@ -8,7 +8,7 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('RegisterCtrl', function ($scope, MgmPublic) {
+  .controller('RegisterCtrl', function ($scope, mgmPublic) {
     $scope.stage = 'Eupa';
 
     $scope.acceptEupa = function () {
@@ -93,7 +93,7 @@ angular.module('mgmApp')
 
       $scope.stage = 'Processing';
       var uname = fname + ' ' + lname;
-      var deferred = MgmPublic.registerUser(uname, email, gender, pword, $scope.registrant.reasons);
+      var deferred = mgmPublic.registerUser(uname, email, gender, pword, $scope.registrant.reasons);
       deferred.then(
         function () {
           $scope.stage = 'Complete';
