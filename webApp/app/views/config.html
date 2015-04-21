@@ -1,5 +1,21 @@
 <div>
-  <h1>Regions List</h1>
+  <table>
+    <tr>
+      <th>Estate</th>
+      <th>Region</th>
+      <th><a href="#/config">View Default Configs</a>
+      </th>
+    </tr>
+    <tr>
+      <td>
+        <select ng-model="currentEstate" ng-change="displayEstate()" ng-options="e.Name for (key, e) in estates | orderBy: 'Name' track by e.ID"></select>
+      </td>
+      <td>
+        <select ng-model="currentRegion" ng-change="displayConfig()" ng-options="r.Name for r in regions | orderBy: 'Name' track by r.UUID"></select>
+      </td>
+    </tr>
+  </table>
+
 </div>
 
 <div>

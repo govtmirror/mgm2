@@ -58,7 +58,7 @@ angular
         templateUrl: 'views/users.html',
         controller: 'UsersCtrl'
       })
-      .when('/config/:region?', {
+      .when('/config/:estate?/:region?', {
         templateUrl: 'views/config.html',
         controller: 'ConfigCtrl'
       })

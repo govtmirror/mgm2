@@ -21,6 +21,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
   self.pendingUsers = {}
   self.groups = {}
   self.hosts = {}
+  self.serverConnected = false;
 
   this.connect = function () {
     console.log("Connecting to: " + remoteURL);
@@ -28,6 +29,8 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
 
     self.ws.onopen = function () {
       console.log("Socket has been opened!");
+      $rootScope.$broadcast("ServerConnected");
+      self.serverConnected = true;
     };
 
     self.ws.onmessage = function (evt) {
@@ -81,6 +84,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
 
     self.ws.onclose = function (message) {
       console.log("Connection closed");
+      self.serverConnected = false;
     }
   };
 
