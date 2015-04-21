@@ -48,7 +48,7 @@ angular.module('mgmApp')
         $http.get("/auth/logout").success(function (data, status, headers, config) {
           if (data.Success) {
             self.loggedIn = false;
-            $rootScope.auth = {};
+            $rootScope.auth = undefined;
             $rootScope.$broadcast("AuthChange", false);
             resolve("login successfull");
           } else {

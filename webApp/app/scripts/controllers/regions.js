@@ -15,8 +15,6 @@ angular.module('mgmApp')
       $location.url("/login");
     }
 
-    console.log($scope.auth);
-
     var regions = {}
     $scope.estates = {};
 
