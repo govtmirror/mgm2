@@ -31,19 +31,20 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
     switch m.MessageType {
       case "GetDefaultConfig":
         if session.GetAccessLevel() > 249 {
-          logger.Info("Serving Default Region Configs.")
+          logger.Info("Serving Default Region Configs.  Request: %v", m.MessageID)
           cfgs, err := dataStore.GetDefaultConfigs()
           if err != nil {
             logger.Error("Error getting default configs: %v", err)
           } else {
             for _, cfg := range cfgs {
-              session.SendConfig(0, cfg)
+              session.SendConfig(m.MessageID, cfg)
             }
             session.SignalSuccess(m.MessageID)
           }
         }
       case "GetConfig":
         if session.GetAccessLevel() > 249 {
+          logger.Info("Serving Region Configs.  Request: %v", m.MessageID)
           rid, err := m.readRegionID()
           if(err != nil){
             logger.Error("Error reading region id for configs: %v", err)
@@ -54,7 +55,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
               logger.Error("Error getting configs: %v", err)
             } else {
               for _, cfg := range cfgs {
-                session.SendConfig(0, cfg)
+                session.SendConfig(m.MessageID, cfg)
               }
               session.SignalSuccess(m.MessageID)
             }

@@ -96,12 +96,11 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
       case "Success":
         var msgID = message.MessageID;
         if (msgID in requestMap) {
-          requestMap[msgID].Callback();
+          requestMap[msgID].Callback(true);
           delete requestMap[msgID];
         } else {
           console.log("Invalid success for nonexistant request: " + msgID);
         }
-        //  $rootScope.$broadcast("SyncComplete");
         break;
       default:
         console.log("Error parsing message:");
@@ -130,6 +129,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
       "Callback": callback
     };
     self.ws.send(JSON.stringify({
+      "MessageID": msgId,
       "MessageType": requestType,
       "Message": reqObject
     }));
