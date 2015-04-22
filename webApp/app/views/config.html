@@ -18,8 +18,55 @@
 
 </div>
 
-<div>
-  <h1>Config View</h1>
-</div>
 
-{{config}}
+<div>
+  <h1>{{currentRegion? currentRegion.name : "default settings"}}</h1>
+  <button ng-click="config.create()">Insert New Config</button>
+  </td>
+  </tr>
+
+  <div id="configView" ng-if="currentRegion.Name">
+    <p>Region Edit</p>
+    {{regionConfig}}
+    <table>
+      <tbody ng-repeat="(section,row) in editConfig">
+        <tr>
+          <td>[{{section}}]</td>
+        </tr>
+        <tr ng-repeat="(key,data) in row" ng-class-odd="'odd'" ng-class-even="'even'">
+          <td style="padding-left: 10px">-</td>
+          <td style="padding-left: 10px">{{key}}</td>
+          <td style="padding-left: 10px">{{data.value}}</td>
+          <td ng-if="data.source=='default'">
+            <button ng-click="config.modify(section, key, data.value)">Override</button>
+          </td>
+          <td ng-if="data.source=='region'">
+            <button ng-click="config.modify(section, key, data.value)">Update</button>
+            <button ng-click="config.default(section, key)">Default</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="configView" ng-if="!currentRegion.Name && !currentEstate.Name">
+    <p>Default Edit</p>
+    {{defaultConfig}}
+    <table style="width: 67em;">
+      <tbody ng-repeat="(section,row) in editConfig">
+        <tr>
+          <td>[{{section}}]</td>
+        </tr>
+        <tr ng-repeat="(key,data) in row" ng-class-odd="'odd'" ng-class-even="'even'">
+          <td style="padding-left: 10px">-</td>
+          <td style="padding-left: 10px">{{key}}</td>
+          <td style="padding-left: 10px">{{data.value}}</td>
+          <td>
+            <button ng-click="config.modify(section, key, data.value)">Update</button>
+            <button ng-click="config.delete(section, key)">Delete</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>

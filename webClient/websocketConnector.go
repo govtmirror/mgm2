@@ -8,6 +8,7 @@ import (
 )
 
 type clientResponse struct {
+  MessageID int
   MessageType string
   Message interface{}
 }

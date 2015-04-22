@@ -11,6 +11,7 @@ angular.module('mgmApp')
   .controller('LoadingCtrl', function ($scope, $location, $timeout, mgmPublic, mgm) {
 
     if ($scope.auth === undefined) {
+      //attempt to resume session
       mgmPublic.resumeSession();
     }
 
@@ -26,7 +27,7 @@ angular.module('mgmApp')
           $location.url("/account");
         }, 1);
       } else {
-        console.log("regirecting to " + url);
+        console.log("redirecting to " + url);
         $timeout(function () {
           $location.url(url);
         }, 1);

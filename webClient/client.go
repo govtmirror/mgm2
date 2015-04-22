@@ -16,66 +16,66 @@ type client struct {
   logger Logger
 }
 
-func (c client) SendUser(account core.User){
-  resp := clientResponse{ "UserUpdate", account}
+func (c client) SendUser(req int, account core.User){
+  resp := clientResponse{0, "UserUpdate", account}
   data, err := json.Marshal(resp)
   if err == nil {
     c.writeData(data)
   }
 }
-func (c client) SendPendingUser(account core.PendingUser){
-  resp := clientResponse{ "PendingUserUpdate", account}
-  data, err := json.Marshal(resp)
-  if err == nil {
-    c.writeData(data)
-  }
-}
-
-func (c client) SendRegion(region core.Region){
-  resp := clientResponse{ "RegionUpdate", region}
+func (c client) SendPendingUser(req int, account core.PendingUser){
+  resp := clientResponse{0, "PendingUserUpdate", account}
   data, err := json.Marshal(resp)
   if err == nil {
     c.writeData(data)
   }
 }
 
-func (c client) SendEstate(estate core.Estate){
-  resp := clientResponse{ "EstateUpdate", estate}
+func (c client) SendRegion(req int, region core.Region){
+  resp := clientResponse{req, "RegionUpdate", region}
   data, err := json.Marshal(resp)
   if err == nil {
     c.writeData(data)
   }
 }
 
-func (c client) SendGroup(group core.Group){
-  resp := clientResponse{ "GroupUpdate", group}
+func (c client) SendEstate(req int, estate core.Estate){
+  resp := clientResponse{req, "EstateUpdate", estate}
   data, err := json.Marshal(resp)
   if err == nil {
     c.writeData(data)
   }
 }
 
-func (c client) SendConfig(cfg core.ConfigOption){
-  resp := clientResponse{ "ConfigUpdate", cfg}
+func (c client) SendGroup(req int, group core.Group){
+  resp := clientResponse{req, "GroupUpdate", group}
   data, err := json.Marshal(resp)
   if err == nil {
     c.writeData(data)
   }
 }
 
-func (c client) SendHost(host core.Host){
+func (c client) SendConfig(req int, cfg core.ConfigOption){
+  resp := clientResponse{req, "ConfigUpdate", cfg}
+  data, err := json.Marshal(resp)
+  if err == nil {
+    c.writeData(data)
+  }
+}
+
+func (c client) SendHost(req int, host core.Host){
   if host.Status == "" {
     host.Status = "{}"
   }
-  resp := clientResponse{ "HostUpdate", host}
+  resp := clientResponse{req, "HostUpdate", host}
   data, err := json.Marshal(resp)
   if err == nil {
     c.writeData(data)
   }
 }
 
-func (c client) SignalSyncComplete(){
-  resp := clientResponse{ "SyncComplete", nil}
+func (c client) SignalSuccess(req int){
+  resp := clientResponse{req, "Success", ""}
   data, err := json.Marshal(resp)
   if err == nil {
     c.writeData(data)

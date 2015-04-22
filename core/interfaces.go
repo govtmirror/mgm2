@@ -3,14 +3,14 @@ package core
 import "github.com/satori/go.uuid"
 
 type UserSession interface {
-  SendUser(User)
-  SendPendingUser(PendingUser)
-  SendRegion(Region)
-  SendEstate(Estate)
-  SendGroup(Group)
-  SendHost(Host)
-  SendConfig(ConfigOption)
-  SignalSyncComplete()
+  SendUser(int, User)
+  SendPendingUser(int, PendingUser)
+  SendRegion(int, Region)
+  SendEstate(int, Estate)
+  SendGroup(int, Group)
+  SendHost(int, Host)
+  SendConfig(int, ConfigOption)
+  SignalSuccess(int)
   Read() ([]byte, bool)
 
   GetGuid() uuid.UUID
@@ -35,6 +35,7 @@ type Database interface {
   GetPendingUsers() ([]PendingUser, error)
 
   GetDefaultConfigs()([]ConfigOption, error)
+  GetConfigs(uuid.UUID)([]ConfigOption, error)
 }
 
 type Logger interface {

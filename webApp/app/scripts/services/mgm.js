@@ -46,6 +46,9 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
       console.log("Socket has been opened!");
       $rootScope.$broadcast("ServerConnected");
       self.serverConnected = true;
+      self.request("GetState", "", function () {
+        $rootScope.$broadcast("SyncComplete");
+      });
     };
 
     self.ws.onmessage = function (evt) {
@@ -90,8 +93,15 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
         self.hosts[message.Message.Address] = message.Message;
         $rootScope.$broadcast("HostUpdate", message.Message);
         break;
-      case "SyncComplete":
-        $rootScope.$broadcast("SyncComplete");
+      case "Success":
+        var msgID = message.MessageID;
+        if (msgID in requestMap) {
+          requestMap[msgID].Callback();
+          delete requestMap[msgID];
+        } else {
+          console.log("Invalid success for nonexistant request: " + msgID);
+        }
+        //  $rootScope.$broadcast("SyncComplete");
         break;
       default:
         console.log("Error parsing message:");
@@ -110,8 +120,19 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
     self.ws.close();
   };
 
-  this.request = function (req) {
-    self.ws.send(JSON.stringify(req));
+  var requestNum = 0;
+  var requestMap = {};
+  this.request = function (requestType, reqObject, callback) {
+    var msgId = requestNum;
+    requestNum++;
+    requestMap[msgId] = {
+      "MessageID": msgId,
+      "Callback": callback
+    };
+    self.ws.send(JSON.stringify({
+      "MessageType": requestType,
+      "Message": reqObject
+    }));
   }
 
   var locationStack = new Array();
