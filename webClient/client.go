@@ -32,6 +32,9 @@ func (c client) SendPendingUser(req int, account core.PendingUser){
 }
 
 func (c client) SendRegion(req int, region core.Region){
+  if region.Status == "" {
+    region.Status = "{}"
+  }
   resp := clientResponse{req, "RegionUpdate", region}
   data, err := json.Marshal(resp)
   if err == nil {

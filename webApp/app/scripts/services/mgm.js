@@ -74,6 +74,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
         $rootScope.$broadcast("PendingUserUpdate", message.Message);
         break;
       case "RegionUpdate":
+        message.Message.Status = JSON.parse(message.Message.Status);
         self.regions[message.Message.UUID] = message.Message;
         $rootScope.$broadcast("RegionUpdate", message.Message);
         break;

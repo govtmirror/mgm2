@@ -48,12 +48,16 @@ angular.module('mgmApp')
       if (uuid === '00000000-0000-0000-0000-000000000000') {
         mgm.request("GetDefaultConfig", {}, function (success) {
           //all default configs received
+          generateEditConfig();
+          $scope.$apply();
         });
       } else {
         mgm.request("GetConfig", {
           "RegionUUID": uuid
         }, function (success) {
           //all region configs received
+          generateEditConfig();
+          $scope.$apply();
         });
       }
     }
