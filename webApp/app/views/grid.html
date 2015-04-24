@@ -12,14 +12,13 @@
 <div ng-if="isActive('estates')">
   <table style="width: 100%;">
     <tr>
-      <th></th>
+      <th>
+        <button style="float: left;" ng-click="estate.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-secondary btn-xs">Add A New Estate</button>
+      </th>
       <th>Name</th>
       <th>Regions</th>
       <th>Owner</th>
       <th>Managers</th>
-      <th>
-        <button style="float: left;" ng-click="estate.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-secondary btn-sm">Add A New Estate</button>
-      </th>
     </tr>
     <tr ng-repeat="est in estates | orderBy:'Name'" ng-class-odd="'odd'" ng-class-even="'even'">
       <td>
@@ -28,32 +27,29 @@
       <td>{{est.Name}}</td>
       <td>{{est.Regions.length}}</td>
       <td>{{getUserNameFromID(est.Owner)}}</td>
-      <td>{{getUserNamesFromIDs(est.Managers)}}</td>
-
+      <td colspan="2">{{getUserNamesFromIDs(est.Managers)}}</td>
     </tr>
   </table>
 </div>
 <div ng-if="isActive('groups')">
   <table style="width: 100%;">
     <tr>
-      <th></th>
+      <th>
+        <button style="float: left;" ng-click="group.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-secondary btn-xs">Add A New Group</button>
+      </th>
       <th>Name</th>
       <th>Founder</th>
       <th># Members</th>
       <th># Roles</th>
-      <th>
-        <button style="float: left;" ng-click="group.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-secondary btn-sm">Add A New Group</button>
-      </th>
     </tr>
     <tr ng-repeat="grp in groups | orderBy:'Name'" ng-class-odd="'odd'" ng-class-even="'even'">
       <td>
-        <button ng-click="estate.remove(est)" style="float: right;">Remove</button>
+        <button ng-click="estate.remove(est)">Remove</button>
       </td>
       <td>{{grp.Name}}</td>
       <td>{{getUserNameFromID(grp.Founder)}}</td>
       <td>{{grp.Members.length}}</td>
       <td>{{grp.Roles.length}}</td>
-
     </tr>
   </table>
 
@@ -61,29 +57,32 @@
 <div ng-if="isActive('hosts')" ng-if="auth.AccessLevel > 249">
   <table style="width: 100%;">
     <tr>
-      <th></th>
+      <th>
+        <button style="float: left;" ng-click="host.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-secondary btn-sm">Add A New Host</button>
+      </th>
       <th>Name</th>
       <th>Address</th>
       <th>Timestamp</th>
       <th>Regions</th>
-      <th>Slots</th>
       <th>CPU</th>
       <th>Mem</th>
       <th>Network</th>
-      <th>
-        <button style="float: left;" ng-click="host.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-secondary btn-sm">Add A New Host</button>
-      </th>
     </tr>
     <tr ng-repeat="hst in hosts | orderBy:'Name'" ng-class-odd="'odd'" ng-class-even="'even'">
-      <td></td>
-      <td>{{hst.Hostname}}</td>
-      <td>{{hst.Address}}</td>
-      <td>{{TimestampToDate(hst.Status.timestamp)}}</td>
-      <td>{{hst.Regions.length}}</td>
-      <td>{{hst.Slots}}</td>
-      <td>{{hst.Status.cpuPercent}}</td>
-      <td>{{hst.Status.memPercent}}% {{(hst.Status.memKB/1024).toFixed(2)}} MB</td>
-      <td>{{(hst.Status.netSentPer/1024).toFixed(2)}} / {{(hst.Status.netRecvPer/1024).toFixed(2)}} KBps</td>
+      <tr ng-repeat="hst in hosts | orderBy:'Name'" ng-class-odd="'odd'" ng-class-even="'even'">
+        <td>
+          <button>Remove</button>
+        </td>
+        <td>{{hst.Hostname}}</td>
+        <td>{{hst.Address}}</td>
+        <td>{{TimestampToDate(hst.Status.timestamp)}}</td>
+        <td>{{hst.Regions.length}}/{{hst.Slots}}</td>
+        <td>
+          <div id="cpu-{{$index}}" mgm-chart data="hst.Status.cpuPercent"></div>
+        </td>
+        <td>{{hst.Status.memPercent}}% {{(hst.Status.memKB/1024).toFixed(2)}} MB</td>
+        <td>{{(hst.Status.netSentPer/1024).toFixed(2)}} / {{(hst.Status.netRecvPer/1024).toFixed(2)}} KBps</td>
+      </tr>
     </tr>
   </table>
 </div>
