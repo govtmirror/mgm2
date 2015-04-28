@@ -82,7 +82,12 @@ module.exports = function (grunt) {
           host: 'localhost',
           port: '8080',
           ws: true
-        }
+        },
+	{
+	  context: '/maps',
+	  host: 'localhost',
+	  port: '80'
+	}
       ],
       livereload: {
         options: {

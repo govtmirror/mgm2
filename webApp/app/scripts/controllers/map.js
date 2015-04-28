@@ -8,7 +8,9 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('MapCtrl', function ($scope, $location) {
+  .controller('MapCtrl', function ($scope, $location, mgm) {
+
+    $scope.regions = mgm.regions;
 
     if ($scope.auth === undefined || $scope.auth === {}) {
       mgm.pushLocation($location.url());
