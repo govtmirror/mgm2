@@ -5,6 +5,7 @@ import (
   "github.com/gorilla/websocket"
   "github.com/satori/go.uuid"
   "github.com/M-O-S-E-S/mgm2/core"
+  "encoding/json"
 )
 
 type clientResponse struct {
@@ -27,10 +28,19 @@ var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 
 func (wc WebsocketConnector) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
-  session, _ := wc.httpConnector.store.Get(r, "MGM")
   // test if session exists
+  session, _ := wc.httpConnector.store.Get(r, "MGM")
   if len(session.Values) == 0 {
     wc.logger.Info("Websocket closed, no existing session")
+
+    response := clientResponse{ MessageType: "AccessDenied", Message: "No Session Found"}
+    js, err := json.Marshal(response)
+    if err != nil {
+      http.Error(w, err.Error(), http.StatusInternalServerError)
+      return
+    }
+    w.Header().Set("Content-Type", "application/json")
+    w.Write(js)
     return
   }
   // test origin, etc for websocket security
