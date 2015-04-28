@@ -97,16 +97,21 @@ function MosesMap(canvas, regions, tiles) {
     for (var x = offXMod - 256; x < width; x += 256) {
       for (var y = offYMod - 256; y < height; y += 256) {
         var coords = self.pixelToTile(x, y);
-        var coordstring = self.scalar + "-" + coords.x + "-" + coords.y;
+        var coordstring = (self.zoomMax - self.zoomLevel + 1) + "-" + coords.x + "-" + coords.y;
         var tileName = "map-" + (self.zoomMax - self.zoomLevel + 1) + "-" + coords.x + "-" + coords.y + "-objects.png";
         if (coordstring in tiles) {
-          var img = new window.Image();
+          var img = new Image();
           img.setAttribute("src", tiles[coordstring]);
-          ctx.drawImage(img, x, y);
+          ctx.drawImage(img, x, y - 256);
+          if (!img.complete) {
+            img.onload = function () {
+              self.redraw();
+            }
+          }
         }
       }
     }
-    if (mouse.down && self.zoomLevel > 4) {
+    if (mouse.down && self.zoomLevel > 5) {
       //draw grid
       ctx.beginPath();
       ctx.lineWidth = 1;
@@ -193,7 +198,6 @@ function MosesMap(canvas, regions, tiles) {
   canvas.onmousewheel = function (e) {
     var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
     self.changeZoom(delta, e.pageX, e.pageY);
-    self.adjustOffset
     self.redraw();
   };
 
