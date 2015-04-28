@@ -23,14 +23,19 @@ angular.module('mgmApp')
           var y = scope.regions[uuid].LocY;
           coordsToRegions[x + "," + y] = scope.regions[uuid].Name;
           coordTiles["1-" + x + "-" + y] = "/maps/map-1-" + x + "-" + y + "-objects.png";
+          for (var z = 2; z <= 8; z++) {
+            var w = Math.pow(2, z - 1);
+            var x1 = x - (x % w);
+            var y1 = y - (y % w);
+            coordTiles[z + "-" + x1 + "-" + y1] = "/maps/map-" + z + "-" + x1 + "-" + y1 + "-objects.png";
+          }
         }
-
-        //map
 
         var canvas = document.getElementById('mosesMap');
         var map = new MosesMap(canvas, coordsToRegions, coordTiles);
         map.resize();
         map.centerTile(1000, 1000);
+        map.redraw();
 
       },
       scope: {
@@ -94,7 +99,6 @@ function MosesMap(canvas, regions, tiles) {
         var coords = self.pixelToTile(x, y);
         var coordstring = self.scalar + "-" + coords.x + "-" + coords.y;
         var tileName = "map-" + (self.zoomMax - self.zoomLevel + 1) + "-" + coords.x + "-" + coords.y + "-objects.png";
-        console.log(tileName);
         if (coordstring in tiles) {
           var img = new window.Image();
           img.setAttribute("src", tiles[coordstring]);
@@ -125,9 +129,9 @@ function MosesMap(canvas, regions, tiles) {
         for (var y = offYMod - 256; y < height; y += tileScalar) {
           var coords = self.pixelToTile(x, y);
           var coordstring = coords.x + "," + coords.y;
-          ctx.fillText(coordstring, x, y + offset);
+          ctx.fillText(coordstring, x, y);
           if (coordstring in regions) {
-            ctx.fillText(regions[coordstring], x, y + fontSize);
+            ctx.fillText(regions[coordstring], x, y - offset + fontSize);
           }
         }
       }
