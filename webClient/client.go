@@ -85,6 +85,14 @@ func (c client) SignalSuccess(req int){
   }
 }
 
+func (c client) SignalError(req int, message string){
+  resp := clientResponse{req, "Error", message}
+  data, err := json.Marshal(resp)
+  if err == nil {
+    c.writeData(data)
+  }
+}
+
 func(c client) writeData(data []byte){
   defer func() {
     if x := recover(); x != nil {

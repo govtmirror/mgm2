@@ -11,6 +11,7 @@ type UserSession interface {
   SendHost(int, Host)
   SendConfig(int, ConfigOption)
   SignalSuccess(int)
+  SignalError(int, string)
   Read() ([]byte, bool)
 
   GetGuid() uuid.UUID

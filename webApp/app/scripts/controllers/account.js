@@ -15,11 +15,14 @@ angular.module('mgmApp')
     }
 
     $scope.account = {
-      UserID: "",
-      Name: "",
-      AccessLevel: "",
-      Email: ""
+      UserID: '',
+      Name: '',
+      AccessLevel: '',
+      Email: ''
     };
+
+    $scope.passwordError = '';
+    $scope.disablePasswordSubmit = false;
 
     for (var uuid in mgm.activeUsers) {
       if (uuid === $scope.auth.UUID) {
@@ -34,6 +37,29 @@ angular.module('mgmApp')
       };
     });
 
+    $scope.setPassword = function (password, confirm) {
+      $scope.passwordError = '';
+      if (password === undefined || password === '') {
+        $scope.passwordError = 'Password cannot be blank';
+        return;
+      }
+      if (confirm === undefined || confirm === '') {
+        $scope.passwordError = 'Password confirmation cannot be blank';
+        return;
+      }
+      if (confirm !== password) {
+        $scope.passwordError = 'Passwords do not match';
+        return;
+      }
+      mgm.request("SetPassword", {
+        UserID: $scope.auth.UUID,
+        Password: password
+      }, function (success, message) {
+        $scope.passwordError = message;
+        $scope.$apply();
+      });
 
 
-  })
+    }
+
+  });

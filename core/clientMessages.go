@@ -30,3 +30,16 @@ func(ur userRequest) readRegionID() (uuid.UUID, error) {
   }
   return r.RegionUUID, nil
 }
+
+func(ur userRequest) readPassword()( uuid.UUID, string, error){
+  type pw struct {
+    UserID uuid.UUID
+    Password string
+  }
+  p := pw{}
+  err := json.Unmarshal(ur.Message, &p)
+  if err != nil {
+    return uuid.UUID{}, "", err
+  }
+  return p.UserID, p.Password, nil
+}

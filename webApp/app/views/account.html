@@ -19,17 +19,35 @@
   </tr>
 </table>
 <hr>
-<span>Reset Password</span>
-<form ng-submit="account.resetPassword()">
-  <label>Password:</label>
-  <input type="password" ng-model="account.password" />
-  <br>
-  <label>Confirm:</label>
-  <input type="password" ng-model="account.passwordConfirm" />
-  <br>
-  <button type="submit">Submit reset</button>
+<h3>Reset Password</h3>
+<form ng-submit="setPassword(password, passwordConfirm)">
+  <table>
+    <tr>
+      <td>
+        <label>Password:</label>
+      </td>
+      <td>
+        <input type="password" ng-model="password" />
+      </td>
+      <td><strong style="color:red">{{passwordError}}</strong>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <label>Confirm:</label>
+      </td>
+      <td>
+        <input type="password" ng-model="passwordConfirm" />
+      </td>
+    </tr>
+    <tr>
+      <td colspan="3">
+        <button class="btn" type="submit" ng-disabled="disablePasswordSubmit" ng-class="{'disabled': disablePasswordSubmit}">Submit reset</button>
+      </td>
+    </tr>
+  </table>
 </form>
 <hr>
-<p>Iar functions:</p>
-<button ng-click="iar.showLoad()">Load IAR</button>
-<button ng-click="iar.showSave()">Save IAR</button>
+<h3>Iar functions:</h3>
+<button ng-click="showLoadIar()">Load IAR</button>
+<button ng-click="showSaveIar()">Save IAR</button>

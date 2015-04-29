@@ -29,6 +29,18 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
     m := userRequest{}
     m.load(msg)
     switch m.MessageType {
+      case "SetPassword":
+        userID, password, err := m.readPassword()
+        if err != nil {
+          logger.Error("Error reading password request")
+          continue
+        }
+        logger.Info("Setting password for %v to %v", userID, password)
+        if userID != session.GetGuid() && session.GetAccessLevel() < 250 {
+          session.SignalError(m.MessageID, "Permission Denied")
+        } else {
+          session.SignalError(m.MessageID, "Not Implemented")
+        }
       case "GetDefaultConfig":
         if session.GetAccessLevel() > 249 {
           logger.Info("Serving Default Region Configs.  Request: %v", m.MessageID)

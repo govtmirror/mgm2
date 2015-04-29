@@ -103,6 +103,15 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
           console.log("Invalid success for nonexistant request: " + msgID);
         }
         break;
+      case "Error":
+        var msgID = message.MessageID;
+        if (msgID in requestMap) {
+          requestMap[msgID].Callback(false, message.Message);
+          delete requestMap[msgID];
+        } else {
+          console.log("Invalid error for nonexistant request: " + msgID);
+        }
+        break;
       default:
         console.log("Error parsing message:");
         console.log(message);
