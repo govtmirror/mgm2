@@ -20,16 +20,16 @@
 </table>
 <hr>
 <h3>Reset Password</h3>
-<form ng-submit="setPassword(password, passwordConfirm)">
+<form ng-submit="setPassword()">
   <table>
     <tr>
       <td>
         <label>Password:</label>
       </td>
       <td>
-        <input type="password" ng-model="password" />
+        <input type="password" ng-model="password.password" />
       </td>
-      <td><strong style="color:red">{{passwordError}}</strong>
+      <td><strong style="color:red">{{password.passwordError}}</strong>
       </td>
     </tr>
     <tr>
@@ -37,12 +37,15 @@
         <label>Confirm:</label>
       </td>
       <td>
-        <input type="password" ng-model="passwordConfirm" />
+        <input type="password" ng-model="password.confirm" />
       </td>
     </tr>
     <tr>
-      <td colspan="3">
-        <button class="btn" type="submit" ng-disabled="disablePasswordSubmit" ng-class="{'disabled': disablePasswordSubmit}">Submit reset</button>
+      <td colspan="2">
+        <button class="btn" type="submit" ng-disabled="disablePasswordSubmit" ng-class="{'disabled': password.disablePasswordSubmit}">Submit reset</button>
+      </td>
+      <td>
+        <strong style="color:green">{{password.passwordResult}}</strong>
       </td>
     </tr>
   </table>

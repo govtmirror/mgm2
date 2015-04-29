@@ -23,7 +23,7 @@ type UserConnector interface {
   GetUsers() ([]User, error)
   GetGroups() ([]Group, error)
 
-  SetPassword(User, string) error
+  SetPassword(uuid.UUID, string) error
 }
 
 type Database interface {

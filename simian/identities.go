@@ -96,17 +96,19 @@ func (sc SimianConnector)InsertPasswordHash(username string, credential string, 
   return sc.confirmRequest(response)
 }
 
-func (sc SimianConnector)SetPassword(user core.User, password string) error {
+func (sc SimianConnector)SetPassword(userID uuid.UUID, password string) error {
   hasher := md5.New()
   hasher.Write([]byte(password))
   
+  user, _ := sc.GetUserByID(userID)
+
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddIdentity"},
       "Identifier": {user.Name},
       "Type": {"md5hash"},
       "Credential": {"$1$" +hex.EncodeToString(hasher.Sum(nil))},
-      "UserID": {user.UserID.String()},
+      "UserID": {userID.String()},
     })
   
   if err != nil {

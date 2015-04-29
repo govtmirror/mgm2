@@ -25,7 +25,7 @@ type Authenticator interface {
   GetUserByEmail(string) (*core.User, error)
   GetUserByName(string) (*core.User, error)
   GetIdentities(uuid.UUID) ([]core.Identity, error)
-  SetPassword(core.User, string) error
+  SetPassword(uuid.UUID, string) error
 }
 
 type Mailer interface {
@@ -303,7 +303,7 @@ func (hc HttpConnector) PasswordResetHandler(w http.ResponseWriter, r *http.Requ
     return
   }
 
-  err = hc.authenticator.SetPassword(*user, req.Password)
+  err = hc.authenticator.SetPassword(user.UserID, req.Password)
   if err != nil {
     http.Error(w, err.Error(), http.StatusInternalServerError)
     return

@@ -39,7 +39,16 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
         if userID != session.GetGuid() && session.GetAccessLevel() < 250 {
           session.SignalError(m.MessageID, "Permission Denied")
         } else {
-          session.SignalError(m.MessageID, "Not Implemented")
+          if password == "" {
+            session.SignalError(m.MessageID, "Password Cannot be blank")
+          } else {
+            err = userConn.SetPassword(session.GetGuid(), password)
+            if err != nil {
+              session.SignalError(m.MessageID, err.Error())
+            } else {
+              session.SignalSuccess(m.MessageID)
+            }
+          }
         }
       case "GetDefaultConfig":
         if session.GetAccessLevel() > 249 {
