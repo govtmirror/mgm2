@@ -105,7 +105,7 @@ func (sc SimianConnector)GetUsers() ( []core.User, error) {
   return users, nil
 }
 
-func (sc SimianConnector)RemoveUser(userID uuid.UUID) ( bool, error) {
+func (sc SimianConnector)RemoveUser(userID uuid.UUID) error {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"RemoveUser"},
@@ -113,13 +113,13 @@ func (sc SimianConnector)RemoveUser(userID uuid.UUID) ( bool, error) {
     })
   
   if err != nil {
-    return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    return &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
   return sc.confirmRequest(response)
 }
 
-func (sc SimianConnector)SetUserLastLocation(userID uuid.UUID, uri string) ( bool, error) {
+func (sc SimianConnector)SetUserLastLocation(userID uuid.UUID, uri string) error {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddUserData"},
@@ -128,13 +128,13 @@ func (sc SimianConnector)SetUserLastLocation(userID uuid.UUID, uri string) ( boo
     })
   
   if err != nil {
-    return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    return &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
   return sc.confirmRequest(response)
 }
 
-func (sc SimianConnector)SetUserHomeLocation(userID uuid.UUID, uri string) ( bool, error) {
+func (sc SimianConnector)SetUserHomeLocation(userID uuid.UUID, uri string) error {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddUserData"},
@@ -143,13 +143,13 @@ func (sc SimianConnector)SetUserHomeLocation(userID uuid.UUID, uri string) ( boo
     })
   
   if err != nil {
-    return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    return &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
   return sc.confirmRequest(response)
 }
 
-func (sc SimianConnector)UpdateUser(name string, email string, userID uuid.UUID, level int) ( bool, error) {
+func (sc SimianConnector)UpdateUser(name string, email string, userID uuid.UUID, level int) error {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddUser"},
@@ -160,7 +160,7 @@ func (sc SimianConnector)UpdateUser(name string, email string, userID uuid.UUID,
     })
   
   if err != nil {
-    return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    return &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
   return sc.confirmRequest(response)

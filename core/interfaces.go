@@ -21,8 +21,9 @@ type UserSession interface {
 type UserConnector interface {
   GetUserByID(uuid.UUID) (*User, error)
   GetUsers() ([]User, error)
-
   GetGroups() ([]Group, error)
+
+  SetPassword(User, string) error
 }
 
 type Database interface {

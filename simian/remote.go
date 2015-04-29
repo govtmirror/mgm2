@@ -58,14 +58,14 @@ func (sc *SimianConnector)handle_request(remoteUrl string, vals url.Values) ([]b
   return body, nil
 }
 
-func (sc SimianConnector)confirmRequest(response []byte) (bool, error){
+func (sc SimianConnector)confirmRequest(response []byte) error {
   var m confirmRequest
   err := json.Unmarshal(response, &m)
   if err != nil {
-    return false, err
+    return err
   }
   if m.Success {
-    return  true, nil
+    return  nil
   }
-  return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
+  return &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }

@@ -43,7 +43,7 @@ func (sc SimianConnector)Auth(username string, password string) (uuid.UUID, erro
   return uuid.UUID{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
 
-func (sc SimianConnector)EnableIdentity(username string, identityType string, credential string, userID uuid.UUID) (bool, error) {
+func (sc SimianConnector)EnableIdentity(username string, identityType string, credential string, userID uuid.UUID) error {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddIdentity"},
@@ -55,13 +55,13 @@ func (sc SimianConnector)EnableIdentity(username string, identityType string, cr
     })
   
   if err != nil {
-    return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    return &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
   return sc.confirmRequest(response)
 }
 
-func (sc SimianConnector)DisableIdentity(username string, identityType string, credential string, userID uuid.UUID) (bool, error) {
+func (sc SimianConnector)DisableIdentity(username string, identityType string, credential string, userID uuid.UUID) error {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddIdentity"},
@@ -73,13 +73,13 @@ func (sc SimianConnector)DisableIdentity(username string, identityType string, c
     })
   
   if err != nil {
-    return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    return &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
   return sc.confirmRequest(response)
 }
 
-func (sc SimianConnector)InsertPasswordHash(username string, credential string, userID uuid.UUID) (bool, error) {
+func (sc SimianConnector)InsertPasswordHash(username string, credential string, userID uuid.UUID) error {
   response, err := sc.handle_request(sc.url,
     url.Values{
       "RequestMethod": {"AddIdentity"},
@@ -90,13 +90,13 @@ func (sc SimianConnector)InsertPasswordHash(username string, credential string, 
     })
   
   if err != nil {
-    return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    return &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
   return sc.confirmRequest(response)
 }
 
-func (sc SimianConnector)SetPassword(user core.User, password string) (bool, error) {
+func (sc SimianConnector)SetPassword(user core.User, password string) error {
   hasher := md5.New()
   hasher.Write([]byte(password))
   
@@ -110,7 +110,7 @@ func (sc SimianConnector)SetPassword(user core.User, password string) (bool, err
     })
   
   if err != nil {
-    return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    return &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
   }
   
   return sc.confirmRequest(response)
