@@ -31,6 +31,7 @@ module.exports = function(config) {
       'bower_components/angular-messages/angular-messages.js',
       'bower_components/reconnectingWebsocket/reconnecting-websocket.js',
       'bower_components/d3/d3.js',
+      'bower_components/angular-pageslide-directive/dist/angular-pageslide-directive.js',
       'bower_components/angular-mocks/angular-mocks.js',
       // endbower
       'webapp/scripts/**/*.js',

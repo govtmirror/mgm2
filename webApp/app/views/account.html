@@ -52,5 +52,11 @@
 </form>
 <hr>
 <h3>Iar functions:</h3>
-<button ng-click="showLoadIar()">Load IAR</button>
-<button ng-click="showSaveIar()">Save IAR</button>
+<button class="btn" ng-click="iar.showLoad()">Load IAR</button>
+<button class="btn" ng-click="iar.showSave()">Save IAR</button>
+<div ng-if="iar.state == 'load'">
+  loading page
+</div>
+<div ng-if="iar.state == 'save'">
+  saving page
+</div>

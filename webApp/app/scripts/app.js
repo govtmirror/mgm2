@@ -16,7 +16,8 @@ angular
     'ngResource',
     'ngRoute',
     'ngSanitize',
-    'ngTouch'
+    'ngTouch',
+    'pageslide-directive'
   ])
   .config(function ($routeProvider) {
     $routeProvider

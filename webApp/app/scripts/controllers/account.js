@@ -29,6 +29,16 @@ angular.module('mgmApp')
       confirm: ''
     }
 
+    $scope.iar = {
+      state: '',
+      showLoad: function () {
+        $scope.iar.state = 'load';
+      },
+      showSave: function () {
+        $scope.iar.state = 'save';
+      },
+    }
+
     for (var uuid in mgm.activeUsers) {
       if (uuid === $scope.auth.UUID) {
         angular.copy(mgm.activeUsers[uuid], $scope.account);

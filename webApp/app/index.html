@@ -83,12 +83,32 @@
             <li ng-class="{active:isActive('/config')}" ng-if="auth.AccessLevel > 249"><a href="#/config">Config</a>
             </li>
             <li>
+              <span ng-click="task.toggle()" class="glyphicon glyphicon-tasks" style="padding: 16px 15px;"></span>
+            </li>
+            <li>
               <button ng-click="logout()" class="btn btn-danger" style="margin-top: 7px">Log Out</button>
             </li>
           </ul>
         </div>
       </div>
     </div>
+    <div ng-if="loggedIn">
+      <div pageslide="" ps-open="task.showBar" ps-side="left" ps-push="true" class="ng-isolate-scope ng-pageslide" style="z-index: 1000; position: fixed; width: 300px; height: 100%; overflow: hidden; transition-duration: 0.5s; -webkit-transition-duration: 0.5s; transition-property: width, height; -webkit-transition-property: width, height; top: 0px; bottom: 0px; left: 0px;">
+        <div>
+          <p>some random content...{{task}}</p>
+        </div>
+      </div>
+    </div>
+
+    <!--<div  ps-side="left" class="ng-isolate-scope ng-pageslide" >
+                    <div style="padding: 20px; display: block;" id="demo-right">
+                        <h2>Hello Pageslide</h2>
+                        <p>Put here whatever you want</p>
+                        <a ng-click="toggle()" class="button">Close</a>
+                    </div>
+                </div>
+
+    -->
   </div>
 
   <div class="container">
@@ -113,6 +133,7 @@
   <script src="bower_components/angular-messages/angular-messages.js"></script>
   <script src="bower_components/reconnectingWebsocket/reconnecting-websocket.js"></script>
   <script src="bower_components/d3/d3.js"></script>
+  <script src="bower_components/angular-pageslide-directive/dist/angular-pageslide-directive.js"></script>
   <!-- endbower -->
   <!-- endbuild -->
 

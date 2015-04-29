@@ -33,4 +33,11 @@ angular.module('mgmApp').controller('NavCtrl', function ($scope, $location, $tim
     mgm.disconnect();
     mgmPublic.logout();
   };
+
+  $scope.task = {
+    showBar: false,
+    toggle: function () {
+      $scope.task.showBar = !$scope.task.showBar;
+    }
+  }
 });
