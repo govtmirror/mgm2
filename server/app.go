@@ -56,7 +56,11 @@ func main() {
     config.MySQL.Host,
   )
   //create our simian connector
-  sim, _ := simian.NewSimianConnector(config.MGM.SimianUrl)
+  sim, err := simian.NewSimianConnector(config.MGM.SimianUrl)
+  if err != nil {
+    logger.Error("Error instantiating Simian connection: %v",err)
+    return
+  }
 
   //start new goroutine exiring old password tokens
   go ExpirePasswordTokens(db)
