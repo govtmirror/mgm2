@@ -93,10 +93,31 @@
       </div>
     </div>
     <div ng-if="loggedIn">
-      <div pageslide="" ps-open="task.showBar" ps-side="left" ps-push="true" class="ng-isolate-scope ng-pageslide" style="z-index: 1000; position: fixed; width: 300px; height: 100%; overflow: hidden; transition-duration: 0.5s; -webkit-transition-duration: 0.5s; transition-property: width, height; -webkit-transition-property: width, height; top: 0px; bottom: 0px; left: 0px;">
-        <div>
-          <p>some random content...{{task}}</p>
-        </div>
+      <div pageslide="" ps-open="task.showBar" ps-push="true" class="ng-isolate-scope ng-pageslide" style="background-color: #9C9C9C; padding-left: 10px;">
+        <h3>Task List</h3>
+        <table>
+          <tr>
+            <th width="100px">taskitem</th>
+            <th width="100px">taskstatus</th>
+          </tr>
+          <tr>
+            <td>Task Item 1</td>
+            <td>Status</td>
+          </tr>
+          <tr>
+            <td>Task Item 2</td>
+            <td>Status</td>
+          </tr>
+          <tr>
+            <td>Task Item 3</td>
+            <td>Status</td>
+          </tr>
+          <tr>
+            <td>Task Item 4</td>
+            <td>Status</td>
+          </tr>
+
+        </table>
       </div>
     </div>
 

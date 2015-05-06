@@ -6,7 +6,7 @@ import (
   "github.com/M-O-S-E-S/mgm/simian"
   "github.com/M-O-S-E-S/mgm/webClient"
   "github.com/M-O-S-E-S/mgm/email"
-  //"github.com/M-O-S-E-S/mgm2/opensim"
+  //"github.com/M-O-S-E-S/mgm/opensim"
   "net/http"
   "github.com/gorilla/mux"
   "code.google.com/p/gcfg"
