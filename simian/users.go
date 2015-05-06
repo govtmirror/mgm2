@@ -5,7 +5,7 @@ import (
   "fmt"
   "github.com/satori/go.uuid"
   "encoding/json"
-  "github.com/M-O-S-E-S/mgm2/core"
+  "github.com/M-O-S-E-S/mgm/core"
 )
 
 func (sc SimianConnector)GetUserByEmail(email string) (*core.User, error) {

@@ -6,7 +6,7 @@ import (
   "encoding/json"
   "github.com/satori/go.uuid"
   "github.com/gorilla/sessions"
-  "github.com/M-O-S-E-S/mgm2/core"
+  "github.com/M-O-S-E-S/mgm/core"
   "encoding/gob"
 )
 

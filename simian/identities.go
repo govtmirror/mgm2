@@ -7,7 +7,7 @@ import (
   "encoding/hex"
   "encoding/json"
   "github.com/satori/go.uuid"
-  "github.com/M-O-S-E-S/mgm2/core"
+  "github.com/M-O-S-E-S/mgm/core"
 )
 
 func (sc SimianConnector)Auth(username string, password string) (uuid.UUID, error) {

@@ -1,11 +1,11 @@
 package main
 
 import (
-  "github.com/M-O-S-E-S/mgm2/core"
-  "github.com/M-O-S-E-S/mgm2/mysql"
-  "github.com/M-O-S-E-S/mgm2/simian"
-  "github.com/M-O-S-E-S/mgm2/webClient"
-  "github.com/M-O-S-E-S/mgm2/email"
+  "github.com/M-O-S-E-S/mgm/core"
+  "github.com/M-O-S-E-S/mgm/mysql"
+  "github.com/M-O-S-E-S/mgm/simian"
+  "github.com/M-O-S-E-S/mgm/webClient"
+  "github.com/M-O-S-E-S/mgm/email"
   //"github.com/M-O-S-E-S/mgm2/opensim"
   "net/http"
   "github.com/gorilla/mux"

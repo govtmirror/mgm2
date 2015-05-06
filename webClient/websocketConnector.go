@@ -4,7 +4,7 @@ import (
   "net/http"
   "github.com/gorilla/websocket"
   "github.com/satori/go.uuid"
-  "github.com/M-O-S-E-S/mgm2/core"
+  "github.com/M-O-S-E-S/mgm/core"
   "encoding/json"
 )
 

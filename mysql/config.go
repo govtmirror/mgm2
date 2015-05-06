@@ -1,7 +1,7 @@
 package mysql
 
 import (
-  "github.com/M-O-S-E-S/mgm2/core"
+  "github.com/M-O-S-E-S/mgm/core"
   "fmt"
   "database/sql"
   "github.com/satori/go.uuid"

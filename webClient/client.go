@@ -4,7 +4,7 @@ import (
   "encoding/json"
   "github.com/satori/go.uuid"
   "github.com/gorilla/websocket"
-  "github.com/M-O-S-E-S/mgm2/core"
+  "github.com/M-O-S-E-S/mgm/core"
 )
 
 type client struct {

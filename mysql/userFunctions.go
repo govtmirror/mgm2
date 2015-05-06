@@ -6,7 +6,7 @@ import (
   _ "github.com/go-sql-driver/mysql"
   "crypto/md5"
   "encoding/hex"
-  "github.com/M-O-S-E-S/mgm2/core"
+  "github.com/M-O-S-E-S/mgm/core"
 )
 
 func (db Database) GetPendingUsers() ([]core.PendingUser, error) {

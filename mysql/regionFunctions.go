@@ -4,7 +4,7 @@ import (
   "fmt"
   "database/sql"
   _ "github.com/go-sql-driver/mysql"
-  "github.com/M-O-S-E-S/mgm2/core"
+  "github.com/M-O-S-E-S/mgm/core"
   "github.com/satori/go.uuid"
 )
 
