@@ -92,7 +92,7 @@
         </div>
       </div>
     </div>
-    <div ng-if="loggedIn">
+    <div ng-if="loggedIn && task.showBar">
       <div pageslide="" ps-open="task.showBar" ps-push="true" class="ng-isolate-scope ng-pageslide" style="background-color: #9C9C9C; padding-left: 10px;">
         <h3>Task List</h3>
         <table>
@@ -120,16 +120,6 @@
         </table>
       </div>
     </div>
-
-    <!--<div  ps-side="left" class="ng-isolate-scope ng-pageslide" >
-                    <div style="padding: 20px; display: block;" id="demo-right">
-                        <h2>Hello Pageslide</h2>
-                        <p>Put here whatever you want</p>
-                        <a ng-click="toggle()" class="button">Close</a>
-                    </div>
-                </div>
-
-    -->
   </div>
 
   <div class="container">

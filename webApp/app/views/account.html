@@ -19,44 +19,52 @@
   </tr>
 </table>
 <hr>
-<h3>Reset Password</h3>
-<form ng-submit="setPassword()">
-  <table>
-    <tr>
-      <td>
-        <label>Password:</label>
-      </td>
-      <td>
-        <input type="password" ng-model="password.password" />
-      </td>
-      <td><strong style="color:red">{{password.passwordError}}</strong>
-      </td>
-    </tr>
-    <tr>
-      <td>
-        <label>Confirm:</label>
-      </td>
-      <td>
-        <input type="password" ng-model="password.confirm" />
-      </td>
-    </tr>
-    <tr>
-      <td colspan="2">
-        <button class="btn" type="submit" ng-disabled="disablePasswordSubmit" ng-class="{'disabled': password.disablePasswordSubmit}">Submit reset</button>
-      </td>
-      <td>
-        <strong style="color:green">{{password.passwordResult}}</strong>
-      </td>
-    </tr>
-  </table>
-</form>
-<hr>
 <h3>Iar functions:</h3>
-<button class="btn" ng-click="iar.showLoad()">Load IAR</button>
-<button class="btn" ng-click="iar.showSave()">Save IAR</button>
-<div ng-if="iar.state == 'load'">
-  loading page
+<div class="btn-group">
+  <button type="button" class="btn" ng-click="nav.togglePass()">Set Password</button>
+  <button type="button" class="btn" ng-click="nav.toggleLoad()">Load IAR</button>
+  <button tyep="button" class="btn" ng-click="nav.toggleSave()">Save IAR</button>
 </div>
-<div ng-if="iar.state == 'save'">
-  saving page
+<div ng-if="nav.state == 'pass'" class="jumbotron">
+  <h3>Reset Password</h3>
+  <form ng-submit="setPassword()">
+
+    <label>Password:</label>
+    <input type="password" ng-model="password.password" />
+    <strong style="color:red">{{password.passwordError}}</strong>
+    <br>
+
+    <label>Confirm:</label>
+    <input type="password" ng-model="password.confirm" />
+    <br>
+
+    <button class="btn-xs" type="submit" ng-disabled="disablePasswordSubmit" ng-class="{'disabled': password.disablePasswordSubmit}">Submit reset</button>
+    <strong style="color:green">{{password.passwordResult}}</strong>
+
+  </form>
+</div>
+<div ng-if="nav.state == 'load'" class="jumbotron">
+  <h3>Load IAR File</h3>
+  <p>Select a file and enter your password to load an iar file. The iar file will be loaded into the root of your inventory, it will not merge with any existing folders.</p>
+  <form>
+
+    <label> File: </label>
+    <input type="file" ng-model="iar.file" style="display: inline">
+    <br>
+
+
+    <label> Password: </label>
+    <input type="password" ng-model="iar.password" />
+    <button class="btn-xs" ng-click="iar.load()">Submit</button>
+  </form>
+</div>
+<div ng-if="nav.state == 'save'" class="jumbotron">
+  <p><b>Save IAR File</b>
+  </p>
+  <p>Please enter your password to save an IAR file. This file will include your entire inventory. This is a long-running asynchronous task. You will be sent an email when it completes. The file will be listed in your taskbar at the bottom of the Account tab, which is where you will download it from.</p>
+  <form>
+    <label> Password: </label>
+    <input type="password" class="alertify-text" ng-model="iar.password" />
+    <button class="btn-xs" ng-click="iar.save()">Submit</button>
+  </form>
 </div>

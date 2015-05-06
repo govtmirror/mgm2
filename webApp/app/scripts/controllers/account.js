@@ -29,14 +29,29 @@ angular.module('mgmApp')
       confirm: ''
     }
 
-    $scope.iar = {
+    $scope.nav = {
       state: '',
-      showLoad: function () {
-        $scope.iar.state = 'load';
+      toggleLoad: function () {
+        if ($scope.nav.state === 'load') {
+          $scope.nav.state = '';
+        } else {
+          $scope.nav.state = 'load';
+        }
       },
-      showSave: function () {
-        $scope.iar.state = 'save';
+      toggleSave: function () {
+        if ($scope.nav.state === 'save') {
+          $scope.nav.state = '';
+        } else {
+          $scope.nav.state = 'save';
+        }
       },
+      togglePass: function () {
+        if ($scope.nav.state === 'pass') {
+          $scope.nav.state = '';
+        } else {
+          $scope.nav.state = 'pass';
+        }
+      }
     }
 
     for (var uuid in mgm.activeUsers) {
