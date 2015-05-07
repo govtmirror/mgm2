@@ -85,6 +85,7 @@ func main() {
   r.HandleFunc("/auth/register", httpCon.RegisterHandler)
   r.HandleFunc("/auth/passwordToken", httpCon.PasswordTokenHandler)
   r.HandleFunc("/auth/passwordReset", httpCon.PasswordResetHandler)
+  r.HandleFunc("/upload/{id}", httpCon.UploadHandler)
   
   http.Handle("/", r)
   logger.Info("Listening for clients on :%v", config.MGM.WebPort)
