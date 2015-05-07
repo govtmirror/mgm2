@@ -8,7 +8,14 @@ import (
   "github.com/satori/go.uuid"
 )
 
-func (db Database) CreateTask(taskType string, userID uuid.UUID, data string) (core.Job, error) {
+func (db Database) GetJobsForUser(userID uuid.UUID) ([]core.Job, error) {
+  con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v?parseTime=true", db.user, db.password, db.host, db.database))
+  if err != nil {return core.Job{}, err}
+  defer con.Close()
+
+}
+
+func (db Database) CreateJob(taskType string, userID uuid.UUID, data string) (core.Job, error) {
   con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v?parseTime=true", db.user, db.password, db.host, db.database))
   if err != nil {return core.Job{}, err}
   defer con.Close()

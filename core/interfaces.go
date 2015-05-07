@@ -31,6 +31,7 @@ type UserConnector interface {
 type Database interface {
   TestConnection() error
   GetRegionsForUser(uuid.UUID) ([]Region, error)
+  GetJobsForUser(uuid.UUID) ([]Job, error)
   GetRegionsOnHost(string) ([]Region, error)
   GetRegions()([]Region, error)
   GetEstates()([]Estate, error)
@@ -41,7 +42,7 @@ type Database interface {
   GetDefaultConfigs()([]ConfigOption, error)
   GetConfigs(uuid.UUID)([]ConfigOption, error)
 
-  CreateTask(string, uuid.UUID, string) (Job, error)
+  CreateJob(string, uuid.UUID, string) (Job, error)
 }
 
 type Logger interface {

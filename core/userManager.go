@@ -46,7 +46,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
       } else {
         if isValid {
           //password is valid, create the upload job
-          job,err := dataStore.CreateTask("load_iar",userID, "/")
+          job,err := dataStore.CreateJob("load_iar",userID, "/")
           if err != nil {
             session.SignalError(m.MessageID, err.Error())
           } else {
@@ -56,7 +56,6 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
         } else {
           session.SignalError(m.MessageID, "Invalid Password")
         }
-
       }
 
       case "SetPassword":
@@ -122,16 +121,25 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
           if user.Suspended && session.GetAccessLevel() < 250 {
             continue
           }
-          session.SendUser(0, user)
+          session.SendUser(m.MessageID, user)
         }
         users = nil
+
+        jobs, err := dataStore.GetJobsForUser(session.GetGuid())
+        if err != nil {
+          logger.Error("Error lookin up tasks: ", err)
+        }
+        for _, job := range jobs {
+          session.SendJob(m.MessageID, job)
+        }
+        jobs = nil
 
         pendingUsers, err := dataStore.GetPendingUsers()
         if err != nil {
           logger.Error("Error lookin up pending user account: ", err)
         }
         for _, user := range pendingUsers {
-          session.SendPendingUser(0, user)
+          session.SendPendingUser(m.MessageID, user)
         }
         pendingUsers = nil
 
@@ -151,7 +159,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
           logger.Error("Error lookin up estates: ", err)
         }
         for _, e := range estates {
-          session.SendEstate(0, e)
+          session.SendEstate(m.MessageID, e)
         }
         estates = nil
         groups, err := userConn.GetGroups()
@@ -159,7 +167,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
           logger.Error("Error lookin up groups: ", err)
         }
         for _, g := range groups {
-          session.SendGroup(0, g)
+          session.SendGroup(m.MessageID, g)
         }
         groups = nil
         //only administrative users need host access
@@ -169,7 +177,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
             logger.Error("Error lookin up hosts: ", err)
           }
           for _, h := range hosts {
-            session.SendHost(0, h)
+            session.SendHost(m.MessageID, h)
           }
         }
 
