@@ -87,6 +87,11 @@ module.exports = function (grunt) {
 	  context: '/maps',
 	  host: 'localhost',
 	  port: '80'
+	},
+	{
+	  context: '/upload',
+	  host: 'localhost',
+	  port: '8080'
 	}
       ],
       livereload: {
