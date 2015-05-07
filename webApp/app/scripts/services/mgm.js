@@ -171,7 +171,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
           }
         })
         .success(function (data, status, headers, config) {
-          reject("success");
+          resolve();
         })
         .error(function (data, status, headers, config) {
           reject(status);

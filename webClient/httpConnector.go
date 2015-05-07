@@ -59,9 +59,10 @@ type HttpConnector struct {
   logger Logger
   db Database
   mailer Mailer
+  fileUploadChan chan<- core.FileUpload
 }
 
-func NewHttpConnector(sessionKey string, authenticator Authenticator, db Database, mailer Mailer, logger Logger) (*HttpConnector){
+func NewHttpConnector(sessionKey string, fileUpload chan<- core.FileUpload, authenticator Authenticator, db Database, mailer Mailer, logger Logger) (*HttpConnector){
   gob.Register(uuid.UUID{})
 
   store := sessions.NewCookieStore([]byte(sessionKey))
@@ -69,7 +70,7 @@ func NewHttpConnector(sessionKey string, authenticator Authenticator, db Databas
     Path: "/",
     MaxAge: 3600 * 8,
   }
-  return &HttpConnector{store, authenticator, logger, db, mailer}
+  return &HttpConnector{store, authenticator, logger, db, mailer, fileUpload}
 }
 
 func (hc HttpConnector) LoginHandler(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +135,7 @@ func (hc HttpConnector) LoginHandler(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  w.Header().Set("Content-Type", "application/jons")
+  w.Header().Set("Content-Type", "application/json")
   w.Write(js)
 }
 

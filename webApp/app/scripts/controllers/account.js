@@ -124,6 +124,9 @@ angular.module('mgmApp')
               function () {
                 //success
                 console.log("upload must have worked");
+                $scope.iar.password = '';
+                $scope.iar.file = undefined;
+                $scope.iar.message = '';
               },
               function (msg) {
                 //error
@@ -131,9 +134,6 @@ angular.module('mgmApp')
                 $scope.iar.message = 'Error: ' + msg;
               }
             );
-
-
-
           } else {
             $scope.iar.message = message;
           }
