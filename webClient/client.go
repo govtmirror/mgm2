@@ -77,8 +77,16 @@ func (c client) SendHost(req int, host core.Host){
   }
 }
 
-func (c client) SignalSuccess(req int){
-  resp := clientResponse{req, "Success", ""}
+func (c client) SendJob(req int, job core.Job){
+  resp := clientResponse{req, "JobUpdate", job}
+  data, err := json.Marshal(resp)
+  if err == nil {
+    c.writeData(data)
+  }
+}
+
+func (c client) SignalSuccess(req int, message string){
+  resp := clientResponse{req, "Success", message}
   data, err := json.Marshal(resp)
   if err == nil {
     c.writeData(data)

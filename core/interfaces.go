@@ -10,7 +10,8 @@ type UserSession interface {
   SendGroup(int, Group)
   SendHost(int, Host)
   SendConfig(int, ConfigOption)
-  SignalSuccess(int)
+  SendJob(int, Job)
+  SignalSuccess(int, string)
   SignalError(int, string)
   Read() ([]byte, bool)
 

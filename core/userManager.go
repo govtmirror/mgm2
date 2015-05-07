@@ -1,5 +1,9 @@
 package core
 
+import (
+  "fmt"
+)
+
 func UserManager(sessionListener <-chan UserSession, dataStore Database, userConn UserConnector, logger Logger){
   
   //create notification hub
@@ -42,7 +46,13 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
       } else {
         if isValid {
           //password is valid, create the upload job
-          session.SignalError(m.MessageID, "task creation Not Implemented")
+          job,err := dataStore.CreateTask("load_iar",userID, "/")
+          if err != nil {
+            session.SignalError(m.MessageID, err.Error())
+          } else {
+            session.SendJob(m.MessageID, job)
+            session.SignalSuccess(m.MessageID, fmt.Sprintf("%v",job.ID))
+          }
         } else {
           session.SignalError(m.MessageID, "Invalid Password")
         }
@@ -66,7 +76,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
             if err != nil {
               session.SignalError(m.MessageID, err.Error())
             } else {
-              session.SignalSuccess(m.MessageID)
+              session.SignalSuccess(m.MessageID, "Password Set Successfully")
             }
           }
         }
@@ -80,7 +90,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
             for _, cfg := range cfgs {
               session.SendConfig(m.MessageID, cfg)
             }
-            session.SignalSuccess(m.MessageID)
+            session.SignalSuccess(m.MessageID, "Default Config Retrieved")
           }
         }
       case "GetConfig":
@@ -98,7 +108,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
               for _, cfg := range cfgs {
                 session.SendConfig(m.MessageID, cfg)
               }
-              session.SignalSuccess(m.MessageID)
+              session.SignalSuccess(m.MessageID, "Config Retrieved")
             }
           }
         }
@@ -164,7 +174,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
         }
 
         //signal to the client that we have completed initial state sync
-        session.SignalSuccess(m.MessageID)
+        session.SignalSuccess(m.MessageID, "State Sync Complete")
         logger.Info("Sync Complete")
 
       default:

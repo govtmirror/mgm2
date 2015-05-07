@@ -120,8 +120,7 @@ angular.module('mgmApp')
         }, function (success, message) {
           console.log("success from mgm request: " + success + " message: " + message)
           if (success === true) {
-            console.log(message);
-            mgm.upload("/upload/" + message.ID, $scope.iar.file[0]).then(
+            mgm.upload("/upload/" + message, $scope.iar.file[0]).then(
               function () {
                 //success
                 console.log("upload must have worked");

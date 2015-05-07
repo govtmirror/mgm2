@@ -43,10 +43,10 @@ type Group struct {
 
 type Job struct {
   ID int
-  TimeStamp int
+  Timestamp time.Time
   Type string
   User uuid.UUID
-  Data string
+  Data []byte
 }
 
 type Estate struct {

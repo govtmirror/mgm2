@@ -21,6 +21,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
   self.pendingUsers = {};
   self.groups = {};
   self.hosts = {};
+  self.jobs = {};
   self.serverConnected = false;
 
   $rootScope.$on("AuthChange", function (event, value) {
@@ -86,6 +87,10 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
         self.groups[message.Message.ID] = message.Message;
         $rootScope.$broadcast("GroupUpdate", message.Message);
         break;
+      case "JobUpdate":
+        self.jobs[message.Message.ID] = message.Message;
+        $rootScope.$broadcast("JobUpdate", message.Message);
+        break;
       case "ConfigUpdate":
         $rootScope.$broadcast("ConfigUpdate", message.Message);
         break;
@@ -97,7 +102,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
       case "Success":
         var msgID = message.MessageID;
         if (msgID in requestMap) {
-          requestMap[msgID].Callback(true);
+          requestMap[msgID].Callback(true, message.Message);
           delete requestMap[msgID];
         } else {
           console.log("Invalid success for nonexistant request: " + msgID);
