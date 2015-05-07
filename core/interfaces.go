@@ -43,6 +43,7 @@ type Database interface {
   GetConfigs(uuid.UUID)([]ConfigOption, error)
 
   CreateJob(string, uuid.UUID, string) (Job, error)
+  CreateLoadIarJob(owner uuid.UUID, inventoryPath string) (Job, error)
 }
 
 type Logger interface {

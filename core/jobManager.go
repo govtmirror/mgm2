@@ -5,7 +5,7 @@ type FileUpload struct {
   File []byte
 }
 
-func TaskManager(fileUpload <-chan FileUpload, taskNotify chan<- int, dataStore Database, logger Logger){
+func JobManager(fileUpload <-chan FileUpload, taskNotify chan<- int, dataStore Database, logger Logger){
 
   //create notification hub
 

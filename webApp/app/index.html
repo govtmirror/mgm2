@@ -97,26 +97,13 @@
         <h3>Task List</h3>
         <table>
           <tr>
-            <th width="100px">taskitem</th>
-            <th width="100px">taskstatus</th>
+            <th width="100px">type</th>
+            <th width="100px">data</th>
           </tr>
-          <tr>
-            <td>Task Item 1</td>
-            <td>Status</td>
+          <tr ng-repeat="job in task.jobs">
+            <td>{{job.Type}}</td>
+            <td>{{job.Data}}</td>
           </tr>
-          <tr>
-            <td>Task Item 2</td>
-            <td>Status</td>
-          </tr>
-          <tr>
-            <td>Task Item 3</td>
-            <td>Status</td>
-          </tr>
-          <tr>
-            <td>Task Item 4</td>
-            <td>Status</td>
-          </tr>
-
         </table>
       </div>
     </div>

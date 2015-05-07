@@ -75,7 +75,7 @@ func main() {
   //regionManager := core.RegionManager{nil, db}
   sessionListener := make(chan core.UserSession, 64) 
   core.UserManager(sessionListener, db, sim, logger)
-  core.TaskManager(fileUpload, taskNotify, db, logger)
+  core.JobManager(fileUpload, taskNotify, db, logger)
 
   httpCon := webClient.NewHttpConnector(config.MGM.SessionSecret, fileUpload, sim, db, mailer, logger)
   sockCon := webClient.NewWebsocketConnector(httpCon, sessionListener, logger)

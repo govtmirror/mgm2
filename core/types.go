@@ -46,7 +46,11 @@ type Job struct {
   Timestamp time.Time
   Type string
   User uuid.UUID
-  Data []byte
+  Data string
+}
+
+type LoadIarTask struct {
+  InventoryPath string
 }
 
 type Estate struct {

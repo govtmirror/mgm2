@@ -38,6 +38,18 @@ angular.module('mgmApp').controller('NavCtrl', function ($scope, $location, $tim
     showBar: false,
     toggle: function () {
       $scope.task.showBar = !$scope.task.showBar;
-    }
+    },
+    jobs: {}
   }
+
+  $scope.task.jobs = mgm.jobs;
+  $scope.$on("JobUpdate", function (event, job) {
+    if (!(job.ID in $scope.task.jobs)) {
+      $scope.task.jobs[job.ID] = job;
+    } else {
+      if (job !== $scope.task.jobs[job.ID]) {
+        angular.copy(job, $scope.task.jobs[job.ID]);
+      }
+    }
+  });
 });

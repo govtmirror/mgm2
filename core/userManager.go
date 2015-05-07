@@ -46,7 +46,7 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
       } else {
         if isValid {
           //password is valid, create the upload job
-          job,err := dataStore.CreateJob("load_iar",userID, "/")
+          job,err := dataStore.CreateLoadIarJob(userID, "/")
           if err != nil {
             session.SignalError(m.MessageID, err.Error())
           } else {
