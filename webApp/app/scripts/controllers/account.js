@@ -106,24 +106,40 @@ angular.module('mgmApp')
       file: undefined,
       message: '',
       upload: function () {
-        console.log('upload file here');
         if ($scope.iar.file === undefined) {
           console.log("invalid file selection");
           console.log($scope.iar.file);
           return;
         }
         $scope.iar.message = 'Uploading...';
-        mgm.upload("/upload/idgoeshere", $scope.iar.file[0]).then(
-          function () {
-            //success
-            console.log("upload must have worked");
-          },
-          function (msg) {
-            //error
-            console.log(msg);
-            $scope.iar.message = 'Error: ' + msg;
+        //request iar upload from mgm
+        console.log("requesting from mgm");
+        mgm.request("IarUpload", {
+          UserID: $scope.auth.UUID,
+          Password: $scope.iar.password
+        }, function (success, message) {
+          console.log("success from mgm request: " + success + " message: " + message)
+          if (success === true) {
+            console.log(message);
+            mgm.upload("/upload/" + message.ID, $scope.iar.file[0]).then(
+              function () {
+                //success
+                console.log("upload must have worked");
+              },
+              function (msg) {
+                //error
+                console.log(msg);
+                $scope.iar.message = 'Error: ' + msg;
+              }
+            );
+
+
+
+          } else {
+            $scope.iar.message = message;
           }
-        );
+          $scope.$apply();
+        });
       }
     }
 

@@ -29,6 +29,26 @@ func userSession(session UserSession, dataStore Database, userConn UserConnector
     m := userRequest{}
     m.load(msg)
     switch m.MessageType {
+      case "IarUpload":
+        userID, password, err := m.readPassword()
+        if err != nil {
+          logger.Error("Error reading iar upload request")
+          continue
+        }
+      logger.Info("Iar upload request from %v:%v", userID,password)
+      isValid, err := userConn.ValidatePassword(userID, password)
+      if err != nil {
+        session.SignalError(m.MessageID, err.Error())
+      } else {
+        if isValid {
+          //password is valid, create the upload job
+          session.SignalError(m.MessageID, "task creation Not Implemented")
+        } else {
+          session.SignalError(m.MessageID, "Invalid Password")
+        }
+
+      }
+
       case "SetPassword":
         userID, password, err := m.readPassword()
         if err != nil {

@@ -10,7 +10,7 @@ import (
   "github.com/M-O-S-E-S/mgm/core"
 )
 
-func (sc SimianConnector)Auth(username string, password string) (uuid.UUID, error) {
+func (sc SimianConnector)Auth(username string, password string) (bool, uuid.UUID, error) {
   hasher := md5.New()
   hasher.Write([]byte(password))
   
@@ -23,7 +23,11 @@ func (sc SimianConnector)Auth(username string, password string) (uuid.UUID, erro
     })
   
   if err != nil {
-    return uuid.UUID{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    if err.Error() == "Missing identity or invalid credentials" {
+      return false, uuid.UUID{}, nil
+    } else {
+      return false, uuid.UUID{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+    }
   }
   
   type tmpStruct struct {
@@ -34,13 +38,13 @@ func (sc SimianConnector)Auth(username string, password string) (uuid.UUID, erro
   var m tmpStruct
   err = json.Unmarshal(response, &m)
   if err != nil {
-    return uuid.UUID{}, err
+    return false, uuid.UUID{}, err
   }
   if m.Success {
     userID, _ := uuid.FromString(m.UserID)
-    return  userID, nil
+    return  true, userID, nil
   }
-  return uuid.UUID{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
+  return false, uuid.UUID{}, nil
 }
 
 func (sc SimianConnector)EnableIdentity(username string, identityType string, credential string, userID uuid.UUID) error {
@@ -116,6 +120,23 @@ func (sc SimianConnector)SetPassword(userID uuid.UUID, password string) error {
   }
   
   return sc.confirmRequest(response)
+}
+
+func (sc SimianConnector)ValidatePassword(userID uuid.UUID, password string) (bool, error) {
+  user, err := sc.GetUserByID(userID)
+  if err != nil {
+    return false, err
+  }
+  valid, uid, err := sc.Auth(user.Name, password)
+  if err != nil {
+    return false, err
+  }
+  if valid {
+    if uid == userID {
+      return true, nil
+    }
+  }
+  return false, nil
 }
 
 func (sc SimianConnector)GetIdentities(userID uuid.UUID) ( []core.Identity, error) {

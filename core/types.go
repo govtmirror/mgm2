@@ -41,6 +41,14 @@ type Group struct {
   Roles []string
 }
 
+type Job struct {
+  ID int
+  TimeStamp int
+  Type string
+  User uuid.UUID
+  Data string
+}
+
 type Estate struct {
   Name string
   ID uint

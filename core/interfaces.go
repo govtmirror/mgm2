@@ -24,6 +24,7 @@ type UserConnector interface {
   GetGroups() ([]Group, error)
 
   SetPassword(uuid.UUID, string) error
+  ValidatePassword(uuid.UUID, string) (bool, error)
 }
 
 type Database interface {
@@ -38,6 +39,8 @@ type Database interface {
 
   GetDefaultConfigs()([]ConfigOption, error)
   GetConfigs(uuid.UUID)([]ConfigOption, error)
+
+  CreateTask(string, uuid.UUID, string) (Job, error)
 }
 
 type Logger interface {

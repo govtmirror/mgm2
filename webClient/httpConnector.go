@@ -20,7 +20,7 @@ type Logger interface {
 }
 
 type Authenticator interface {
-  Auth(string, string) (uuid.UUID, error)
+  Auth(string, string) (bool, uuid.UUID, error)
   GetUserByID(uuid.UUID) (*core.User, error)
   GetUserByEmail(string) (*core.User, error)
   GetUserByName(string) (*core.User, error)
@@ -87,8 +87,12 @@ func (hc HttpConnector) LoginHandler(w http.ResponseWriter, r *http.Request) {
     return
   }
 
-  guid,err := hc.authenticator.Auth(t.Username,t.Password);
+  valid,guid,err := hc.authenticator.Auth(t.Username,t.Password);
   if err != nil {
+    if valid == false {
+      http.Error(w, "Invalid Credential", http.StatusInternalServerError)
+      return
+    }
     response := clientAuthResponse{Message: err.Error(),}
     js, err := json.Marshal(response)
     if err != nil {
