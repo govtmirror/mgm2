@@ -12,6 +12,7 @@ import (
   "code.google.com/p/gcfg"
   "github.com/jcelliott/lumber"
   "time"
+  "flag"
 )
 
 type MgmConfig struct {
@@ -21,6 +22,7 @@ type MgmConfig struct {
     OpensimPort string
     WebPort string
     PublicHostname string
+    LocalFileStorage string
   }
 
   MySQL struct {
@@ -37,9 +39,13 @@ func main() {
   //instantiate our logger
   logger := lumber.NewConsoleLogger(lumber.DEBUG)
 
+  cfgPtr := flag.String("config", "/opt/mgm/conf.gcfg", "path to config file")
+
+  flag.Parse()
+
   //read configuration file
   config := MgmConfig{}
-  err := gcfg.ReadFileInto(&config, "conf.gcfg")
+  err := gcfg.ReadFileInto(&config, *cfgPtr)
   if err != nil {
     logger.Fatal("Error reading config file: %v", err)
     return
