@@ -25,39 +25,61 @@
   <button type="button" class="btn" ng-click="nav.toggleLoad()">Load IAR</button>
   <button tyep="button" class="btn" ng-click="nav.toggleSave()">Save IAR</button>
 </div>
+
+
 <div ng-if="nav.state == 'pass'" class="jumbotron">
   <h3>Reset Password</h3>
   <form ng-submit="setPassword()">
-
-    <label>Password:</label>
-    <input type="password" ng-model="password.password" />
-    <strong style="color:red">{{password.passwordError}}</strong>
-    <br>
-
-    <label>Confirm:</label>
-    <input type="password" ng-model="password.confirm" />
-    <br>
-
-    <button class="btn-xs" type="submit" ng-disabled="disablePasswordSubmit" ng-class="{'disabled': password.disablePasswordSubmit}">Submit reset</button>
-    <strong style="color:green">{{password.passwordResult}}</strong>
-
+    <table style="margin-left: 100px">
+      <tr>
+        <td>
+          <label>Password:</label>
+        </td>
+        <td>
+          <input type="password" ng-model="password.password" />
+        </td>
+        <td>
+          <strong style="color:red">{{password.passwordError}}</strong>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <label>Confirm:</label>
+        </td>
+        <td>
+          <input type="password" ng-model="password.confirm" />
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <button class="btn-xs" type="submit" ng-disabled="disablePasswordSubmit" ng-class="{'disabled': password.disablePasswordSubmit}">Submit reset</button>
+        </td>
+        <td>
+          <strong style="color:green">{{password.passwordResult}}</strong>
+        </td>
+      </tr>
+    </table>
   </form>
 </div>
+
+
 <div ng-if="nav.state == 'load'" class="jumbotron">
   <h3>Load IAR File</h3>
   <p>Select a file and enter your password to load an iar file. The iar file will be loaded into the root of your inventory, it will not merge with any existing folders.</p>
   <form>
 
     <label> File: </label>
-    <input type="file" ng-model="iar.file" style="display: inline">
+    <input type="file" style="display: inline" onchange="angular.element(this).scope().iar.file = this.files" />
     <br>
-
 
     <label> Password: </label>
     <input type="password" ng-model="iar.password" />
-    <button class="btn-xs" ng-click="iar.load()">Submit</button>
+    <button class="btn-xs" ng-click="iar.upload()">Submit</button>
   </form>
+  <b>{{iar.message}}</b>
 </div>
+
+
 <div ng-if="nav.state == 'save'" class="jumbotron">
   <p><b>Save IAR File</b>
   </p>

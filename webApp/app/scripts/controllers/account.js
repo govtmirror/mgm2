@@ -70,11 +70,11 @@ angular.module('mgmApp')
     $scope.setPassword = function () {
       $scope.password.passwordError = '';
       if ($scope.password.password === undefined || $scope.password.password === '') {
-        $scope.passwordError = 'Password cannot be blank';
+        $scope.password.passwordError = 'Password cannot be blank';
         return;
       }
       if ($scope.password.confirm === undefined || $scope.password.confirm === '') {
-        $scope.password.passwordError = 'Password confirmation cannot be blank';
+        $scope.password.passwordError = 'Password confirmation is blank';
         return;
       }
       if ($scope.password.confirm !== $scope.password.password) {
@@ -99,8 +99,32 @@ angular.module('mgmApp')
         $scope.password.disablePasswordSubmit = false;
         $scope.$apply();
       });
+    }
 
-
+    $scope.iar = {
+      password: '',
+      file: undefined,
+      message: '',
+      upload: function () {
+        console.log('upload file here');
+        if ($scope.iar.file === undefined) {
+          console.log("invalid file selection");
+          console.log($scope.iar.file);
+          return;
+        }
+        $scope.iar.message = 'Uploading...';
+        mgm.upload("/upload/idgoeshere", $scope.iar.file[0]).then(
+          function () {
+            //success
+            console.log("upload must have worked");
+          },
+          function (msg) {
+            //error
+            console.log(msg);
+            $scope.iar.message = 'Error: ' + msg;
+          }
+        );
+      }
     }
 
   });

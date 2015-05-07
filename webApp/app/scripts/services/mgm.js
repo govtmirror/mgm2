@@ -7,7 +7,7 @@
  * # mgm
  * Service in the mgmApp.
  */
-angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
+angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $http) {
   console.log("mgm service instantiated");
 
   var remoteURL = "ws://" + $location.host() + ":" + $location.port() + "/ws";
@@ -37,7 +37,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
     }
   });
 
-  this.connect = function () {
+  self.connect = function () {
     $rootScope.$broadcast("SyncBegin");
     console.log("Connecting to: " + remoteURL);
     self.ws = new ReconnectingWebSocket(remoteURL);
@@ -125,13 +125,14 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
     }
   };
 
-  this.disconnect = function () {
+  self.disconnect = function () {
     self.ws.close();
   };
 
+  /* Request tracking */
   var requestNum = 0;
   var requestMap = {};
-  this.request = function (requestType, reqObject, callback) {
+  self.request = function (requestType, reqObject, callback) {
     var msgId = requestNum;
     requestNum++;
     requestMap[msgId] = {
@@ -145,11 +146,31 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope) {
     }));
   }
 
+  /* location tracking */
   var locationStack = new Array();
-  this.pushLocation = function (url) {
+  self.pushLocation = function (url) {
     locationStack.push(url);
   }
-  this.popLocation = function () {
+  self.popLocation = function () {
     return locationStack.pop();
+  }
+
+  self.upload = function (url, file) {
+    return $q(function (resolve, reject) {
+      var form = new FormData();
+      form.append("file", file);
+      $http.post(url, form, {
+          transformRequest: angular.identity,
+          headers: {
+            'Content-Type': undefined
+          }
+        })
+        .success(function (data, status, headers, config) {
+          reject("success");
+        })
+        .error(function (data, status, headers, config) {
+          reject(status);
+        });
+    });
   }
 });
