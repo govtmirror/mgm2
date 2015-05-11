@@ -27,7 +27,7 @@ func UserManager(sessionListener <-chan UserSession, jobNotify <-chan Job, dataS
 				//new user session
 				userMap[s.GetGUID()] = sessionLookup{make(chan Job, 32)}
 				logger.Info("User %v Connected", s.GetGUID().String())
-				go userSession(s, userMap[s.GetGUID()].jobLink, dataStore, userConn, logger)
+				go userSession(s, userMap[s.GetGUID()].jobLink, clientClosed, dataStore, userConn, logger)
 			case id := <-clientClosed:
 				//user session has disconnected
 				logger.Info("User %v Disconnected", id.String())
@@ -45,7 +45,7 @@ func UserManager(sessionListener <-chan UserSession, jobNotify <-chan Job, dataS
 
 }
 
-func userSession(session UserSession, jobLink <-chan Job, dataStore Database, userConn UserConnector, logger Logger) {
+func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.UUID, dataStore Database, userConn UserConnector, logger Logger) {
 
 	clientMsg := make(chan []byte, 32)
 	clientClosed := make(chan bool)
@@ -62,6 +62,7 @@ func userSession(session UserSession, jobLink <-chan Job, dataStore Database, us
 			m.load(msg)
 			switch m.MessageType {
 			case "IarUpload":
+				logger.Info("User %v requesting iar upload", session.GetGUID())
 				userID, password, err := m.readPassword()
 				if err != nil {
 					logger.Error("Error reading iar upload request")
@@ -86,6 +87,7 @@ func userSession(session UserSession, jobLink <-chan Job, dataStore Database, us
 					}
 				}
 			case "SetPassword":
+				logger.Info("User %v requesting password change", session.GetGUID())
 				userID, password, err := m.readPassword()
 				if err != nil {
 					logger.Error("Error reading password request")
@@ -107,6 +109,7 @@ func userSession(session UserSession, jobLink <-chan Job, dataStore Database, us
 					}
 				}
 			case "GetDefaultConfig":
+				logger.Info("User %v requesting default configuration", session.GetGUID())
 				if session.GetAccessLevel() > 249 {
 					logger.Info("Serving Default Region Configs.  Request: %v", m.MessageID)
 					cfgs, err := dataStore.GetDefaultConfigs()
@@ -120,6 +123,7 @@ func userSession(session UserSession, jobLink <-chan Job, dataStore Database, us
 					}
 				}
 			case "GetConfig":
+				logger.Info("User %v requesting configuration", session.GetGUID())
 				if session.GetAccessLevel() > 249 {
 					logger.Info("Serving Region Configs.  Request: %v", m.MessageID)
 					rid, err := m.readRegionID()
@@ -139,7 +143,7 @@ func userSession(session UserSession, jobLink <-chan Job, dataStore Database, us
 					}
 				}
 			case "GetState":
-				logger.Info("Service state request")
+				logger.Info("User %v requesting state sync", session.GetGUID())
 				users, err := userConn.GetUsers()
 				if err != nil {
 					logger.Error("Error lookin up activeuser account: ", err)
@@ -210,7 +214,6 @@ func userSession(session UserSession, jobLink <-chan Job, dataStore Database, us
 
 				//signal to the client that we have completed initial state sync
 				session.SignalSuccess(m.MessageID, "State Sync Complete")
-				logger.Info("Sync Complete")
 
 			default:
 				logger.Error("Error on message from client: ", m.MessageType)
@@ -218,7 +221,7 @@ func userSession(session UserSession, jobLink <-chan Job, dataStore Database, us
 			}
 		case <-clientClosed:
 			//the client connection has closed
-			logger.Info("Client went away")
+			exitLink <- session.GetGUID()
 			return
 		}
 
