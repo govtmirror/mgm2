@@ -68,7 +68,6 @@ func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.U
 					logger.Error("Error reading iar upload request")
 					continue
 				}
-				logger.Info("Iar upload request from %v:%v", userID, password)
 				isValid, err := userConn.ValidatePassword(userID, password)
 				if err != nil {
 					session.SignalError(m.MessageID, err.Error())
@@ -77,6 +76,7 @@ func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.U
 						//password is valid, create the upload job
 						job, err := dataStore.CreateLoadIarJob(userID, "/")
 						if err != nil {
+							logger.Error("Cannot creat job for load_iar: ", err)
 							session.SignalError(m.MessageID, err.Error())
 						} else {
 							session.SendJob(m.MessageID, job)
@@ -93,7 +93,6 @@ func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.U
 					logger.Error("Error reading password request")
 					continue
 				}
-				logger.Info("Setting password for %v to %v", userID, password)
 				if userID != session.GetGUID() && session.GetAccessLevel() < 250 {
 					session.SignalError(m.MessageID, "Permission Denied")
 				} else {
@@ -105,6 +104,7 @@ func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.U
 							session.SignalError(m.MessageID, err.Error())
 						} else {
 							session.SignalSuccess(m.MessageID, "Password Set Successfully")
+							logger.Info("User %v password changed", session.GetGUID())
 						}
 					}
 				}
@@ -120,15 +120,19 @@ func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.U
 							session.SendConfig(m.MessageID, cfg)
 						}
 						session.SignalSuccess(m.MessageID, "Default Config Retrieved")
+						logger.Info("User %v default configuration served", session.GetGUID())
 					}
+				} else {
+					logger.Info("User %v permission denied to default configurations", session.GetGUID())
+					session.SignalError(m.MessageID, "Permission Denied")
 				}
 			case "GetConfig":
-				logger.Info("User %v requesting configuration", session.GetGUID())
+				logger.Info("User %v requesting region configuration", session.GetGUID())
 				if session.GetAccessLevel() > 249 {
-					logger.Info("Serving Region Configs.  Request: %v", m.MessageID)
 					rid, err := m.readRegionID()
 					if err != nil {
 						logger.Error("Error reading region id for configs: ", err)
+						session.SignalError(m.MessageID, "Error loading region")
 					} else {
 						logger.Info("Serving Region Configs for %v.", rid)
 						cfgs, err := dataStore.GetConfigs(rid)
@@ -139,14 +143,20 @@ func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.U
 								session.SendConfig(m.MessageID, cfg)
 							}
 							session.SignalSuccess(m.MessageID, "Config Retrieved")
+							logger.Info("User %v config retrieved", session.GetGUID())
 						}
 					}
+				} else {
+					logger.Info("User %v permission denied to configurations", session.GetGUID())
+					session.SignalError(m.MessageID, "Permission Denied")
 				}
 			case "GetState":
 				logger.Info("User %v requesting state sync", session.GetGUID())
 				users, err := userConn.GetUsers()
 				if err != nil {
 					logger.Error("Error lookin up activeuser account: ", err)
+					session.SignalError(m.MessageID, "Error loading user accounts")
+					continue
 				}
 				for _, user := range users {
 					if user.Suspended && session.GetAccessLevel() < 250 {
@@ -159,6 +169,8 @@ func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.U
 				jobs, err := dataStore.GetJobsForUser(session.GetGUID())
 				if err != nil {
 					logger.Error("Error lookin up tasks: ", err)
+					session.SignalError(m.MessageID, "Error loading tasks")
+					continue
 				}
 				for _, job := range jobs {
 					session.SendJob(m.MessageID, job)
@@ -168,6 +180,8 @@ func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.U
 				pendingUsers, err := dataStore.GetPendingUsers()
 				if err != nil {
 					logger.Error("Error lookin up pending user account: ", err)
+					session.SignalError(m.MessageID, "Error looking up pending users")
+					continue
 				}
 				for _, user := range pendingUsers {
 					session.SendPendingUser(m.MessageID, user)
@@ -178,6 +192,8 @@ func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.U
 				regions, err := dataStore.GetRegions()
 				if err != nil {
 					logger.Error("Error lookin up user regions: ", err)
+					session.SignalError(m.MessageID, "Error looking up regions")
+					continue
 				}
 				for _, r := range regions {
 					session.SendRegion(0, r)
@@ -188,6 +204,8 @@ func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.U
 				estates, err := dataStore.GetEstates()
 				if err != nil {
 					logger.Error("Error lookin up estates: ", err)
+					session.SignalError(m.MessageID, "Error looking up estates")
+					continue
 				}
 				for _, e := range estates {
 					session.SendEstate(m.MessageID, e)
@@ -196,6 +214,8 @@ func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.U
 				groups, err := userConn.GetGroups()
 				if err != nil {
 					logger.Error("Error lookin up groups: ", err)
+					session.SignalError(m.MessageID, "Error looking up groups")
+					continue
 				}
 				for _, g := range groups {
 					session.SendGroup(m.MessageID, g)
@@ -206,18 +226,21 @@ func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.U
 					hosts, err := dataStore.GetHosts()
 					if err != nil {
 						logger.Error("Error lookin up hosts: ", err)
+						session.SignalError(m.MessageID, "Error enumerating hosts")
+						continue
 					}
 					for _, h := range hosts {
 						session.SendHost(m.MessageID, h)
 					}
 				}
 
+				logger.Info("User %v state sync complete", session.GetGUID())
 				//signal to the client that we have completed initial state sync
 				session.SignalSuccess(m.MessageID, "State Sync Complete")
 
 			default:
 				logger.Error("Error on message from client: ", m.MessageType)
-
+				session.SignalError(m.MessageID, "Invalid request")
 			}
 		case <-clientClosed:
 			//the client connection has closed
