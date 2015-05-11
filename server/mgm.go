@@ -75,14 +75,14 @@ func main() {
 	//leave this out for now
 	//os,_ := opensim.NewOpensimListener(config.OpensimPort, nil)
 
-	taskNotify := make(chan core.Job, 32)
+	jobNotifier := make(chan core.Job, 32)
 	fileUpload := make(chan core.FileUpload, 32)
 
 	//Hook up core processing...
 	//regionManager := core.RegionManager{nil, db}
 	sessionListener := make(chan core.UserSession, 64)
-	core.UserManager(sessionListener, db, sim, logger)
-	core.JobManager(fileUpload, taskNotify, config.MGM.LocalFileStorage, db, logger)
+	core.UserManager(sessionListener, jobNotifier, db, sim, logger)
+	core.JobManager(fileUpload, jobNotifier, config.MGM.LocalFileStorage, db, logger)
 
 	httpCon := webClient.NewHttpConnector(config.MGM.SessionSecret, fileUpload, sim, db, mailer, logger)
 	sockCon := webClient.NewWebsocketConnector(httpCon, sessionListener, logger)

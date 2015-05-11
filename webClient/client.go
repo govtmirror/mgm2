@@ -119,7 +119,13 @@ func (c client) GetAccessLevel() uint8 {
 	return c.userLevel
 }
 
-func (c client) Read() ([]byte, bool) {
-	data, more := <-c.fromClient
-	return data, more
+func (c client) Read(upstream chan<- []byte, closing chan<- bool) {
+	for {
+		data, more := <-c.fromClient
+		if !more {
+			closing <- true
+			return
+		}
+		upstream <- data
+	}
 }

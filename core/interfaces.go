@@ -14,7 +14,7 @@ type UserSession interface {
 	SendJob(int, Job)
 	SignalSuccess(int, string)
 	SignalError(int, string)
-	Read() ([]byte, bool)
+	Read(chan<- []byte, chan<- bool)
 
 	GetGUID() uuid.UUID
 	GetAccessLevel() uint8
