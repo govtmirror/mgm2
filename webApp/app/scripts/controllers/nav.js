@@ -51,5 +51,6 @@ angular.module('mgmApp').controller('NavCtrl', function ($scope, $location, $tim
         angular.copy(job, $scope.task.jobs[job.ID]);
       }
     }
+    $scope.$apply();
   });
 });

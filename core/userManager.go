@@ -25,7 +25,7 @@ func UserManager(sessionListener <-chan UserSession, jobNotify <-chan Job, dataS
 			select {
 			case s := <-sessionListener:
 				//new user session
-				userMap[s.GetGUID()] = sessionLookup{}
+				userMap[s.GetGUID()] = sessionLookup{make(chan Job, 32)}
 				logger.Info("User %v Connected", s.GetGUID().String())
 				go userSession(s, userMap[s.GetGUID()].jobLink, dataStore, userConn, logger)
 			case id := <-clientClosed:
@@ -45,7 +45,7 @@ func UserManager(sessionListener <-chan UserSession, jobNotify <-chan Job, dataS
 
 }
 
-func userSession(session UserSession, joblink <-chan Job, dataStore Database, userConn UserConnector, logger Logger) {
+func userSession(session UserSession, jobLink <-chan Job, dataStore Database, userConn UserConnector, logger Logger) {
 
 	clientMsg := make(chan []byte, 32)
 	clientClosed := make(chan bool)
@@ -54,6 +54,8 @@ func userSession(session UserSession, joblink <-chan Job, dataStore Database, us
 
 	for {
 		select {
+		case j := <-jobLink:
+			session.SendJob(0, j)
 		case msg := <-clientMsg:
 			//message from client
 			m := userRequest{}

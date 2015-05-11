@@ -96,8 +96,6 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
         $rootScope.$broadcast("GroupUpdate", message.Message);
         break;
       case "JobUpdate":
-        console.log(message.Message.Data);
-        console.log(bin2String(message.Message.Data));
         self.jobs[message.Message.ID] = message.Message;
         $rootScope.$broadcast("JobUpdate", message.Message);
         break;
