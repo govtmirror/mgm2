@@ -134,7 +134,6 @@ func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.U
 			case "GetDefaultConfig":
 				logger.Info("User %v requesting default configuration", session.GetGUID())
 				if session.GetAccessLevel() > 249 {
-					logger.Info("Serving Default Region Configs.  Request: %v", m.MessageID)
 					cfgs, err := dataStore.GetDefaultConfigs()
 					if err != nil {
 						logger.Error("Error getting default configs: ", err)

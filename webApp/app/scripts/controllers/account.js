@@ -61,9 +61,10 @@ angular.module('mgmApp')
     }
 
     $scope.$on("UserUpdate", function (event, user) {
-      if (user.UserID === $scope.auth.UUID) {
-        angular.copy(user, $scope.account);
-        $scope.$apply();
+      if (user.UserID === $scope.auth.UUID && user != $scope.auth) {
+        $timeout(function(){
+          angular.copy(user, $scope.account);
+        })
       };
     });
 
@@ -86,18 +87,19 @@ angular.module('mgmApp')
         UserID: $scope.auth.UUID,
         Password: $scope.password.password
       }, function (success, message) {
-        if (success === true) {
-          $scope.password.passwordResult = 'password updated successfuly';
-          $scope.password.password = '';
-          $scope.password.confirm = '';
-          $timeout(function () {
-            $scope.password.passwordResult = '';
-          }, 5 * 1000);
-        } else {
-          $scope.password.passwordError = message;
-        }
-        $scope.password.disablePasswordSubmit = false;
-        $scope.$apply();
+        $timeout(function(){
+          if (success === true) {
+            $scope.password.passwordResult = 'password updated successfuly';
+            $scope.password.password = '';
+            $scope.password.confirm = '';
+            $timeout(function () {
+              $scope.password.passwordResult = '';
+            }, 5 * 1000);
+          } else {
+            $scope.password.passwordError = message;
+          }
+          $scope.password.disablePasswordSubmit = false;
+        });
       });
     }
 
@@ -117,23 +119,24 @@ angular.module('mgmApp')
           UserID: $scope.auth.UUID,
           Password: $scope.iar.password
         }, function (success, message) {
-          if (success === true) {
-            mgm.upload("/upload/" + message, $scope.iar.file[0]).then(
-              function () {
-                //success
-                $scope.iar.password = '';
-                $scope.iar.message = '';
-              },
-              function (msg) {
-                //error
-                console.log(msg);
-                $scope.iar.message = 'Error: ' + msg;
-              }
-            );
-          } else {
-            $scope.iar.message = message;
-          }
-          $scope.$apply();
+          $timeout(function(){
+            if (success === true) {
+              mgm.upload("/upload/" + message, $scope.iar.file[0]).then(
+                function () {
+                  //success
+                  $scope.iar.password = '';
+                  $scope.iar.message = '';
+                },
+                function (msg) {
+                  //error
+                  console.log(msg);
+                  $scope.iar.message = 'Error: ' + msg;
+                }
+              );
+            } else {
+              $scope.iar.message = message;
+            }
+          });
         });
       }
     }

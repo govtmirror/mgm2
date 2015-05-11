@@ -8,7 +8,7 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('ConfigCtrl', function ($scope, $routeParams, $location, mgm) {
+  .controller('ConfigCtrl', function ($scope, $routeParams, $location, $timeout, mgm) {
 
     if ($scope.auth === undefined || $scope.auth === {}) {
       mgm.pushLocation($location.url());
@@ -48,33 +48,36 @@ angular.module('mgmApp')
       if (uuid === '00000000-0000-0000-0000-000000000000') {
         mgm.request("GetDefaultConfig", {}, function (success) {
           //all default configs received
-          generateEditConfig();
-          $scope.$apply();
+          $timeout(function(){
+            generateEditConfig();
+          });
         });
       } else {
         mgm.request("GetConfig", {
           "RegionUUID": uuid
         }, function (success) {
           //all region configs received
-          generateEditConfig();
-          $scope.$apply();
+          $timeout(function(){
+            generateEditConfig();
+          });
         });
       }
     }
     $scope.$on('ConfigUpdate', function (event, cfg) {
-      if (cfg['Region'] === '00000000-0000-0000-0000-000000000000') {
-        if (!(cfg['Section'] in $scope.defaultConfig)) {
-          $scope.defaultConfig[cfg['Section']] = {};
+      $timeout(function(){
+        if (cfg['Region'] === '00000000-0000-0000-0000-000000000000') {
+          if (!(cfg['Section'] in $scope.defaultConfig)) {
+            $scope.defaultConfig[cfg['Section']] = {};
+          }
+          $scope.defaultConfig[cfg['Section']][cfg['Item']] = cfg['Content'];
         }
-        $scope.defaultConfig[cfg['Section']][cfg['Item']] = cfg['Content'];
-      }
-      if (cfg['Region'] === $scope.currentRegion.UUID) {
-        if (!(cfg['Section'] in $scope.regionConfig)) {
-          $scope.regionConfig[cfg['Section']] = {};
+        if (cfg['Region'] === $scope.currentRegion.UUID) {
+          if (!(cfg['Section'] in $scope.regionConfig)) {
+            $scope.regionConfig[cfg['Section']] = {};
+          }
+          $scope.regionConfig[cfg['Section']][cfg['Item']] = cfg['Content'];
         }
-        $scope.regionConfig[cfg['Section']][cfg['Item']] = cfg['Content'];
-      }
-      $scope.$apply();
+      });
     });
 
     $scope.displayConfig = function () {
