@@ -40,7 +40,7 @@ func main() {
 	//instantiate our logger
 	logger := lumber.NewConsoleLogger(lumber.DEBUG)
 
-	cfgPtr := flag.String("config", "/opt/mgm/conf.gcfg", "path to config file")
+	cfgPtr := flag.String("config", "/opt/mgm/mgm.gcfg", "path to config file")
 
 	flag.Parse()
 
