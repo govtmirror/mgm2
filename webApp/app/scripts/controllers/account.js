@@ -113,19 +113,15 @@ angular.module('mgmApp')
         }
         $scope.iar.message = 'Uploading...';
         //request iar upload from mgm
-        console.log("requesting from mgm");
         mgm.request("IarUpload", {
           UserID: $scope.auth.UUID,
           Password: $scope.iar.password
         }, function (success, message) {
-          console.log("success from mgm request: " + success + " message: " + message)
           if (success === true) {
             mgm.upload("/upload/" + message, $scope.iar.file[0]).then(
               function () {
                 //success
-                console.log("upload must have worked");
                 $scope.iar.password = '';
-                $scope.iar.file = undefined;
                 $scope.iar.message = '';
               },
               function (msg) {

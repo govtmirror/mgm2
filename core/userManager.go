@@ -61,6 +61,29 @@ func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.U
 			m := userRequest{}
 			m.load(msg)
 			switch m.MessageType {
+			case "DeleteJob":
+				logger.Info("User %v requesting delete job", session.GetGUID())
+				id, err := m.readID()
+				if err != nil {
+					session.SignalError(m.MessageID, "Invalid format")
+					continue
+				}
+				job, err := dataStore.GetJobByID(id)
+				if err != nil {
+					session.SignalError(m.MessageID, "Error retrieving job")
+					continue
+				}
+				if job.ID != id {
+					session.SignalError(m.MessageID, "Job does not exist")
+					continue
+				}
+				err = dataStore.DeleteJob(job)
+				if err != nil {
+					logger.Error("Error deleting job: ", err)
+					session.SignalError(m.MessageID, "Error deleting job")
+					continue
+				}
+				session.SignalSuccess(m.MessageID, "Job Deleted")
 			case "IarUpload":
 				logger.Info("User %v requesting iar upload", session.GetGUID())
 				userID, password, err := m.readPassword()

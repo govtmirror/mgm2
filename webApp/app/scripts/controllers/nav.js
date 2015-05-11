@@ -39,7 +39,20 @@ angular.module('mgmApp').controller('NavCtrl', function ($scope, $location, $tim
     toggle: function () {
       $scope.task.showBar = !$scope.task.showBar;
     },
-    jobs: {}
+    jobs: {},
+    delete: function(job){
+      mgm.deleteJob(job).then(
+        function(){
+          //success
+          $timeout(function(){
+            delete $scope.task.jobs[job.ID];
+          })
+        },
+        function(msg){
+          console.log(msg);
+        }
+      );
+    }
   }
 
   $scope.task.jobs = mgm.jobs;

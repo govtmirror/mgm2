@@ -48,6 +48,7 @@ type Database interface {
 	CreateJob(string, uuid.UUID, string) (Job, error)
 	CreateLoadIarJob(uuid.UUID, string) (Job, error)
 	UpdateJob(Job) error
+	DeleteJob(Job) error
 
 	GetJobByID(int) (Job, error)
 }

@@ -93,16 +93,18 @@
       </div>
     </div>
     <div ng-if="loggedIn && task.showBar">
-      <div pageslide="" ps-open="task.showBar" ps-push="true" class="ng-isolate-scope ng-pageslide" style="background-color: #9C9C9C; padding-left: 10px;">
-        <h3>Task List</h3>
+      <div pageslide="" ps-size="400px" ps-open="task.showBar" ps-push="true" class="ng-isolate-scope ng-pageslide" style="background-color: #BCBCBC; padding-left: 10px; border-left: 1px solid black">
+        <h3><span ng-click="task.toggle()" class="glyphicon glyphicon-tasks" style="padding: 16px 15px;"></span>Task List</h3>
         <table>
           <tr>
+            <th width="30px"></th>
             <th width="100px">type</th>
-            <th width="100px">data</th>
+            <th width="200px">status</th>
           </tr>
           <tr ng-repeat="job in task.jobs">
+            <td><button class="btn btn-danger btn-xs" ng-click="task.delete(job)"><i class="glyphicon glyphicon-remove"></i></button></td>
             <td>{{job.Type}}</td>
-            <td>{{job.Data}}</td>
+            <td>{{job.Data.Status}}</td>
           </tr>
         </table>
       </div>

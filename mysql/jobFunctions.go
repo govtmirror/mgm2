@@ -44,6 +44,21 @@ func (db Database) UpdateJob(job core.Job) error {
 	return nil
 }
 
+// DeleteJob purges a job record from the database
+func (db Database) DeleteJob(job core.Job) error {
+	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v?parseTime=true", db.user, db.password, db.host, db.database))
+	if err != nil {
+		return err
+	}
+	defer con.Close()
+
+	_, err = con.Exec("DELETE FROM jobs WHERE id=?", job.ID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // GetJobsForUser get all job records for a particular user
 func (db Database) GetJobsForUser(userID uuid.UUID) ([]core.Job, error) {
 	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v?parseTime=true", db.user, db.password, db.host, db.database))

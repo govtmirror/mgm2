@@ -96,6 +96,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
         $rootScope.$broadcast("GroupUpdate", message.Message);
         break;
       case "JobUpdate":
+        message.Message.Data = JSON.parse(message.Message.Data)
         self.jobs[message.Message.ID] = message.Message;
         $rootScope.$broadcast("JobUpdate", message.Message);
         break;
@@ -184,6 +185,23 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
         .error(function (data, status, headers, config) {
           reject(status);
         });
+    });
+  }
+
+  /* utility functions */
+  self.deleteJob = function(job){
+    return $q(function (resolve, reject) {
+      self.request("DeleteJob",{
+        ID: job.ID
+      }, function(success, message){
+        if(success){
+          delete self.jobs[job.ID];
+          resolve();
+        } else {
+          reject(message);
+        }
+      })
+
     });
   }
 });
