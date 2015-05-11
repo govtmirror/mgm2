@@ -83,6 +83,8 @@ func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.U
 					session.SignalError(m.MessageID, "Error deleting job")
 					continue
 				}
+				//TODO some jobs may need files cleaned up... should we delete them here
+				// or leave them and create a cleanup coroutine?
 				session.SignalSuccess(m.MessageID, "Job Deleted")
 			case "IarUpload":
 				logger.Info("User %v requesting iar upload", session.GetGUID())
