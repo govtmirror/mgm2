@@ -1,6 +1,8 @@
 package core
 
-import "github.com/satori/go.uuid"
+import (
+	"github.com/satori/go.uuid"
+)
 
 // UserSession is the connection to the web client
 type UserSession interface {
@@ -40,6 +42,7 @@ type Database interface {
 	GetRegions() ([]Region, error)
 	GetEstates() ([]Estate, error)
 	GetHosts() ([]Host, error)
+	GetHostByAddress(string) (Host, error)
 
 	GetPendingUsers() ([]PendingUser, error)
 

@@ -6,7 +6,7 @@ import (
 )
 
 // NodeManager receives and communicates with mgm Node processes
-func NodeManager(listenPort string, hStatsLink chan<- HostStats, logger Logger) {
+func NodeManager(listenPort string, hStatsLink chan<- HostStats, db Database, logger Logger) {
 
 	ln, err := net.Listen("tcp", ":"+listenPort)
 	if err != nil {
@@ -15,21 +15,34 @@ func NodeManager(listenPort string, hStatsLink chan<- HostStats, logger Logger) 
 	}
 	logger.Info("Listening for mgmNode instances on :" + listenPort)
 
-	go mgmConnectionAcceptor(ln, hStatsLink, logger)
+	go mgmConnectionAcceptor(ln, hStatsLink, db, logger)
 }
 
-func mgmConnectionAcceptor(listen net.Listener, hStatsLink chan<- HostStats, logger Logger) {
+func mgmConnectionAcceptor(listen net.Listener, hStatsLink chan<- HostStats, db Database, logger Logger) {
 	for {
 		conn, err := listen.Accept()
 		if err != nil {
 			logger.Error("Error accepting connection: ", err)
 			continue
 		}
-		go mgmConnectionHandler(conn, hStatsLink, logger)
+		//validate connection, and identify host
+		addr := conn.RemoteAddr()
+		address := addr.(*net.TCPAddr).IP.String()
+		host, err := db.GetHostByAddress(address)
+		if err != nil {
+			logger.Error("Error looking up mgm Node: ", err)
+			continue
+		}
+		if host.Address != address {
+			logger.Info("mgmNode connection from unregistered address: ", address)
+			continue
+		}
+		logger.Info("MGM Node connection from: ", address)
+		go mgmConnectionHandler(host.ID, conn, hStatsLink, logger)
 	}
 }
 
-func mgmConnectionHandler(conn net.Conn, hStatsLink chan<- HostStats, logger Logger) {
+func mgmConnectionHandler(id uint, conn net.Conn, hStatsLink chan<- HostStats, logger Logger) {
 	d := json.NewDecoder(conn)
 	for {
 		nmsg := NetworkMessage{}
@@ -44,6 +57,7 @@ func mgmConnectionHandler(conn net.Conn, hStatsLink chan<- HostStats, logger Log
 		switch nmsg.MessageType {
 		case "host_stats":
 			hStats := nmsg.HStats
+			hStats.ID = id
 			hStatsLink <- hStats
 		default:
 			logger.Info("Received invalid message from an MGM node: ", nmsg.MessageType)

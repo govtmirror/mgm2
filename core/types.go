@@ -82,6 +82,7 @@ type Identity struct {
 
 // Host is an MGM server record
 type Host struct {
+	ID       uint
 	Address  string
 	Port     uint `json:"-"`
 	Hostname string

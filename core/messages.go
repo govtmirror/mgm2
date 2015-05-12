@@ -17,6 +17,7 @@ type NetworkMessage struct {
 
 // HostStats holds mgm host statistical info
 type HostStats struct {
+	ID         uint
 	CPUPercent []float64
 	MEMTotal   uint64
 	MEMUsed    uint64

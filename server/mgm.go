@@ -85,7 +85,7 @@ func main() {
 	sessionListener := make(chan core.UserSession, 64)
 	core.SessionManager(sessionListener, jobNotifier, hostStatsNotifier, db, sim, logger)
 	core.JobManager(fileUpload, jobNotifier, config.MGM.LocalFileStorage, db, logger)
-	core.NodeManager(config.MGM.NodePort, hostStatsNotifier, logger)
+	core.NodeManager(config.MGM.NodePort, hostStatsNotifier, db, logger)
 
 	httpCon := webClient.NewHttpConnector(config.MGM.SessionSecret, fileUpload, sim, db, mailer, logger)
 	sockCon := webClient.NewWebsocketConnector(httpCon, sessionListener, logger)
