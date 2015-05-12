@@ -1,7 +1,7 @@
 [node]
 OpensimBinDir = /opt/mgm/opensim/bin
 RegionDir = /opt/mgm/regions
-MGMAddress = 127.0.0.1:8080
+MGMAddress = 127.0.0.1:3000
 
 [opensim]
 MinRegionPort = 9000
@@ -9,4 +9,3 @@ MaxRegionPort = 9029
 MinConsolePort = 10000
 MaxConsolePort = 10029
 ExternalAddress = 127.0.0.1
-

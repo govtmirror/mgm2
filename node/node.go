@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"net"
 	"time"
@@ -62,21 +63,29 @@ func main() {
 			continue
 		}
 		n.logger.Info("MGM Node connected to MGM")
-		go n.handleConnection(conn, mgmCommands)
+		go n.readConnection(conn, mgmCommands)
 
 		for {
 			select {
 			case msg := <-mgmCommands:
 				n.logger.Info("recieved message from MGM: ", string(msg))
 			case stats := <-hStats:
-				n.logger.Info("collected host stats: ", stats)
+				data, err := json.Marshal(stats)
+				if err != nil {
+					n.logger.Error("Error json marshalling stats object: ", err)
+					continue
+				}
+				_, err = conn.Write(data)
+				if err != nil {
+					n.logger.Error("Error sending data: ", err)
+				}
 			}
 		}
 	}
 
 }
 
-func (node mgmNode) handleConnection(conn net.Conn, out chan []byte) {
+func (node mgmNode) readConnection(conn net.Conn, out chan []byte) {
 	for {
 		data := make([]byte, 512)
 		_, err := conn.Read(data)
@@ -99,7 +108,7 @@ func (node mgmNode) collectHostStatistics(out chan core.HostStats) {
 
 		v, err := mem.VirtualMemory()
 		if err != nil {
-			node.logger.Error("Error reafing Memory", err)
+			node.logger.Error("Error reading Memory", err)
 		}
 		s.MEMTotal = v.Total
 		s.MEMUsed = v.Used

@@ -22,6 +22,7 @@ type mgmConfig struct {
 		SessionSecret    string
 		OpensimPort      string
 		WebPort          string
+		NodePort         string
 		PublicHostname   string
 		LocalFileStorage string
 	}
@@ -81,8 +82,9 @@ func main() {
 	//Hook up core processing...
 	//regionManager := core.RegionManager{nil, db}
 	sessionListener := make(chan core.UserSession, 64)
-	core.UserManager(sessionListener, jobNotifier, db, sim, logger)
+	core.SessionManager(sessionListener, jobNotifier, db, sim, logger)
 	core.JobManager(fileUpload, jobNotifier, config.MGM.LocalFileStorage, db, logger)
+	core.NodeManager(config.MGM.NodePort, logger)
 
 	httpCon := webClient.NewHttpConnector(config.MGM.SessionSecret, fileUpload, sim, db, mailer, logger)
 	sockCon := webClient.NewWebsocketConnector(httpCon, sessionListener, logger)

@@ -3,6 +3,7 @@
   SessionSecret = 35FA4ACE5EF326AE5474AE14EF143
   OpensimPort = 8000
   WebPort = 8080
+  NodePort = 3000
   PublicHostname = publicsite.com
   LocalFileStorage = /opt/mgm/files
 

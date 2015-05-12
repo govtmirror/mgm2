@@ -6,8 +6,8 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-// UserManager is the process that listens for new session connections and spins of the session go-routine
-func UserManager(sessionListener <-chan UserSession, jobNotify <-chan Job, dataStore Database, userConn UserConnector, logger Logger) {
+// SessionManager is the process that listens for new session connections and spins of the session go-routine
+func SessionManager(sessionListener <-chan UserSession, jobNotify <-chan Job, dataStore Database, userConn UserConnector, logger Logger) {
 
 	//structure for our lookup table
 	type sessionLookup struct {
