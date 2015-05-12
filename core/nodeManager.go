@@ -6,7 +6,7 @@ import (
 )
 
 // NodeManager receives and communicates with mgm Node processes
-func NodeManager(listenPort string, logger Logger) {
+func NodeManager(listenPort string, hStatsLink chan<- HostStats, logger Logger) {
 
 	ln, err := net.Listen("tcp", ":"+listenPort)
 	if err != nil {
@@ -15,27 +15,21 @@ func NodeManager(listenPort string, logger Logger) {
 	}
 	logger.Info("Listening for mgmNode instances on :" + listenPort)
 
-	//inBox := make(chan []byte, 64)
-
-	go mgmConnectionAcceptor(ln, logger)
-
-	go func() {
-		logger.Info("NodeManager Running")
-	}()
+	go mgmConnectionAcceptor(ln, hStatsLink, logger)
 }
 
-func mgmConnectionAcceptor(listen net.Listener, logger Logger) {
+func mgmConnectionAcceptor(listen net.Listener, hStatsLink chan<- HostStats, logger Logger) {
 	for {
 		conn, err := listen.Accept()
 		if err != nil {
 			logger.Error("Error accepting connection: ", err)
 			continue
 		}
-		go mgmConnectionHandler(conn, logger)
+		go mgmConnectionHandler(conn, hStatsLink, logger)
 	}
 }
 
-func mgmConnectionHandler(conn net.Conn, logger Logger) {
+func mgmConnectionHandler(conn net.Conn, hStatsLink chan<- HostStats, logger Logger) {
 	d := json.NewDecoder(conn)
 	for {
 		nmsg := NetworkMessage{}
@@ -50,7 +44,7 @@ func mgmConnectionHandler(conn net.Conn, logger Logger) {
 		switch nmsg.MessageType {
 		case "host_stats":
 			hStats := nmsg.HStats
-			logger.Info("Received message from an MGM node: ", hStats)
+			hStatsLink <- hStats
 		default:
 			logger.Info("Received invalid message from an MGM node: ", nmsg.MessageType)
 		}

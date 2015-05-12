@@ -7,11 +7,13 @@ import (
 )
 
 // SessionManager is the process that listens for new session connections and spins of the session go-routine
-func SessionManager(sessionListener <-chan UserSession, jobNotify <-chan Job, dataStore Database, userConn UserConnector, logger Logger) {
+func SessionManager(sessionListener <-chan UserSession, jobNotify <-chan Job, hStatNofity <-chan HostStats, dataStore Database, userConn UserConnector, logger Logger) {
 
 	//structure for our lookup table
 	type sessionLookup struct {
-		jobLink chan Job
+		jobLink      chan Job
+		hostStatLink chan HostStats
+		accessLevel  uint8
 	}
 
 	userMap := make(map[uuid.UUID]sessionLookup)
@@ -25,9 +27,13 @@ func SessionManager(sessionListener <-chan UserSession, jobNotify <-chan Job, da
 			select {
 			case s := <-sessionListener:
 				//new user session
-				userMap[s.GetGUID()] = sessionLookup{make(chan Job, 32)}
+				userMap[s.GetGUID()] = sessionLookup{
+					make(chan Job, 32),
+					make(chan HostStats, 32),
+					s.GetAccessLevel(),
+				}
 				logger.Info("User %v Connected", s.GetGUID().String())
-				go userSession(s, userMap[s.GetGUID()].jobLink, clientClosed, dataStore, userConn, logger)
+				go userSession(s, userMap[s.GetGUID()].jobLink, userMap[s.GetGUID()].hostStatLink, clientClosed, dataStore, userConn, logger)
 			case id := <-clientClosed:
 				//user session has disconnected
 				logger.Info("User %v Disconnected", id.String())
@@ -39,13 +45,20 @@ func SessionManager(sessionListener <-chan UserSession, jobNotify <-chan Job, da
 					//tell session coroutine to inform user
 					session.jobLink <- j
 				}
+			case stat := <-hStatNofity:
+				//host stats updated, find any admin users authenticated
+				for _, v := range userMap {
+					if v.accessLevel >= 240 {
+						v.hostStatLink <- stat
+					}
+				}
 			}
 		}
 	}()
 
 }
 
-func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.UUID, dataStore Database, userConn UserConnector, logger Logger) {
+func userSession(session UserSession, jobLink <-chan Job, hStatLink <-chan HostStats, exitLink chan<- uuid.UUID, dataStore Database, userConn UserConnector, logger Logger) {
 
 	clientMsg := make(chan []byte, 32)
 	clientClosed := make(chan bool)
@@ -56,6 +69,8 @@ func userSession(session UserSession, jobLink <-chan Job, exitLink chan<- uuid.U
 		select {
 		case j := <-jobLink:
 			session.SendJob(0, j)
+		case s := <-hStatLink:
+			session.SendHostStat(s)
 		case msg := <-clientMsg:
 			//message from client
 			m := userRequest{}

@@ -78,13 +78,14 @@ func main() {
 
 	jobNotifier := make(chan core.Job, 32)
 	fileUpload := make(chan core.FileUpload, 32)
+	hostStatsNotifier := make(chan core.HostStats, 64)
 
 	//Hook up core processing...
 	//regionManager := core.RegionManager{nil, db}
 	sessionListener := make(chan core.UserSession, 64)
-	core.SessionManager(sessionListener, jobNotifier, db, sim, logger)
+	core.SessionManager(sessionListener, jobNotifier, hostStatsNotifier, db, sim, logger)
 	core.JobManager(fileUpload, jobNotifier, config.MGM.LocalFileStorage, db, logger)
-	core.NodeManager(config.MGM.NodePort, logger)
+	core.NodeManager(config.MGM.NodePort, hostStatsNotifier, logger)
 
 	httpCon := webClient.NewHttpConnector(config.MGM.SessionSecret, fileUpload, sim, db, mailer, logger)
 	sockCon := webClient.NewWebsocketConnector(httpCon, sessionListener, logger)

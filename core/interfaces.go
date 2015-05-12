@@ -10,6 +10,7 @@ type UserSession interface {
 	SendEstate(int, Estate)
 	SendGroup(int, Group)
 	SendHost(int, Host)
+	SendHostStat(HostStats)
 	SendConfig(int, ConfigOption)
 	SendJob(int, Job)
 	SignalSuccess(int, string)

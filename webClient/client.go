@@ -78,6 +78,14 @@ func (c client) SendHost(req int, host core.Host) {
 	}
 }
 
+func (c client) SendHostStat(stat core.HostStats) {
+	resp := clientResponse{0, "HostStatus", stat}
+	data, err := json.Marshal(resp)
+	if err == nil {
+		c.writeData(data)
+	}
+}
+
 func (c client) SendJob(req int, job core.Job) {
 	resp := clientResponse{req, "JobUpdate", job}
 	data, err := json.Marshal(resp)
