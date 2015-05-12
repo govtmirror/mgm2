@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"net"
+	"syscall"
 	"time"
 
 	"code.google.com/p/gcfg"
@@ -52,6 +53,7 @@ func main() {
 
 	hStats := make(chan core.HostStats, 8)
 	mgmCommands := make(chan []byte, 32)
+	socketClosed := make(chan bool)
 
 	go n.collectHostStatistics(hStats)
 
@@ -63,19 +65,28 @@ func main() {
 			continue
 		}
 		n.logger.Info("MGM Node connected to MGM")
-		go n.readConnection(conn, mgmCommands)
+		go n.readConnection(conn, mgmCommands, socketClosed)
 
+	ProcessingPackets:
 		for {
 			select {
+			case <-socketClosed:
+				break ProcessingPackets
 			case msg := <-mgmCommands:
 				n.logger.Info("recieved message from MGM: ", string(msg))
 			case stats := <-hStats:
-				data, err := json.Marshal(stats)
+				nmsg := core.NetworkMessage{}
+				nmsg.MessageType = "host_stats"
+				nmsg.HStats = stats
+				data, err := json.Marshal(nmsg)
 				if err != nil {
 					n.logger.Error("Error json marshalling stats object: ", err)
 					continue
 				}
 				_, err = conn.Write(data)
+				if err == syscall.EPIPE {
+					break
+				}
 				if err != nil {
 					n.logger.Error("Error sending data: ", err)
 				}
@@ -85,12 +96,13 @@ func main() {
 
 }
 
-func (node mgmNode) readConnection(conn net.Conn, out chan []byte) {
+func (node mgmNode) readConnection(conn net.Conn, out chan []byte, closing chan bool) {
 	for {
 		data := make([]byte, 512)
 		_, err := conn.Read(data)
 		if err != nil {
 			node.logger.Error("Error reading from socket: ", err)
+			closing <- true
 			return
 		}
 		out <- data

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"encoding/json"
 	"net"
 )
 
@@ -35,13 +36,24 @@ func mgmConnectionAcceptor(listen net.Listener, logger Logger) {
 }
 
 func mgmConnectionHandler(conn net.Conn, logger Logger) {
+	d := json.NewDecoder(conn)
 	for {
-		data := make([]byte, 512)
-		_, err := conn.Read(data)
+		nmsg := NetworkMessage{}
+		err := d.Decode(&nmsg)
 		if err != nil {
-			logger.Error("Error reading from socket: ", err)
-			return
+			logger.Error("Error decoding mgmNode message: ", err)
+			if err.Error() == "EOF" {
+				return
+			}
 		}
-		logger.Info("Received message from an MGM node: ", string(data))
+
+		switch nmsg.MessageType {
+		case "host_stats":
+			hStats := nmsg.HStats
+			logger.Info("Received message from an MGM node: ", hStats)
+		default:
+			logger.Info("Received invalid message from an MGM node: ", nmsg.MessageType)
+		}
+
 	}
 }
