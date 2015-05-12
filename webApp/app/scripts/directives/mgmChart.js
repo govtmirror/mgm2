@@ -37,11 +37,10 @@ angular.module('mgmApp')
         .rangeRoundBands([margin.left, width], 0.40);
 
       var yScale = d3.scale.linear()
-        .domain([0, d3.max(dataset, function (d) {
-          return d.val;
-        })])
+        .domain([0, 100])
         .range([h, 0]);
 
+      d3.select('#' + id).selectAll("svg").remove();
       var svg = d3.select('#' + id).append("svg")
         .attr("width", w + margin.right + margin.left)
         .attr("height", h + margin.top + margin.bottom)
@@ -60,33 +59,30 @@ angular.module('mgmApp')
           return h - yScale(d.val);
         })
         .attr("fill", function (d) {
-          return "rgb(259, 148, " + (d.val * 14) + ")";
+          return "rgb(0,0,0)";
         })
     }
 
     var linkFunction = function (scope, element, attrs) {
-      var data = scope.data;
-      if (data === undefined) {
-        return;
-      }
-
-      console.log(data);
-
-      var graphData = [];
-      for (var i = 0; i < data.length; i++) {
-        if (data[i] < 2) {
-          data[i] = 2;
+      scope.$watch('data', function(){
+        var data = scope.data;
+        if (data === undefined) {
+          return;
         }
-        graphData.push({
-          'key': i,
-          'val': data[i]
-        });
-      }
 
-      $timeout(function () {
+        var graphData = [];
+        for (var i = 0; i < data.length; i++) {
+          if (data[i] < 2) {
+            data[i] = 2;
+          }
+          graphData.push({
+            'key': i,
+            'val': data[i]
+          });
+        }
+
         drawChart(scope, element, attrs, graphData);
-      }, 1);
-
+      });
     };
 
     return {

@@ -11,8 +11,9 @@ import (
 
 	"github.com/M-O-S-E-S/mgm/core"
 	"github.com/jcelliott/lumber"
-	"github.com/shirou/gopsutil/cpu"
-	"github.com/shirou/gopsutil/mem"
+	pscpu "github.com/shirou/gopsutil/cpu"
+	psmem "github.com/shirou/gopsutil/mem"
+	psnet "github.com/shirou/gopsutil/net"
 )
 
 type nodeConfig struct {
@@ -111,20 +112,33 @@ func (node mgmNode) readConnection(conn net.Conn, out chan []byte, closing chan 
 
 func (node mgmNode) collectHostStatistics(out chan core.HostStats) {
 	for {
+		//start calculating network sent
+		fInet, err := psnet.NetIOCounters(false)
+		if err != nil {
+			node.logger.Error("Error reading networking", err)
+		}
+
 		s := core.HostStats{}
-		c, err := cpu.CPUPercent(time.Second, true)
+		c, err := pscpu.CPUPercent(time.Second, true)
 		if err != nil {
 			node.logger.Error("Error readin CPU: ", err)
 		}
 		s.CPUPercent = c
 
-		v, err := mem.VirtualMemory()
+		v, err := psmem.VirtualMemory()
 		if err != nil {
 			node.logger.Error("Error reading Memory", err)
 		}
-		s.MEMTotal = v.Total
-		s.MEMUsed = v.Used
+		s.MEMTotal = v.Total / 1000
+		s.MEMUsed = v.Used / 1000
 		s.MEMPercent = v.UsedPercent
+
+		lInet, err := psnet.NetIOCounters(false)
+		if err != nil {
+			node.logger.Error("Error reading networking", err)
+		}
+		s.NetSent = (lInet[0].BytesSent - fInet[0].BytesSent)
+		s.NetRecv = (lInet[0].BytesRecv - fInet[0].BytesRecv)
 
 		out <- s
 	}

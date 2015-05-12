@@ -62,7 +62,6 @@
       </th>
       <th>Name</th>
       <th>Address</th>
-      <th>Timestamp</th>
       <th>Regions</th>
       <th>CPU</th>
       <th>Mem</th>
@@ -75,13 +74,12 @@
         </td>
         <td>{{hst.Hostname}}</td>
         <td>{{hst.Address}}</td>
-        <td>{{TimestampToDate(hst.Status.timestamp)}}</td>
         <td>{{hst.Regions.length}}/{{hst.Slots}}</td>
         <td>
-          <div id="cpu-{{$index}}" mgm-chart data="hst.Status.cpuPercent"></div>
+          <div id="cpu-{{$index}}" mgm-chart data="hst.Status.CPUPercent"></div>
         </td>
-        <td>{{hst.Status.memPercent}}% {{(hst.Status.memKB/1024).toFixed(2)}} MB</td>
-        <td>{{(hst.Status.netSentPer/1024).toFixed(2)}} / {{(hst.Status.netRecvPer/1024).toFixed(2)}} KBps</td>
+        <td>{{hst.Status.MEMPercent.toFixed(2)}}% {{(hst.Status.MEMUsed/1024).toFixed(2)}} MB</td>
+        <td>{{(hst.Status.NetSent/1024).toFixed(2)}} KBps <br> {{(hst.Status.NetRecv/1024).toFixed(2)}} KBps</td>
       </tr>
     </tr>
   </table>

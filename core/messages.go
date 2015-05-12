@@ -22,4 +22,6 @@ type HostStats struct {
 	MEMTotal   uint64
 	MEMUsed    uint64
 	MEMPercent float64
+	NetSent    uint64
+	NetRecv    uint64
 }

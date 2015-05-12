@@ -18,7 +18,7 @@ func (db Database) GetHosts() ([]core.Host, error) {
 
 	var hosts []core.Host
 
-	rows, err := con.Query("Select id, address, port, name, slots, status from hosts")
+	rows, err := con.Query("Select id, address, port, name, slots from hosts")
 	defer rows.Close()
 	for rows.Next() {
 		h := core.Host{}
@@ -28,7 +28,6 @@ func (db Database) GetHosts() ([]core.Host, error) {
 			&h.Port,
 			&h.Hostname,
 			&h.Slots,
-			&h.Status,
 		)
 		if err != nil {
 			fmt.Println(err)
@@ -54,13 +53,12 @@ func (db Database) GetHostByAddress(address string) (core.Host, error) {
 	}
 	defer con.Close()
 
-	err = con.QueryRow("SELECT id, address, port, name, slots, status FROM hosts WHERE address=?", address).Scan(
+	err = con.QueryRow("SELECT id, address, port, name, slots FROM hosts WHERE address=?", address).Scan(
 		&h.ID,
 		&h.Address,
 		&h.Port,
 		&h.Hostname,
 		&h.Slots,
-		&h.Status,
 	)
 	if err != nil {
 		fmt.Println("SELECT id, address, port, name, slots, status FROM hosts WHERE address=?", address)

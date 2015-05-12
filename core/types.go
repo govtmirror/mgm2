@@ -87,7 +87,6 @@ type Host struct {
 	Port     uint `json:"-"`
 	Hostname string
 	Regions  []uuid.UUID
-	Status   string
 	Slots    uint
 }
 

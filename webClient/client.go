@@ -68,9 +68,6 @@ func (c client) SendConfig(req int, cfg core.ConfigOption) {
 }
 
 func (c client) SendHost(req int, host core.Host) {
-	if host.Status == "" {
-		host.Status = "{}"
-	}
 	resp := clientResponse{req, "HostUpdate", host}
 	data, err := json.Marshal(resp)
 	if err == nil {

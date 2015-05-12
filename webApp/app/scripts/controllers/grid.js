@@ -8,7 +8,7 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('GridCtrl', function ($scope, mgm, $location, $routeParams) {
+  .controller('GridCtrl', function ($scope, mgm, $location, $routeParams, $timeout) {
 
     if ($scope.auth === undefined || $scope.auth === {}) {
       mgm.pushLocation($location.url());
@@ -46,13 +46,20 @@ angular.module('mgmApp')
     });
 
     $scope.$on("HostUpdate", function (event, host) {
-      if (!(host.Address in $scope.hosts)) {
-        $scope.hosts[host.Address] = host;
+      if (!(host.ID in $scope.hosts)) {
+        $scope.hosts[host.ID] = host;
       } else {
-        angular.copy(host, $scope.hosts[host.Address]);
+        angular.copy(host, $scope.hosts[host.ID]);
       }
     });
 
+    $scope.$on("HostStatusUpdate", function (event, stat) {
+      if( stat.ID in $scope.hosts){
+        $timeout(function(){
+          $scope.hosts[stat.ID].Status = stat;
+        });
+      }
+    });
 
     $scope.getUserNameFromID = function (uuid) {
       if (uuid in mgm.activeUsers) {
