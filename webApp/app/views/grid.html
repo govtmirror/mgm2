@@ -58,11 +58,11 @@
   <table style="width: 100%;">
     <tr>
       <th>
-        <button style="float: left;" ng-click="host.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-secondary btn-sm">Add A New Host</button>
+        <button style="float: left;" ng-click="host.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-secondary btn-sm">Add Host</button>
       </th>
-      <th>Name</th>
+      <th>Hostname</th>
       <th>Address</th>
-      <th>Regions</th>
+      <th>#</th>
       <th>CPU</th>
       <th>Mem</th>
       <th>Network</th>
@@ -74,11 +74,11 @@
         </td>
         <td>{{hst.Hostname}}</td>
         <td>{{hst.Address}}</td>
-        <td>{{hst.Regions.length}}/{{hst.Slots}}</td>
+        <td><sup>{{hst.Regions.length}}</sup>/<sub>{{hst.Slots}}</sub></td>
         <td>
           <div id="cpu-{{$index}}" mgm-chart data="hst.Status.CPUPercent"></div>
         </td>
-        <td>{{hst.Status.MEMPercent.toFixed(2)}}% {{(hst.Status.MEMUsed/1024).toFixed(2)}} MB</td>
+        <td>{{hst.Status.MEMPercent.toFixed(2)}}% <br> {{(hst.Status.MEMUsed/1024).toFixed(2)}} MB</td>
         <td>{{(hst.Status.NetSent/1024).toFixed(2)}} KBps <br> {{(hst.Status.NetRecv/1024).toFixed(2)}} KBps</td>
       </tr>
     </tr>
