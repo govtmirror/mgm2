@@ -94,23 +94,4 @@ angular.module('mgmApp')
       }
       return users;
     }
-
-    $scope.TimestampToDate = function (timestamp) {
-      if (timestamp == undefined || timestamp == "") {
-        return "~";
-      }
-      var last = new Date(timestamp * 1000);
-      var seconds = Math.floor(((new Date()).getTime() - last.getTime()) / 1000);
-
-      var numdays = Math.floor(seconds / 86400);
-      if (numdays > 0) {
-        return numdays + " days ago";
-      }
-      var numhours = Math.floor((seconds % 86400) / 3600);
-      if (numhours > 0) {
-        return numhours + " hours ago";
-      }
-      var numminutes = Math.floor(((seconds % 86400) % 3600) / 60);
-      return numminutes + " minutes ago";
-    }
   });
