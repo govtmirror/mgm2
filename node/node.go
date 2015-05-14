@@ -130,7 +130,7 @@ func (node mgmNode) collectHostStatistics(out chan core.HostStats) {
 			node.logger.Error("Error reading Memory", err)
 		}
 		s.MEMTotal = v.Total / 1000
-		s.MEMUsed = v.Used / 1000
+		s.MEMUsed = (v.Total - v.Available) / 1000
 		s.MEMPercent = v.UsedPercent
 
 		lInet, err := psnet.NetIOCounters(false)
