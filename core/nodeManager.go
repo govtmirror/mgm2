@@ -6,7 +6,7 @@ import (
 )
 
 // NodeManager receives and communicates with mgm Node processes
-func NodeManager(listenPort string, hStatsLink chan<- HostStats, db Database, logger Logger) {
+func NodeManager(listenPort string, hHub HostHub, db Database, logger Logger) {
 
 	ln, err := net.Listen("tcp", ":"+listenPort)
 	if err != nil {
@@ -15,10 +15,10 @@ func NodeManager(listenPort string, hStatsLink chan<- HostStats, db Database, lo
 	}
 	logger.Info("Listening for mgmNode instances on :" + listenPort)
 
-	go mgmConnectionAcceptor(ln, hStatsLink, db, logger)
+	go mgmConnectionAcceptor(ln, hHub, db, logger)
 }
 
-func mgmConnectionAcceptor(listen net.Listener, hStatsLink chan<- HostStats, db Database, logger Logger) {
+func mgmConnectionAcceptor(listen net.Listener, hHub HostHub, db Database, logger Logger) {
 	for {
 		conn, err := listen.Accept()
 		if err != nil {
@@ -38,18 +38,32 @@ func mgmConnectionAcceptor(listen net.Listener, hStatsLink chan<- HostStats, db 
 			continue
 		}
 		logger.Info("MGM Node connection from: %v", address)
-		go mgmConnectionHandler(host.ID, conn, hStatsLink, logger)
+		go mgmConnectionHandler(host.ID, conn, hHub, db, logger)
 	}
 }
 
-func mgmConnectionHandler(id uint, conn net.Conn, hStatsLink chan<- HostStats, logger Logger) {
+func mgmConnectionHandler(id uint, conn net.Conn, hHub HostHub, db Database, logger Logger) {
 	d := json.NewDecoder(conn)
+	//place host online
+	h, err := db.PlaceHostOnline(id)
+	if err != nil {
+		logger.Error("Error looking up host: ", err)
+		return
+	}
+	hHub.HostNotifier <- h
 	for {
 		nmsg := NetworkMessage{}
 		err := d.Decode(&nmsg)
 		if err != nil {
 			logger.Error("Error decoding mgmNode message: ", err)
 			if err.Error() == "EOF" {
+				//place host offline
+				h, err := db.PlaceHostOffline(id)
+				if err != nil {
+					logger.Error("Error looking up host: ", err)
+					return
+				}
+				hHub.HostNotifier <- h
 				return
 			}
 		}
@@ -58,7 +72,7 @@ func mgmConnectionHandler(id uint, conn net.Conn, hStatsLink chan<- HostStats, l
 		case "host_stats":
 			hStats := nmsg.HStats
 			hStats.ID = id
-			hStatsLink <- hStats
+			hHub.HostStatsNotifier <- hStats
 		default:
 			logger.Info("Received invalid message from an MGM node: ", nmsg.MessageType)
 		}

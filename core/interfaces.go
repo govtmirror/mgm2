@@ -42,6 +42,8 @@ type Database interface {
 	GetRegions() ([]Region, error)
 	GetEstates() ([]Estate, error)
 	GetHosts() ([]Host, error)
+	PlaceHostOnline(uint) (Host, error)
+	PlaceHostOffline(uint) (Host, error)
 	GetHostByAddress(string) (Host, error)
 
 	GetPendingUsers() ([]PendingUser, error)

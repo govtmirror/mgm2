@@ -30,27 +30,40 @@ angular.module('mgmApp')
     $scope.hosts = mgm.hosts;
 
     $scope.$on("EstateUpdate", function (event, estate) {
-      if (!(estate.ID in $scope.estates)) {
-        $scope.estates[estate.ID] = estate;
-      } else {
-        angular.copy(estate, $scope.estates[estate.ID]);
-      }
+      $timeout(function(){
+        if (!(estate.ID in $scope.estates)) {
+          $scope.estates[estate.ID] = estate;
+        } else {
+          if( estate !== $scope.estates[estate.ID]){
+            angular.copy(estate, $scope.estates[estate.ID]);
+          }
+        }
+      });
     });
 
     $scope.$on("GroupUpdate", function (event, group) {
-      if (!(group.ID in $scope.groups)) {
-        $scope.groups[group.ID] = group;
-      } else {
-        angular.copy(group, $scope.groups[group.ID]);
-      }
+      $timeout(function(){
+        if (!(group.ID in $scope.groups)) {
+          $scope.groups[group.ID] = group;
+        } else {
+          if(group !== $scope.groups[group.ID]){
+            angular.copy(group, $scope.groups[group.ID]);
+          }
+
+        }
+      });
     });
 
     $scope.$on("HostUpdate", function (event, host) {
-      if (!(host.ID in $scope.hosts)) {
-        $scope.hosts[host.ID] = host;
-      } else {
-        angular.copy(host, $scope.hosts[host.ID]);
-      }
+      $timeout(function(){
+        if (!(host.ID in $scope.hosts)) {
+          $scope.hosts[host.ID] = host;
+        } else {
+          if(host !== $scope.hosts[host.ID]){
+            angular.copy(host, $scope.hosts[host.ID]);
+          }
+        }
+      });
     });
 
     $scope.$on("HostStatusUpdate", function (event, stat) {

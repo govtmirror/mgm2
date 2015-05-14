@@ -18,7 +18,7 @@ func (db Database) GetHosts() ([]core.Host, error) {
 
 	var hosts []core.Host
 
-	rows, err := con.Query("Select id, address, port, name, slots from hosts")
+	rows, err := con.Query("Select id, address, port, name, slots, running from hosts")
 	defer rows.Close()
 	for rows.Next() {
 		h := core.Host{}
@@ -28,6 +28,7 @@ func (db Database) GetHosts() ([]core.Host, error) {
 			&h.Port,
 			&h.Hostname,
 			&h.Slots,
+			&h.Running,
 		)
 		if err != nil {
 			fmt.Println(err)
@@ -53,15 +54,75 @@ func (db Database) GetHostByAddress(address string) (core.Host, error) {
 	}
 	defer con.Close()
 
-	err = con.QueryRow("SELECT id, address, port, name, slots FROM hosts WHERE address=?", address).Scan(
+	err = con.QueryRow("SELECT id, address, port, name, slots, running FROM hosts WHERE address=?", address).Scan(
 		&h.ID,
 		&h.Address,
 		&h.Port,
 		&h.Hostname,
 		&h.Slots,
+		&h.Running,
 	)
 	if err != nil {
-		fmt.Println("SELECT id, address, port, name, slots, status FROM hosts WHERE address=?", address)
+		fmt.Println(err)
+		return h, err
+	}
+	return h, nil
+}
+
+// PlaceHostOffline sets the specified host to offline, and returns the updated struct
+func (db Database) PlaceHostOffline(id uint) (core.Host, error) {
+	h := core.Host{}
+	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
+	if err != nil {
+		return h, err
+	}
+	defer con.Close()
+
+	_, err = con.Exec("UPDATE hosts SET running=? WHERE id=?", false, id)
+	if err != nil {
+		fmt.Println(err)
+		return h, err
+	}
+
+	err = con.QueryRow("SELECT id, address, port, name, slots, running FROM hosts WHERE id=?", id).Scan(
+		&h.ID,
+		&h.Address,
+		&h.Port,
+		&h.Hostname,
+		&h.Slots,
+		&h.Running,
+	)
+	if err != nil {
+		fmt.Println(err)
+		return h, err
+	}
+	return h, nil
+}
+
+// PlaceHostOnline sets the specified host to online, and returns the updated struct
+func (db Database) PlaceHostOnline(id uint) (core.Host, error) {
+	h := core.Host{}
+	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
+	if err != nil {
+		return h, err
+	}
+	defer con.Close()
+
+	_, err = con.Exec("UPDATE hosts SET running=? WHERE id=?", true, id)
+	if err != nil {
+		fmt.Println(err)
+		return h, err
+	}
+
+	err = con.QueryRow("SELECT id, address, port, name, slots, running FROM hosts WHERE id=?", id).Scan(
+		&h.ID,
+		&h.Address,
+		&h.Port,
+		&h.Hostname,
+		&h.Slots,
+		&h.Running,
+	)
+	if err != nil {
 		fmt.Println(err)
 		return h, err
 	}

@@ -88,6 +88,7 @@ type Host struct {
 	Hostname string
 	Regions  []uuid.UUID
 	Slots    uint
+	Running  bool
 }
 
 // ConfigOption is an opensim.ini configuration line record

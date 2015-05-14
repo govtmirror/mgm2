@@ -16,8 +16,6 @@ angular.module('mgmApp')
       return d;
     }
 
-    var svg = undefined;
-
     var drawChart = function (scope, element, attrs, dataset) {
       var id = attrs.id
       var margin = {
@@ -42,12 +40,13 @@ angular.module('mgmApp')
         .domain([0, 100])
         .range([h, 0]);
 
-      //d3.select('#' + id).selectAll("svg").remove();
-      //var svg = d3.select('#' + id).append("svg")
-      //  .attr("width", w + margin.right + margin.left)
-      //  .attr("height", h + margin.top + margin.bottom)
+      var svg = d3.select('#' + id).select("svg")
+        .attr("width", w + margin.right + margin.left)
+        .attr("height", h + margin.top + margin.bottom)
 
-      if(svg !== undefined){
+      var rectCount = svg.selectAll("rect").size();
+
+      if(rectCount > 0){
         //update data
         svg
           .selectAll("rect")
@@ -68,9 +67,6 @@ angular.module('mgmApp')
           })
       } else {
         //insert data
-        svg = d3.select('#' + id).select("svg")
-          .attr("width", w + margin.right + margin.left)
-          .attr("height", h + margin.top + margin.bottom)
         svg
           .selectAll("rect")
           .data(dataset)
