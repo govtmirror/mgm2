@@ -37,7 +37,7 @@ func mgmConnectionAcceptor(listen net.Listener, hStatsLink chan<- HostStats, db 
 			logger.Info("mgmNode connection from unregistered address: ", address)
 			continue
 		}
-		logger.Info("MGM Node connection from: ", address)
+		logger.Info("MGM Node connection from: %v", address)
 		go mgmConnectionHandler(host.ID, conn, hStatsLink, logger)
 	}
 }
