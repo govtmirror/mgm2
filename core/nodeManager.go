@@ -5,49 +5,64 @@ import (
 	"net"
 )
 
-// NodeManager receives and communicates with mgm Node processes
-func NodeManager(listenPort string, hHub HostHub, db Database, logger Logger) {
-
-	ln, err := net.Listen("tcp", ":"+listenPort)
-	if err != nil {
-		logger.Fatal("MGM Node listener cannot start: ", err)
-		return
-	}
-	logger.Info("Listening for mgmNode instances on :" + listenPort)
-
-	go mgmConnectionAcceptor(ln, hHub, db, logger)
+// NodeManager is the interface to mgmNodes
+type NodeManager interface {
 }
 
-func mgmConnectionAcceptor(listen net.Listener, hHub HostHub, db Database, logger Logger) {
+// NewNodeManager constructs NodeManager instances
+func NewNodeManager() NodeManager {
+	mgr := nm{}
+	go mgr.listen()
+	return mgr
+}
+
+type nm struct {
+	listenPort string
+	logger     Logger
+	listener   net.Listener
+	db         Database
+}
+
+// NodeManager receives and communicates with mgm Node processes
+func (nm nm) listen() {
+
+	ln, err := net.Listen("tcp", ":"+nm.listenPort)
+	if err != nil {
+		nm.logger.Fatal("MGM Node listener cannot start: ", err)
+		return
+	}
+	nm.listener = ln
+	nm.logger.Info("Listening for mgmNode instances on :" + nm.listenPort)
+
 	for {
-		conn, err := listen.Accept()
+		conn, err := nm.listener.Accept()
 		if err != nil {
-			logger.Error("Error accepting connection: ", err)
+			nm.logger.Error("Error accepting connection: ", err)
 			continue
 		}
 		//validate connection, and identify host
 		addr := conn.RemoteAddr()
 		address := addr.(*net.TCPAddr).IP.String()
-		host, err := db.GetHostByAddress(address)
+		host, err := nm.db.GetHostByAddress(address)
 		if err != nil {
-			logger.Error("Error looking up mgm Node: ", err)
+			nm.logger.Error("Error looking up mgm Node: ", err)
 			continue
 		}
 		if host.Address != address {
-			logger.Info("mgmNode connection from unregistered address: ", address)
+			nm.logger.Info("mgmNode connection from unregistered address: ", address)
 			continue
 		}
-		logger.Info("MGM Node connection from: %v", address)
-		go mgmConnectionHandler(host.ID, conn, hHub, db, logger)
+		nm.logger.Info("MGM Node connection from: %v", address)
+		go nm.connectionHandler(host.ID, conn, nm.db, nm.logger)
 	}
 }
 
-func mgmConnectionHandler(id uint, conn net.Conn, hHub HostHub, db Database, logger Logger) {
+func (nm nm) connectionHandler(id uint, conn net.Conn) {
 	d := json.NewDecoder(conn)
 	//place host online
-	h, err := db.PlaceHostOnline(id)
+	h, err := nm.db.PlaceHostOnline(id)
 	if err != nil {
-		logger.Error("Error looking up host: ", err)
+		nm.logger.Error("Error looking up host: ", err)
 		return
 	}
 	hHub.HostNotifier <- h
@@ -55,12 +70,12 @@ func mgmConnectionHandler(id uint, conn net.Conn, hHub HostHub, db Database, log
 		nmsg := NetworkMessage{}
 		err := d.Decode(&nmsg)
 		if err != nil {
-			logger.Error("Error decoding mgmNode message: ", err)
+			nm.logger.Error("Error decoding mgmNode message: ", err)
 			if err.Error() == "EOF" {
 				//place host offline
-				h, err := db.PlaceHostOffline(id)
+				h, err := nm.db.PlaceHostOffline(id)
 				if err != nil {
-					logger.Error("Error looking up host: ", err)
+					nm.logger.Error("Error looking up host: ", err)
 					return
 				}
 				hHub.HostNotifier <- h
@@ -74,7 +89,7 @@ func mgmConnectionHandler(id uint, conn net.Conn, hHub HostHub, db Database, log
 			hStats.ID = id
 			hHub.HostStatsNotifier <- hStats
 		default:
-			logger.Info("Received invalid message from an MGM node: ", nmsg.MessageType)
+			nm.logger.Info("Received invalid message from an MGM node: ", nmsg.MessageType)
 		}
 
 	}

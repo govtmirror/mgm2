@@ -10,6 +10,7 @@ import (
 	"code.google.com/p/gcfg"
 
 	"github.com/M-O-S-E-S/mgm/core"
+	"github.com/M-O-S-E-S/mgm/mgm"
 	"github.com/jcelliott/lumber"
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psmem "github.com/shirou/gopsutil/mem"
@@ -52,7 +53,7 @@ func main() {
 
 	n.logger.Info("config loaded: ", config)
 
-	hStats := make(chan core.HostStats, 8)
+	hStats := make(chan mgm.HostStat, 8)
 	mgmCommands := make(chan []byte, 32)
 	socketClosed := make(chan bool)
 
@@ -110,7 +111,7 @@ func (node mgmNode) readConnection(conn net.Conn, out chan []byte, closing chan 
 	}
 }
 
-func (node mgmNode) collectHostStatistics(out chan core.HostStats) {
+func (node mgmNode) collectHostStatistics(out chan mgm.HostStat) {
 	for {
 		//start calculating network sent
 		fInet, err := psnet.NetIOCounters(false)
@@ -118,7 +119,7 @@ func (node mgmNode) collectHostStatistics(out chan core.HostStats) {
 			node.logger.Error("Error reading networking", err)
 		}
 
-		s := core.HostStats{}
+		s := mgm.HostStat{}
 		c, err := pscpu.CPUPercent(time.Second, true)
 		if err != nil {
 			node.logger.Error("Error readin CPU: ", err)
