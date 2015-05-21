@@ -5,13 +5,12 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/M-O-S-E-S/mgm/core"
 	"github.com/gorilla/mux"
 	"github.com/satori/go.uuid"
 )
 
 // UploadHandler accepts POST uploaded files for user jobs
-func (hc HttpConnector) UploadHandler(w http.ResponseWriter, r *http.Request) {
+func (hc httpConn) UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	//only POST is recognized here
 	if r.Method != "POST" {
@@ -51,11 +50,7 @@ func (hc HttpConnector) UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	hc.logger.Info("Read %v bytes from %v", len(data), id)
 
-	hc.fileUploadChan <- core.FileUpload{
-		JobID: id,
-		User:  session.Values["guid"].(uuid.UUID),
-		File:  data,
-	}
+	hc.jMgr.FileUploaded(id, session.Values["guid"].(uuid.UUID), data)
 
 	w.Write([]byte("OK"))
 }

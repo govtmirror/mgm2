@@ -1,30 +1,30 @@
 package simian
 
 import (
-  "github.com/satori/go.uuid"
-  "github.com/M-O-S-E-S/mgm/core"
+	"github.com/M-O-S-E-S/mgm/mgm"
+	"github.com/satori/go.uuid"
 )
 
 type confirmRequest struct {
-  Success bool
-  Message string
+	Success bool
+	Message string
 }
 
 type userRequest struct {
-  Success bool
-  Message string
-  User core.User
+	Success bool
+	Message string
+	User    mgm.User
 }
 
 type usersRequest struct {
-  Success bool
-  Message string
-  Users []core.User
+	Success bool
+	Message string
+	Users   []mgm.User
 }
 
 type Generic struct {
-  OwnerID uuid.UUID
-  Key uuid.UUID
-  Type string
-  Value string
+	OwnerID uuid.UUID
+	Key     uuid.UUID
+	Type    string
+	Value   string
 }

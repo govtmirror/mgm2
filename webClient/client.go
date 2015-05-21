@@ -9,82 +9,31 @@ import (
 )
 
 type client struct {
-	ws         *websocket.Conn
-	toClient   chan []byte
-	fromClient chan []byte
-	guid       uuid.UUID
-	userLevel  uint8
-	logger     Logger
+	ws           *websocket.Conn
+	toClient     chan []byte
+	fromClient   chan []byte
+	guid         uuid.UUID
+	userLevel    uint8
+	logger       core.Logger
+	toClientChan chan core.UserObject
+	closed       bool
 }
 
-func (c client) SendUser(req int, account core.User) {
-	resp := clientResponse{0, "UserUpdate", account}
-	data, err := json.Marshal(resp)
-	if err == nil {
-		c.writeData(data)
-	}
-}
-func (c client) SendPendingUser(req int, account core.PendingUser) {
-	resp := clientResponse{0, "PendingUserUpdate", account}
-	data, err := json.Marshal(resp)
-	if err == nil {
-		c.writeData(data)
-	}
+func (c client) GetSend() chan<- core.UserObject {
+	return c.toClientChan
 }
 
-func (c client) SendRegion(req int, region core.Region) {
-	if region.Status == "" {
-		region.Status = "{}"
-	}
-	resp := clientResponse{req, "RegionUpdate", region}
-	data, err := json.Marshal(resp)
-	if err == nil {
-		c.writeData(data)
+func (c client) processSend() {
+	for c.closed == false {
+		select {
+		case msg := <-c.toClientChan:
+			c.send(msg)
+		}
 	}
 }
 
-func (c client) SendEstate(req int, estate core.Estate) {
-	resp := clientResponse{req, "EstateUpdate", estate}
-	data, err := json.Marshal(resp)
-	if err == nil {
-		c.writeData(data)
-	}
-}
-
-func (c client) SendGroup(req int, group core.Group) {
-	resp := clientResponse{req, "GroupUpdate", group}
-	data, err := json.Marshal(resp)
-	if err == nil {
-		c.writeData(data)
-	}
-}
-
-func (c client) SendConfig(req int, cfg core.ConfigOption) {
-	resp := clientResponse{req, "ConfigUpdate", cfg}
-	data, err := json.Marshal(resp)
-	if err == nil {
-		c.writeData(data)
-	}
-}
-
-func (c client) SendHost(req int, host core.Host) {
-	resp := clientResponse{req, "HostUpdate", host}
-	data, err := json.Marshal(resp)
-	if err == nil {
-		c.writeData(data)
-	}
-}
-
-func (c client) SendHostStat(stat core.HostStats) {
-	resp := clientResponse{0, "HostStatus", stat}
-	data, err := json.Marshal(resp)
-	if err == nil {
-		c.writeData(data)
-	}
-}
-
-func (c client) SendJob(req int, job core.Job) {
-	resp := clientResponse{req, "JobUpdate", job}
+func (c client) send(ob core.UserObject) {
+	resp := clientResponse{MessageType: ob.ObjectType(), Message: ob.Serialize()}
 	data, err := json.Marshal(resp)
 	if err == nil {
 		c.writeData(data)

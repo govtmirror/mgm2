@@ -1,86 +1,102 @@
 package webClient
 
 import (
-  "net/http"
-  "github.com/gorilla/websocket"
-  "github.com/satori/go.uuid"
-  "github.com/M-O-S-E-S/mgm/core"
-  "encoding/json"
+	"encoding/json"
+	"net/http"
+
+	"github.com/M-O-S-E-S/mgm/core"
+	"github.com/gorilla/websocket"
+	"github.com/satori/go.uuid"
 )
 
 type clientResponse struct {
-  MessageID int
-  MessageType string
-  Message interface{}
+	MessageID   int
+	MessageType string
+	Message     interface{}
 }
 
-type WebsocketConnector struct {
-  httpConnector *HttpConnector
-  session chan<- core.UserSession
-  logger Logger
+// WebSocketConnector listens for authenticated websocket connections
+type WebSocketConnector interface {
+	WebsocketHandler(w http.ResponseWriter, r *http.Request)
 }
 
-func NewWebsocketConnector(hc *HttpConnector, session chan<- core.UserSession, logger Logger) (*WebsocketConnector) {
-  return &WebsocketConnector{hc, session, logger}
+type wsConn struct {
+	httpConnector HTTPConnector
+	session       chan<- core.UserSession
+	logger        core.Logger
+}
+
+// NewWebsocketConnector constructs a websocket handler for use
+func NewWebsocketConnector(hc HTTPConnector, session chan<- core.UserSession, logger core.Logger) WebSocketConnector {
+	return wsConn{hc, session, logger}
 }
 
 var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 
-func (wc WebsocketConnector) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
+func (wc wsConn) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
-  // test if session exists
-  session, _ := wc.httpConnector.store.Get(r, "MGM")
-  if len(session.Values) == 0 {
-    wc.logger.Info("Websocket closed, no existing session")
+	// test if session exists
+	session, _ := wc.httpConnector.GetStore().Get(r, "MGM")
+	if len(session.Values) == 0 {
+		wc.logger.Info("Websocket closed, no existing session")
 
-    response := clientResponse{ MessageType: "AccessDenied", Message: "No Session Found"}
-    js, err := json.Marshal(response)
-    if err != nil {
-      http.Error(w, err.Error(), http.StatusInternalServerError)
-      return
-    }
-    w.Header().Set("Content-Type", "application/json")
-    w.Write(js)
-    return
-  }
-  // test origin, etc for websocket security
-  // not sure if necessary, we will be over https, and the session is valid
+		response := clientResponse{MessageType: "AccessDenied", Message: "No Session Found"}
+		js, err := json.Marshal(response)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(js)
+		return
+	}
+	// test origin, etc for websocket security
+	// not sure if necessary, we will be over https, and the session is valid
 
-  ws, err := upgrader.Upgrade(w, r, nil)
-  if err != nil {
-    wc.logger.Error("Error upgrading websocket: %v", err)
-    return
-  }
+	ws, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		wc.logger.Error("Error upgrading websocket: ", err)
+		return
+	}
 
-  guid := session.Values["guid"].(uuid.UUID)
-  uLevel := session.Values["ulevel"].(uint8)
+	guid := session.Values["guid"].(uuid.UUID)
+	uLevel := session.Values["ulevel"].(uint8)
 
-  c := client{ws, make(chan []byte, 64), make(chan []byte, 64), guid, uLevel, wc.logger}
-  go c.reader()
-  go c.writer()
-  wc.session <- c
+	c := client{
+		ws,
+		make(chan []byte, 64),
+		make(chan []byte, 64),
+		guid,
+		uLevel,
+		wc.logger,
+		make(chan core.UserObject, 64),
+		false,
+	}
+	go c.reader()
+	go c.writer()
+	wc.session <- c
 }
 
 func (c *client) reader() {
-  for {
-    _, message, err := c.ws.ReadMessage()
-    if err != nil {
-      break
-    }
-    c.fromClient<-message
-  }
-  close(c.fromClient)
-  c.ws.Close()
+	for {
+		_, message, err := c.ws.ReadMessage()
+		if err != nil {
+			break
+		}
+		c.fromClient <- message
+	}
+	close(c.fromClient)
+	c.ws.Close()
 }
 
 func (c *client) writer() {
-  for message := range c.toClient {
+	for message := range c.toClient {
 
-    err := c.ws.WriteMessage(websocket.TextMessage, message)
-    if err != nil {
-      break
-    }
-  }
-  close(c.toClient)
-  c.ws.Close()
+		err := c.ws.WriteMessage(websocket.TextMessage, message)
+		if err != nil {
+			break
+		}
+	}
+	close(c.toClient)
+	c.ws.Close()
 }

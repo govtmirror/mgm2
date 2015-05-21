@@ -64,7 +64,7 @@ func main() {
 		config.MySQL.Host,
 	)
 	//create our simian connector
-	sim, err := simian.NewSimianConnector(config.MGM.SimianURL)
+	sim, err := simian.NewConnector(config.MGM.SimianURL)
 	if err != nil {
 		logger.Error("Error instantiating Simian connection: ", err)
 		return
@@ -76,22 +76,17 @@ func main() {
 	//leave this out for now
 	//os,_ := opensim.NewOpensimListener(config.OpensimPort, nil)
 
-	jobNotifier := make(chan core.Job, 32)
-	fileUpload := make(chan core.FileUpload, 32)
-	hHub := core.HostHub{
-		make(chan core.HostStats, 64),
-		make(chan core.Host, 8),
-	}
-
 	//Hook up core processing...
+	jMgr := core.NewJobManager(config.MGM.LocalFileStorage, db, logger)
 	//regionManager := core.RegionManager{nil, db}
-	sessionListener := make(chan core.UserSession, 64)
-	core.SessionManager(sessionListener, jobNotifier, hHub, db, sim, logger)
-	core.JobManager(fileUpload, jobNotifier, config.MGM.LocalFileStorage, db, logger)
-	core.NodeManager(config.MGM.NodePort, hHub, db, logger)
+	sessionListenerChan := make(chan core.UserSession, 64)
 
-	httpCon := webClient.NewHttpConnector(config.MGM.SessionSecret, fileUpload, sim, db, mailer, logger)
-	sockCon := webClient.NewWebsocketConnector(httpCon, sessionListener, logger)
+	_ = core.NewSessionManager(sessionListenerChan, jMgr, db, sim, logger)
+
+	//core.NodeManager(config.MGM.NodePort, hHub, db, logger)
+
+	httpCon := webClient.NewHTTPConnector(config.MGM.SessionSecret, jMgr, sim, db, mailer, logger)
+	sockCon := webClient.NewWebsocketConnector(httpCon, sessionListenerChan, logger)
 
 	r := mux.NewRouter()
 	r.HandleFunc("/ws", sockCon.WebsocketHandler)
@@ -110,7 +105,7 @@ func main() {
 	}
 }
 
-func expirePasswordTokens(db *mysql.Database) {
+func expirePasswordTokens(db mysql.Database) {
 	for {
 		db.ExpirePasswordTokens()
 		time.Sleep(60 * time.Minute)
