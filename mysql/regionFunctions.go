@@ -4,14 +4,14 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/M-O-S-E-S/mgm/core"
+	"github.com/M-O-S-E-S/mgm/mgm"
 	//import mysql driver
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/satori/go.uuid"
 )
 
 // GetRegions gets all region records from the database
-func (db Database) GetRegions() ([]core.Region, error) {
+func (db db) GetRegions() ([]mgm.Region, error) {
 	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
 	if err != nil {
 		return nil, err
@@ -27,9 +27,9 @@ func (db Database) GetRegions() ([]core.Region, error) {
 		return nil, err
 	}
 
-	var regions []core.Region
+	var regions []mgm.Region
 	for rows.Next() {
-		r := core.Region{}
+		r := mgm.Region{}
 		err = rows.Scan(
 			&r.UUID,
 			&r.Name,
@@ -57,7 +57,7 @@ func (db Database) GetRegions() ([]core.Region, error) {
 }
 
 // GetRegionsOnHost retrieves all region records for a specified host
-func (db Database) GetRegionsOnHost(host core.Host) ([]core.Region, error) {
+func (db db) GetRegionsOnHost(host mgm.Host) ([]mgm.Region, error) {
 	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
 	if err != nil {
 		return nil, err
@@ -73,9 +73,9 @@ func (db Database) GetRegionsOnHost(host core.Host) ([]core.Region, error) {
 		return nil, err
 	}
 
-	var regions []core.Region
+	var regions []mgm.Region
 	for rows.Next() {
-		r := core.Region{}
+		r := mgm.Region{}
 		err = rows.Scan(
 			&r.UUID,
 			&r.Name,
@@ -102,7 +102,7 @@ func (db Database) GetRegionsOnHost(host core.Host) ([]core.Region, error) {
 }
 
 // GetRegionsForUser retrieves region records for a user where the user owns the estate they are in, or is a manager for said estate
-func (db Database) GetRegionsForUser(guid uuid.UUID) ([]core.Region, error) {
+func (db db) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error) {
 	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
 	if err != nil {
 		return nil, err
@@ -121,9 +121,9 @@ func (db Database) GetRegionsForUser(guid uuid.UUID) ([]core.Region, error) {
 		return nil, err
 	}
 
-	var regions []core.Region
+	var regions []mgm.Region
 	for rows.Next() {
-		r := core.Region{}
+		r := mgm.Region{}
 		err = rows.Scan(
 			&r.UUID,
 			&r.Name,

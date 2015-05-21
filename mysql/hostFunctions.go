@@ -4,24 +4,24 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/M-O-S-E-S/mgm/core"
+	"github.com/M-O-S-E-S/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
 
 // GetHosts retrieves all host records from the database
-func (db Database) GetHosts() ([]core.Host, error) {
+func (db db) GetHosts() ([]mgm.Host, error) {
 	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
 	if err != nil {
 		return nil, err
 	}
 	defer con.Close()
 
-	var hosts []core.Host
+	var hosts []mgm.Host
 
 	rows, err := con.Query("Select id, address, port, name, slots, running from hosts")
 	defer rows.Close()
 	for rows.Next() {
-		h := core.Host{}
+		h := mgm.Host{}
 		err = rows.Scan(
 			&h.ID,
 			&h.Address,
@@ -46,8 +46,8 @@ func (db Database) GetHosts() ([]core.Host, error) {
 }
 
 // GetHostByAddress retrieves a host record by address
-func (db Database) GetHostByAddress(address string) (core.Host, error) {
-	h := core.Host{}
+func (db db) GetHostByAddress(address string) (mgm.Host, error) {
+	h := mgm.Host{}
 	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
 	if err != nil {
 		return h, err
@@ -70,8 +70,8 @@ func (db Database) GetHostByAddress(address string) (core.Host, error) {
 }
 
 // PlaceHostOffline sets the specified host to offline, and returns the updated struct
-func (db Database) PlaceHostOffline(id uint) (core.Host, error) {
-	h := core.Host{}
+func (db db) PlaceHostOffline(id uint) (mgm.Host, error) {
+	h := mgm.Host{}
 	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
 	if err != nil {
 		return h, err
@@ -100,8 +100,8 @@ func (db Database) PlaceHostOffline(id uint) (core.Host, error) {
 }
 
 // PlaceHostOnline sets the specified host to online, and returns the updated struct
-func (db Database) PlaceHostOnline(id uint) (core.Host, error) {
-	h := core.Host{}
+func (db db) PlaceHostOnline(id uint) (mgm.Host, error) {
+	h := mgm.Host{}
 	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
 	if err != nil {
 		return h, err
