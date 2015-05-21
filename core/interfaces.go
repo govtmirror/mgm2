@@ -8,10 +8,11 @@ type UserSession interface {
 	GetSend() chan<- UserObject
 	SignalSuccess(int, string)
 	SignalError(int, string)
-	Read(chan<- []byte, chan<- bool)
+	Read(chan<- []byte)
 
 	GetGUID() uuid.UUID
 	GetAccessLevel() uint8
+	GetClosingSignal() <-chan bool
 }
 
 // UserObject is an object that is transmittable to the client
