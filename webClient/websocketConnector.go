@@ -40,7 +40,7 @@ func (wc wsConn) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 	if len(session.Values) == 0 {
 		wc.logger.Info("Websocket closed, no existing session")
 
-		response := clientResponse{MessageType: "AccessDenied", Message: "No Session Found"}
+		response := clientResponse{MessageType: "AccessDenied", Message: []byte("No Session Found")}
 		js, err := json.Marshal(response)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -70,10 +70,11 @@ func (wc wsConn) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 		uLevel,
 		wc.logger,
 		make(chan core.UserObject, 64),
-		false,
+		make(chan bool, 0),
 	}
 	go c.reader()
 	go c.writer()
+	go c.processSend()
 	wc.session <- c
 }
 

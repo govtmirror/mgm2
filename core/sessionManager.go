@@ -77,9 +77,8 @@ func (sm sessionMgr) process() {
 func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exitLink chan<- uuid.UUID) {
 
 	clientMsg := make(chan []byte, 32)
-	clientClosed := make(chan bool)
 
-	go session.Read(clientMsg, clientClosed)
+	go session.Read(clientMsg)
 
 	for {
 		select {
@@ -272,6 +271,7 @@ func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exit
 					session.GetSend() <- e
 				}
 				estates = nil
+
 				groups, err := sm.userConn.GetGroups()
 				if err != nil {
 					sm.log.Error("Error lookin up groups: ", err)
@@ -303,7 +303,7 @@ func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exit
 				sm.log.Error("Error on message from client: ", m.MessageType)
 				session.SignalError(m.MessageID, "Invalid request")
 			}
-		case <-clientClosed:
+		case <-session.GetClosingSignal():
 			//the client connection has closed
 			exitLink <- session.GetGUID()
 			return

@@ -20,10 +20,9 @@ type Region struct {
 	ExternalAddress string `json:"-"`
 	SlaveAddress    string `json:"-"`
 	IsRunning       bool
-	Status          string
 	EstateName      string
 
-	frames chan int
+	frames chan int `json:"-"`
 }
 
 func (r *Region) countFrames() {

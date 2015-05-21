@@ -63,7 +63,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
     self.ws.onmessage = function (evt) {
       var message = $.parseJSON(evt.data);
       switch (message.MessageType) {
-      case "UserUpdate":
+      case "User":
         var user = message.Message;
         if (user.Suspended) {
           self.suspendedUsers[user.UserID] = user;
@@ -78,36 +78,35 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
         }
         $rootScope.$broadcast("UserUpdate", user);
         break
-      case "PendingUserUpdate":
+      case "PendingUser":
         self.pendingUsers[message.Message.UserID] = message.Message;
         $rootScope.$broadcast("PendingUserUpdate", message.Message);
         break;
-      case "RegionUpdate":
-        message.Message.Status = JSON.parse(message.Message.Status);
+      case "Region":
         self.regions[message.Message.UUID] = message.Message;
         $rootScope.$broadcast("RegionUpdate", message.Message);
         break;
-      case "EstateUpdate":
+      case "Estate":
         self.estates[message.Message.ID] = message.Message;
         $rootScope.$broadcast("EstateUpdate", message.Message);
         break;
-      case "GroupUpdate":
+      case "Group":
         self.groups[message.Message.ID] = message.Message;
         $rootScope.$broadcast("GroupUpdate", message.Message);
         break;
-      case "JobUpdate":
+      case "Job":
         message.Message.Data = JSON.parse(message.Message.Data)
         self.jobs[message.Message.ID] = message.Message;
         $rootScope.$broadcast("JobUpdate", message.Message);
         break;
-      case "ConfigUpdate":
+      case "Config":
         $rootScope.$broadcast("ConfigUpdate", message.Message);
         break;
-      case "HostUpdate":
+      case "Host":
         self.hosts[message.Message.ID] = message.Message;
         $rootScope.$broadcast("HostUpdate", message.Message);
         break;
-      case "HostStatus":
+      case "Host":
         if( message.Message.ID in self.hosts){
           self.hosts[message.Message.ID].Status = message.Message;
           $rootScope.$broadcast("HostStatusUpdate", message.Message);

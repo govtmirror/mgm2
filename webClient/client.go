@@ -16,24 +16,30 @@ type client struct {
 	userLevel    uint8
 	logger       core.Logger
 	toClientChan chan core.UserObject
-	closed       bool
+	closing      chan bool
 }
 
 func (c client) GetSend() chan<- core.UserObject {
 	return c.toClientChan
 }
 
+func (c client) GetClosingSignal() <-chan bool {
+	return c.closing
+}
+
 func (c client) processSend() {
-	for c.closed == false {
+	for {
 		select {
 		case msg := <-c.toClientChan:
 			c.send(msg)
+		case _ = <-c.closing:
+			return
 		}
 	}
 }
 
 func (c client) send(ob core.UserObject) {
-	resp := clientResponse{MessageType: ob.ObjectType(), Message: ob.Serialize()}
+	resp := clientResponse{MessageType: ob.ObjectType(), Message: ob}
 	data, err := json.Marshal(resp)
 	if err == nil {
 		c.writeData(data)
@@ -73,11 +79,11 @@ func (c client) GetAccessLevel() uint8 {
 	return c.userLevel
 }
 
-func (c client) Read(upstream chan<- []byte, closing chan<- bool) {
+func (c client) Read(upstream chan<- []byte) {
 	for {
 		data, more := <-c.fromClient
 		if !more {
-			closing <- true
+			close(c.closing)
 			return
 		}
 		upstream <- data
