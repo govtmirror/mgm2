@@ -51,7 +51,7 @@ func main() {
 		return
 	}
 
-	n.logger.Info("config loaded: ", config)
+	n.logger.Info("config loaded successfully")
 
 	hStats := make(chan mgm.HostStat, 8)
 	mgmCommands := make(chan []byte, 32)
@@ -59,10 +59,13 @@ func main() {
 
 	go n.collectHostStatistics(hStats)
 
+	rMgr := newRegionManager(config.Node.OpensimBinDir, config.Node.RegionDir)
+	rMgr.P
+
 	for {
 		conn, err := net.Dial("tcp", config.Node.MGMAddress)
 		if err != nil {
-			n.logger.Fatal("Cannot connect to MGM") //: ", err)
+			n.logger.Fatal("Cannot connect to MGM")
 			time.Sleep(10 * time.Second)
 			continue
 		}
@@ -81,11 +84,8 @@ func main() {
 				nmsg := core.NetworkMessage{}
 				nmsg.MessageType = "host_stats"
 				nmsg.HStats = stats
-				data, err := json.Marshal(nmsg)
-				if err != nil {
-					n.logger.Error("Error json marshalling stats object: ", err)
-					continue
-				}
+				data, _ := json.Marshal(nmsg)
+
 				_, err = conn.Write(data)
 				if err == syscall.EPIPE {
 					break
@@ -99,17 +99,29 @@ func main() {
 
 }
 
-func (node mgmNode) readConnection(conn net.Conn, out chan []byte, closing chan bool) {
+func (node mgmNode) readConnection(conn net.Conn, readBytes chan<- []byte, closing chan bool) {
+	d := json.NewDecoder(conn)
+
 	for {
-		data := make([]byte, 512)
-		_, err := conn.Read(data)
+		nmsg := core.NetworkMessage{}
+		err := d.Decode(&nmsg)
 		if err != nil {
-			//node.logger.Error("Error reading from socket: ", err)
-			closing <- true
-			return
+			if err.Error() == "EOF" {
+				conn.Close()
+				return
+			}
+			node.logger.Error("Error decoding mgm message: ", err)
 		}
-		out <- data
+
+		switch nmsg.MessageType {
+		default:
+			node.logger.Info("Received invalid message from an MGM node: ", nmsg.MessageType)
+		}
 	}
+}
+
+func (node mgmNode) writeConnection(conn net.Conn, writeBytes <-chan core.UserObject) {
+
 }
 
 func (node mgmNode) collectHostStatistics(out chan mgm.HostStat) {

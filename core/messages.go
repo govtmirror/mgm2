@@ -6,4 +6,5 @@ import "github.com/M-O-S-E-S/mgm/mgm"
 type NetworkMessage struct {
 	MessageType string
 	HStats      mgm.HostStat `json:",omitempty"`
+	Request     string       `json:",omitempty"`
 }
