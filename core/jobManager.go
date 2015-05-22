@@ -11,8 +11,7 @@ import (
 
 // JobManager manages jobs, updating database, and notifying subscribed parties
 type JobManager interface {
-	Subscribe(chan<- mgm.Job)
-	Unsubscribe(chan<- mgm.Job)
+	Subscribe() subscription
 	FileUploaded(int, uuid.UUID, []byte)
 }
 
@@ -38,7 +37,8 @@ func NewJobManager(filePath string, db Database, logger Logger) JobManager {
 	j.broadcast = notifyChan
 	j.datastore = db
 
-	go j.broadcastProcessor()
+	j.subs = newSubscriptionManager()
+
 	go j.process()
 
 	return j
@@ -51,6 +51,8 @@ type jobMgr struct {
 	broadcast   chan mgm.Job
 	datastore   Database
 
+	subs subscriptionManager
+
 	log Logger
 
 	localPath string
@@ -60,36 +62,8 @@ func (jm jobMgr) FileUploaded(id int, user uuid.UUID, data []byte) {
 	jm.fileUp <- fileUpload{id, user, data}
 }
 
-func (jm jobMgr) Subscribe(ch chan<- mgm.Job) {
-	jm.subscribe <- ch
-}
-
-func (jm jobMgr) Unsubscribe(ch chan<- mgm.Job) {
-	jm.unsubscribe <- ch
-}
-
-func (jm jobMgr) broadcastProcessor() {
-	var subscribers []chan<- mgm.Job
-	for {
-		select {
-		case s := <-jm.subscribe:
-			subscribers = append(subscribers, s)
-		case j := <-jm.broadcast:
-			for _, sub := range subscribers {
-				go func(ch chan<- mgm.Job, j mgm.Job) {
-					ch <- j
-				}(sub, j)
-			}
-		case s := <-jm.unsubscribe:
-			for i, sub := range subscribers {
-				if sub == s {
-					subscribers[i] = subscribers[len(subscribers)-1]
-					subscribers = subscribers[:len(subscribers)-1]
-					break
-				}
-			}
-		}
-	}
+func (jm jobMgr) Subscribe() subscription {
+	return jm.subs.Subscribe()
 }
 
 func (jm jobMgr) process() {
