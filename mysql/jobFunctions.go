@@ -71,7 +71,7 @@ func (db db) GetJobsForUser(userID uuid.UUID) ([]mgm.Job, error) {
 	rows, err := con.Query("SELECT * FROM jobs WHERE user=?", userID.String())
 	defer rows.Close()
 	if err != nil {
-		fmt.Println(err)
+		db.log.Error("Error in database query: ", err.Error())
 		return nil, err
 	}
 
@@ -87,7 +87,7 @@ func (db db) GetJobsForUser(userID uuid.UUID) ([]mgm.Job, error) {
 		)
 		if err != nil {
 			rows.Close()
-			fmt.Println(err)
+			db.log.Error("Error in database query: ", err.Error())
 			return nil, err
 		}
 		jobs = append(jobs, j)

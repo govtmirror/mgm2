@@ -62,6 +62,7 @@ func main() {
 		config.MySQL.Password,
 		config.MySQL.Database,
 		config.MySQL.Host,
+		logger,
 	)
 	//create our simian connector
 	sim, err := simian.NewConnector(config.MGM.SimianURL)
@@ -83,7 +84,7 @@ func main() {
 
 	nMgr := core.NewNodeManager(config.MGM.NodePort, db, logger)
 
-	_ = core.NewSessionManager(sessionListenerChan, jMgr, db, sim, logger)
+	_ = core.NewSessionManager(sessionListenerChan, jMgr, nMgr, db, sim, logger)
 
 	httpCon := webClient.NewHTTPConnector(config.MGM.SessionSecret, jMgr, sim, db, mailer, logger)
 	sockCon := webClient.NewWebsocketConnector(httpCon, sessionListenerChan, logger)

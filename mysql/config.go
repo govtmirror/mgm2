@@ -8,8 +8,8 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-func (d db) GetDefaultConfigs() ([]core.ConfigOption, error) {
-	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", d.user, d.password, d.host, d.database))
+func (db db) GetDefaultConfigs() ([]core.ConfigOption, error) {
+	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +30,7 @@ func (d db) GetDefaultConfigs() ([]core.ConfigOption, error) {
 			&c.Content,
 		)
 		if err != nil {
-			fmt.Println(err)
+			db.log.Error("Error in database query: ", err.Error())
 			return nil, err
 		}
 		cfgs = append(cfgs, c)
@@ -45,7 +45,7 @@ func (db db) GetConfigs(regionID uuid.UUID) ([]core.ConfigOption, error) {
 	}
 	defer con.Close()
 
-	cfgs := make([]core.ConfigOption, 0)
+	var cfgs []core.ConfigOption
 
 	rows, err := con.Query("SELECT section, item, content FROM iniConfig WHERE region=?", regionID.String())
 	if err != nil {
@@ -61,7 +61,7 @@ func (db db) GetConfigs(regionID uuid.UUID) ([]core.ConfigOption, error) {
 		)
 		c.Region = regionID
 		if err != nil {
-			fmt.Println(err)
+			db.log.Error("Error in database query: ", err.Error())
 			return nil, err
 		}
 		cfgs = append(cfgs, c)

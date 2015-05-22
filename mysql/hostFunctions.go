@@ -31,7 +31,7 @@ func (db db) GetHosts() ([]mgm.Host, error) {
 			&h.Running,
 		)
 		if err != nil {
-			fmt.Println(err)
+			db.log.Error("Error in database query: ", err.Error())
 			return nil, err
 		}
 		regions, _ := db.GetRegionsOnHost(h)
@@ -63,7 +63,7 @@ func (db db) GetHostByAddress(address string) (mgm.Host, error) {
 		&h.Running,
 	)
 	if err != nil {
-		fmt.Println(err)
+		db.log.Error("Error in database query: ", err.Error())
 		return h, err
 	}
 	return h, nil
@@ -80,7 +80,7 @@ func (db db) PlaceHostOffline(id uint) (mgm.Host, error) {
 
 	_, err = con.Exec("UPDATE hosts SET running=? WHERE id=?", false, id)
 	if err != nil {
-		fmt.Println(err)
+		db.log.Error("Error in database query: ", err.Error())
 		return h, err
 	}
 
@@ -93,7 +93,7 @@ func (db db) PlaceHostOffline(id uint) (mgm.Host, error) {
 		&h.Running,
 	)
 	if err != nil {
-		fmt.Println(err)
+		db.log.Error("Error in database query: ", err.Error())
 		return h, err
 	}
 	return h, nil
@@ -110,7 +110,7 @@ func (db db) PlaceHostOnline(id uint) (mgm.Host, error) {
 
 	_, err = con.Exec("UPDATE hosts SET running=? WHERE id=?", true, id)
 	if err != nil {
-		fmt.Println(err)
+		db.log.Error("Error in database query: ", err.Error())
 		return h, err
 	}
 
@@ -123,7 +123,7 @@ func (db db) PlaceHostOnline(id uint) (mgm.Host, error) {
 		&h.Running,
 	)
 	if err != nil {
-		fmt.Println(err)
+		db.log.Error("Error in database query: ", err.Error())
 		return h, err
 	}
 	return h, nil

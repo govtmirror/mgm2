@@ -23,7 +23,7 @@ func (db db) GetRegions() ([]mgm.Region, error) {
 			"where estate_map.RegionID = regions.uuid AND estate_map.EstateID = estate_settings.EstateID")
 	defer rows.Close()
 	if err != nil {
-		fmt.Println(err)
+		db.log.Error("Error in database query: ", err.Error())
 		return nil, err
 	}
 
@@ -47,7 +47,7 @@ func (db db) GetRegions() ([]mgm.Region, error) {
 		)
 		if err != nil {
 			rows.Close()
-			fmt.Println(err)
+			db.log.Error("Error in database query: ", err.Error())
 			return nil, err
 		}
 		regions = append(regions, r)
@@ -68,7 +68,7 @@ func (db db) GetRegionsOnHost(host mgm.Host) ([]mgm.Region, error) {
 			"where slaveAddress=?", host.Address)
 	defer rows.Close()
 	if err != nil {
-		fmt.Println(err)
+		db.log.Error("Error in database query: ", err.Error())
 		return nil, err
 	}
 
@@ -91,7 +91,7 @@ func (db db) GetRegionsOnHost(host mgm.Host) ([]mgm.Region, error) {
 		)
 		if err != nil {
 			rows.Close()
-			fmt.Println(err)
+			db.log.Error("Error in database query: ", err.Error())
 			return nil, err
 		}
 		regions = append(regions, r)
@@ -115,7 +115,7 @@ func (db db) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error) {
 			"EstateID in (SELECT EstateID from estate_managers WHERE uuid=\"" + guid.String() + "\"))")
 	defer rows.Close()
 	if err != nil {
-		fmt.Println(err)
+		db.log.Error("Error in database query: ", err.Error())
 		return nil, err
 	}
 
@@ -139,7 +139,7 @@ func (db db) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error) {
 		)
 		if err != nil {
 			rows.Close()
-			fmt.Println(err)
+			db.log.Error("Error in database query: ", err.Error())
 			return nil, err
 		}
 		regions = append(regions, r)

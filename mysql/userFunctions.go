@@ -22,7 +22,7 @@ func (db db) GetPendingUsers() ([]mgm.PendingUser, error) {
 	rows, err := con.Query("Select * from users")
 	defer rows.Close()
 	if err != nil {
-		fmt.Println(err)
+		db.log.Error("Error in database query: ", err.Error())
 		return nil, err
 	}
 
@@ -39,7 +39,7 @@ func (db db) GetPendingUsers() ([]mgm.PendingUser, error) {
 		)
 		if err != nil {
 			rows.Close()
-			fmt.Println(err)
+			db.log.Error("Error in database query: ", err.Error())
 			return nil, err
 		}
 		users = append(users, u)

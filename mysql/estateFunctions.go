@@ -9,8 +9,8 @@ import (
 )
 
 // GetEstates retrieves all estates from mgm
-func (d db) GetEstates() ([]mgm.Estate, error) {
-	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", d.user, d.password, d.host, d.database))
+func (db db) GetEstates() ([]mgm.Estate, error) {
+	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
 	if err != nil {
 		return nil, err
 	}
@@ -28,7 +28,7 @@ func (d db) GetEstates() ([]mgm.Estate, error) {
 			&e.Owner,
 		)
 		if err != nil {
-			fmt.Println(err)
+			db.log.Error("Error in database query: ", err.Error())
 			return nil, err
 		}
 		estates = append(estates, e)
@@ -39,14 +39,14 @@ func (d db) GetEstates() ([]mgm.Estate, error) {
 		rows, err := con.Query("SELECT uuid FROM estate_managers WHERE EstateID=?", e.ID)
 		defer rows.Close()
 		if err != nil {
-			fmt.Println(err)
+			db.log.Error("Error in database query: ", err.Error())
 			return nil, err
 		}
 		for rows.Next() {
 			guid := uuid.UUID{}
 			err = rows.Scan(&guid)
 			if err != nil {
-				fmt.Println(err)
+				db.log.Error("Error in database query: ", err.Error())
 				return nil, err
 			}
 			estates[i].Managers = append(estates[i].Managers, guid)
@@ -55,14 +55,14 @@ func (d db) GetEstates() ([]mgm.Estate, error) {
 		rows, err = con.Query("SELECT RegionID FROM estate_map WHERE EstateID=?", e.ID)
 		defer rows.Close()
 		if err != nil {
-			fmt.Println(err)
+			db.log.Error("Error in database query: ", err.Error())
 			return nil, err
 		}
 		for rows.Next() {
 			guid := uuid.UUID{}
 			err = rows.Scan(&guid)
 			if err != nil {
-				fmt.Println(err)
+				db.log.Error("Error in database query: ", err.Error())
 				return nil, err
 			}
 			estates[i].Regions = append(estates[i].Regions, guid)
