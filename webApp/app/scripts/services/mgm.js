@@ -106,7 +106,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
         self.hosts[message.Message.ID] = message.Message;
         $rootScope.$broadcast("HostUpdate", message.Message);
         break;
-      case "Host":
+      case "HostStat":
         if( message.Message.ID in self.hosts){
           self.hosts[message.Message.ID].Status = message.Message;
           $rootScope.$broadcast("HostStatusUpdate", message.Message);
