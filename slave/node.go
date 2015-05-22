@@ -11,6 +11,7 @@ import (
 
 	"github.com/M-O-S-E-S/mgm/core"
 	"github.com/M-O-S-E-S/mgm/mgm"
+	"github.com/M-O-S-E-S/mgm/node"
 	"github.com/jcelliott/lumber"
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psmem "github.com/shirou/gopsutil/mem"
@@ -54,15 +55,18 @@ func main() {
 	n.logger.Info("config loaded successfully")
 
 	hStats := make(chan mgm.HostStat, 8)
-	mgmCommands := make(chan []byte, 32)
-	socketClosed := make(chan bool)
 
 	go n.collectHostStatistics(hStats)
 
-	rMgr := newRegionManager(config.Node.OpensimBinDir, config.Node.RegionDir)
-	rMgr.P
+	rMgr := node.NewRegionManager(config.Node.OpensimBinDir, config.Node.RegionDir, n.logger)
+	err = rMgr.Initialize()
+	if err != nil {
+		n.logger.Error("Error instantiating RegionManager: %q", err.Error())
+		return
+	}
 
 	for {
+		n.logger.Info("Connecting to MGM")
 		conn, err := net.Dial("tcp", config.Node.MGMAddress)
 		if err != nil {
 			n.logger.Fatal("Cannot connect to MGM")
@@ -70,16 +74,24 @@ func main() {
 			continue
 		}
 		n.logger.Info("MGM Node connected to MGM")
-		go n.readConnection(conn, mgmCommands, socketClosed)
+
+		socketClosed := make(chan bool)
+		receiveChan := make(chan core.NetworkMessage, 32)
+		sendChan := make(chan core.NetworkMessage, 32)
+		go n.readConnection(conn, receiveChan, socketClosed)
+		go n.writeConnection(conn, sendChan, socketClosed)
+
+		//new connection, check for region changes since we last connected
 
 	ProcessingPackets:
 		for {
 			select {
 			case <-socketClosed:
 				n.logger.Error("Disconnected from MGM")
+				time.Sleep(10 * time.Second)
 				break ProcessingPackets
-			case msg := <-mgmCommands:
-				n.logger.Info("recieved message from MGM: ", string(msg))
+			case msg := <-receiveChan:
+				n.logger.Info("recieved message from MGM: ", msg.MessageType)
 			case stats := <-hStats:
 				nmsg := core.NetworkMessage{}
 				nmsg.MessageType = "host_stats"
@@ -99,7 +111,7 @@ func main() {
 
 }
 
-func (node mgmNode) readConnection(conn net.Conn, readBytes chan<- []byte, closing chan bool) {
+func (node mgmNode) readConnection(conn net.Conn, readMsgs chan<- core.NetworkMessage, closing chan bool) {
 	d := json.NewDecoder(conn)
 
 	for {
@@ -107,21 +119,32 @@ func (node mgmNode) readConnection(conn net.Conn, readBytes chan<- []byte, closi
 		err := d.Decode(&nmsg)
 		if err != nil {
 			if err.Error() == "EOF" {
+				close(closing)
 				conn.Close()
 				return
 			}
 			node.logger.Error("Error decoding mgm message: ", err)
 		}
 
-		switch nmsg.MessageType {
-		default:
-			node.logger.Info("Received invalid message from an MGM node: ", nmsg.MessageType)
-		}
+		readMsgs <- nmsg
 	}
 }
 
-func (node mgmNode) writeConnection(conn net.Conn, writeBytes <-chan core.UserObject) {
+func (node mgmNode) writeConnection(conn net.Conn, writeMsgs <-chan core.NetworkMessage, closing chan bool) {
 
+	for {
+		select {
+		case <-closing:
+			return
+		case msg := <-writeMsgs:
+			data, _ := json.Marshal(msg)
+			_, err := conn.Write(data)
+			if err != nil {
+				conn.Close()
+				return
+			}
+		}
+	}
 }
 
 func (node mgmNode) collectHostStatistics(out chan mgm.HostStat) {
