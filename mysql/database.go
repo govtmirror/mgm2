@@ -26,7 +26,7 @@ type db struct {
 // Database is the database interface for persisting data
 type Database interface {
 	TestConnection() error
-	GetDefaultConfigs() ([]core.ConfigOption, error)
+	GetDefaultConfigs() ([]mgm.ConfigOption, error)
 	GetEstates() ([]mgm.Estate, error)
 	GetHosts() ([]mgm.Host, error)
 	GetJobByID(id int) (mgm.Job, error)
@@ -35,7 +35,7 @@ type Database interface {
 	UpdateJob(job mgm.Job) error
 	CreatePasswordResetToken(userID uuid.UUID) (uuid.UUID, error)
 	GetRegions() ([]mgm.Region, error)
-	GetConfigs(regionID uuid.UUID) ([]core.ConfigOption, error)
+	GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error)
 	GetHostByAddress(address string) (mgm.Host, error)
 	DeleteJob(job mgm.Job) error
 	ValidatePasswordToken(userID uuid.UUID, token uuid.UUID) (bool, error)

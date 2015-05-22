@@ -21,14 +21,6 @@ type Identity struct {
 	Enabled    bool
 }
 
-// ConfigOption is an opensim.ini configuration line record
-type ConfigOption struct {
-	Region  uuid.UUID
-	Section string
-	Item    string
-	Content string
-}
-
 type sessionLookup struct {
 	jobLink      chan mgm.Job
 	hostStatLink chan mgm.HostStat
