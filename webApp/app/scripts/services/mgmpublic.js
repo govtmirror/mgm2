@@ -25,7 +25,7 @@ angular.module('mgmApp')
           if (data.Success) {
             self.loggedIn = true;
             $rootScope.auth = {
-              UUID: data.Uuid,
+              UUID: data.UUID,
               AccessLevel: data.AccessLevel
             }
             $rootScope.$broadcast("AuthChange", true);
@@ -132,7 +132,7 @@ angular.module('mgmApp')
           self.loggedIn = true;
           $rootScope.$broadcast("AuthChange", true);
           $rootScope.auth = {
-            UUID: data.Uuid,
+            UUID: data.UUID,
             AccessLevel: data.AccessLevel
           }
         } else {
