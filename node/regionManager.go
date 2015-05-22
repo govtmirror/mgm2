@@ -7,22 +7,38 @@ import (
 	"path"
 
 	"github.com/M-O-S-E-S/mgm/core"
+	"github.com/M-O-S-E-S/mgm/mgm"
 )
 
 // RegionManager interfaces with the region management objects
 type RegionManager interface {
 	Initialize() error
+	AddRegion(mgm.Region) error
+	RemoveRegion(mgm.Region) error
 }
 
 // NewRegionManager constructs a region manager for use
 func NewRegionManager(binDir string, regionDir string, log core.Logger) RegionManager {
-	return regMgr{binDir, regionDir, log}
+	return regMgr{
+		copyFrom:  binDir,
+		regionDir: regionDir,
+		logger:    log,
+	}
 }
 
 type regMgr struct {
 	copyFrom  string
 	regionDir string
 	logger    core.Logger
+	regions   []mgm.Region
+}
+
+func (rm regMgr) AddRegion(r mgm.Region) error {
+	return nil
+}
+
+func (rm regMgr) RemoveRegion(r mgm.Region) error {
+	return nil
 }
 
 func (rm regMgr) Initialize() error {

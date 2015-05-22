@@ -3,6 +3,8 @@ package core
 import (
 	"encoding/json"
 	"net"
+
+	"github.com/M-O-S-E-S/mgm/mgm"
 )
 
 // NodeManager is the interface to mgmNodes
@@ -70,47 +72,105 @@ func (nm nm) listen() {
 			continue
 		}
 		nm.logger.Info("MGM Node connection from: %v (%v)", host.ID, address)
-		go nm.connectionHandler(host.ID, conn)
+		go nm.connectionHandler(host, conn)
 	}
 }
 
-func (nm nm) connectionHandler(id uint, conn net.Conn) {
-	d := json.NewDecoder(conn)
+func (nm nm) connectionHandler(h mgm.Host, conn net.Conn) {
 	//place host online
-	h, err := nm.db.PlaceHostOnline(id)
+	h, err := nm.db.PlaceHostOnline(h.ID)
 	if err != nil {
 		nm.logger.Error("Error looking up host: ", err)
 		return
 	}
 	nm.hostSubs.Broadcast(h)
 
+	readMsgs := make(chan NetworkMessage, 32)
+	writeMsgs := make(chan NetworkMessage, 32)
+	nc := NodeConns{
+		Connection: conn, Closing: make(chan bool),
+		Log: nm.logger,
+	}
+	go nc.ReadConnection(readMsgs)
+	go nc.WriteConnection(writeMsgs)
+
+	for {
+
+		select {
+		case <-nc.Closing:
+			nm.logger.Info("mgm node disconnected")
+			h, err := nm.db.PlaceHostOffline(h.ID)
+			if err != nil {
+				nm.logger.Error("Error looking up host: ", err)
+				return
+			}
+			nm.hostSubs.Broadcast(h)
+			return
+		case nmsg := <-readMsgs:
+			switch nmsg.MessageType {
+			case "HostStats":
+				hStats := nmsg.HStats
+				hStats.ID = h.ID
+				nm.hostStatSubs.Broadcast(hStats)
+			case "GetRegions":
+				regions, err := nm.db.GetRegionsOnHost(h)
+				if err != nil {
+					nm.logger.Error("Error getting regions for host: ", err.Error())
+				} else {
+					for _, r := range regions {
+						writeMsgs <- NetworkMessage{MessageType: "AddRegion", Region: r}
+					}
+				}
+			default:
+				nm.logger.Info("Received invalid message from an MGM node: ", nmsg.MessageType)
+			}
+		}
+
+	}
+
+}
+
+// NodeConns is a structure of shared read/write funcitons between MGM and MGMNode
+type NodeConns struct {
+	Connection net.Conn
+	Closing    chan bool
+	Log        Logger
+}
+
+// ReadConnection is a processing loop for reading a socket and parsing messages
+func (node NodeConns) ReadConnection(readMsgs chan<- NetworkMessage) {
+	d := json.NewDecoder(node.Connection)
+
 	for {
 		nmsg := NetworkMessage{}
 		err := d.Decode(&nmsg)
 		if err != nil {
 			if err.Error() == "EOF" {
-				//place host offline
-				h, err := nm.db.PlaceHostOffline(id)
-				if err != nil {
-					nm.logger.Error("Error looking up host: ", err)
-					return
-				}
-				nm.hostSubs.Broadcast(h)
-				nm.logger.Info("mgm node disconnected")
+				close(node.Closing)
+				node.Connection.Close()
 				return
 			}
-			nm.logger.Error("Error decoding mgmNode message: ", err)
+			node.Log.Error("Error decoding mgm message: ", err)
 		}
 
-		switch nmsg.MessageType {
-		case "host_stats":
-			hStats := nmsg.HStats
-			hStats.ID = id
-			nm.hostStatSubs.Broadcast(hStats)
-		default:
-			nm.logger.Info("Received invalid message from an MGM node: ", nmsg.MessageType)
-		}
-
+		readMsgs <- nmsg
 	}
+}
 
+// WriteConnection is a processing loop for json encoding messages to a socket
+func (node NodeConns) WriteConnection(writeMsgs <-chan NetworkMessage) {
+
+	for {
+		select {
+		case <-node.Closing:
+			return
+		case msg := <-writeMsgs:
+			data, _ := json.Marshal(msg)
+			_, err := node.Connection.Write(data)
+			if err != nil {
+				node.Connection.Close()
+				return
+			}
+		}
+	}
 }

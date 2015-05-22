@@ -1,10 +1,8 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"net"
-	"syscall"
 	"time"
 
 	"code.google.com/p/gcfg"
@@ -40,6 +38,7 @@ type mgmNode struct {
 
 func main() {
 	n := mgmNode{lumber.NewConsoleLogger(lumber.DEBUG)}
+	connectedAtLeastOnce := false
 
 	cfgPtr := flag.String("config", "/opt/mgm/node.gcfg", "path to config file")
 	flag.Parse()
@@ -61,7 +60,7 @@ func main() {
 	rMgr := node.NewRegionManager(config.Node.OpensimBinDir, config.Node.RegionDir, n.logger)
 	err = rMgr.Initialize()
 	if err != nil {
-		n.logger.Error("Error instantiating RegionManager: %q", err.Error())
+		n.logger.Error("Error instantiating RegionManager: ", err.Error())
 		return
 	}
 
@@ -78,10 +77,20 @@ func main() {
 		socketClosed := make(chan bool)
 		receiveChan := make(chan core.NetworkMessage, 32)
 		sendChan := make(chan core.NetworkMessage, 32)
-		go n.readConnection(conn, receiveChan, socketClosed)
-		go n.writeConnection(conn, sendChan, socketClosed)
+		nc := core.NodeConns{
+			Connection: conn,
+			Closing:    make(chan bool),
+			Log:        n.logger,
+		}
+		go nc.ReadConnection(receiveChan)
+		go nc.WriteConnection(sendChan)
 
-		//new connection, check for region changes since we last connected
+		if !connectedAtLeastOnce {
+			//new connection, check for region changes since startup
+			sendChan <- core.NetworkMessage{MessageType: "GetRegions"}
+
+			connectedAtLeastOnce = true
+		}
 
 	ProcessingPackets:
 		for {
@@ -90,61 +99,24 @@ func main() {
 				n.logger.Error("Disconnected from MGM")
 				time.Sleep(10 * time.Second)
 				break ProcessingPackets
-			case msg := <-receiveChan:
-				n.logger.Info("recieved message from MGM: ", msg.MessageType)
 			case stats := <-hStats:
 				nmsg := core.NetworkMessage{}
-				nmsg.MessageType = "host_stats"
+				nmsg.MessageType = "HostStats"
 				nmsg.HStats = stats
-				data, _ := json.Marshal(nmsg)
-
-				_, err = conn.Write(data)
-				if err == syscall.EPIPE {
-					break
+				sendChan <- nmsg
+			case msg := <-receiveChan:
+				switch msg.MessageType {
+				case "AddRegion":
+					r := msg.Region
+					n.logger.Info("AddRegion: %v", r.Name)
+				default:
+					n.logger.Info("unexpected message from MGM: %v", msg.MessageType)
 				}
-				if err != nil {
-					n.logger.Error("Error sending data: ", err)
-				}
+
 			}
 		}
 	}
 
-}
-
-func (node mgmNode) readConnection(conn net.Conn, readMsgs chan<- core.NetworkMessage, closing chan bool) {
-	d := json.NewDecoder(conn)
-
-	for {
-		nmsg := core.NetworkMessage{}
-		err := d.Decode(&nmsg)
-		if err != nil {
-			if err.Error() == "EOF" {
-				close(closing)
-				conn.Close()
-				return
-			}
-			node.logger.Error("Error decoding mgm message: ", err)
-		}
-
-		readMsgs <- nmsg
-	}
-}
-
-func (node mgmNode) writeConnection(conn net.Conn, writeMsgs <-chan core.NetworkMessage, closing chan bool) {
-
-	for {
-		select {
-		case <-closing:
-			return
-		case msg := <-writeMsgs:
-			data, _ := json.Marshal(msg)
-			_, err := conn.Write(data)
-			if err != nil {
-				conn.Close()
-				return
-			}
-		}
-	}
 }
 
 func (node mgmNode) collectHostStatistics(out chan mgm.HostStat) {

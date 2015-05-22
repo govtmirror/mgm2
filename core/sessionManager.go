@@ -1,6 +1,8 @@
 package core
 
 import (
+	"fmt"
+
 	"github.com/M-O-S-E-S/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
@@ -56,20 +58,6 @@ func (sm sessionMgr) process() {
 				//user session has disconnected
 				sm.log.Info("User %v Disconnected", id.String())
 				delete(userMap, id)
-				//case stat := <-hHub.HostStatsNotifier:
-				//	//host stats updated, find any admin users authenticated
-				//	for _, v := range userMap {
-				//		if v.accessLevel >= 240 {
-				//			v.hostStatLink <- stat
-				//		}
-				//	}
-				//case host := <-hHub.HostNotifier:
-				//	//host updated, find any admin users authenticated
-				//	for _, v := range userMap {
-				//		if v.accessLevel >= 240 {
-				//			v.hostLink <- host
-				//		}
-				//	}
 			}
 		}
 	}()
@@ -103,57 +91,55 @@ func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exit
 			m.load(msg)
 			switch m.MessageType {
 			case "DeleteJob":
-				/*logger.Info("User %v requesting delete job", session.GetGUID())
+				sm.log.Info("User %v requesting delete job", session.GetGUID())
 				id, err := m.readID()
 				if err != nil {
 					session.SignalError(m.MessageID, "Invalid format")
 					continue
 				}
-				job, err := dataStore.GetJobByID(id)
+				job, err := sm.datastore.GetJobByID(id)
 				if err != nil {
 					session.SignalError(m.MessageID, "Error retrieving job")
 					continue
 				}
 				if job.ID != id {
-					session.SignalError(m.MessageID, "Job does not exist")
+					session.SignalError(m.MessageID, "Job not found")
 					continue
 				}
-				err = dataStore.DeleteJob(job)
+				err = sm.datastore.DeleteJob(job)
 				if err != nil {
-					logger.Error("Error deleting job: ", err)
+					sm.log.Error("Error deleting job: ", err)
 					session.SignalError(m.MessageID, "Error deleting job")
 					continue
 				}
 				//TODO some jobs may need files cleaned up... should we delete them here
 				// or leave them and create a cleanup coroutine?
 				session.SignalSuccess(m.MessageID, "Job Deleted")
-				*/
 			case "IarUpload":
-				/*logger.Info("User %v requesting iar upload", session.GetGUID())
+				sm.log.Info("User %v requesting iar upload", session.GetGUID())
 				userID, password, err := m.readPassword()
 				if err != nil {
-					logger.Error("Error reading iar upload request")
+					sm.log.Error("Error reading iar upload request")
 					continue
 				}
-				isValid, err := userConn.ValidatePassword(userID, password)
+				isValid, err := sm.userConn.ValidatePassword(userID, password)
 				if err != nil {
 					session.SignalError(m.MessageID, err.Error())
 				} else {
 					if isValid {
 						//password is valid, create the upload job
-						job, err := dataStore.CreateLoadIarJob(userID, "/")
+						job, err := sm.datastore.CreateLoadIarJob(userID, "/")
 						if err != nil {
-							logger.Error("Cannot creat job for load_iar: ", err)
+							sm.log.Error("Cannot creat job for load_iar: ", err)
 							session.SignalError(m.MessageID, err.Error())
 						} else {
-							session.SendJob(m.MessageID, job)
+							session.GetSend() <- job
 							session.SignalSuccess(m.MessageID, fmt.Sprintf("%v", job.ID))
 						}
 					} else {
 						session.SignalError(m.MessageID, "Invalid Password")
 					}
 				}
-				*/
 			case "SetPassword":
 				sm.log.Info("User %v requesting password change", session.GetGUID())
 				userID, password, err := m.readPassword()
@@ -177,48 +163,46 @@ func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exit
 					}
 				}
 			case "GetDefaultConfig":
-				/*logger.Info("User %v requesting default configuration", session.GetGUID())
+				sm.log.Info("User %v requesting default configuration", session.GetGUID())
 				if session.GetAccessLevel() > 249 {
-					cfgs, err := dataStore.GetDefaultConfigs()
+					cfgs, err := sm.datastore.GetDefaultConfigs()
 					if err != nil {
-						logger.Error("Error getting default configs: ", err)
+						sm.log.Error("Error getting default configs: ", err)
 					} else {
 						for _, cfg := range cfgs {
-							session.SendConfig(m.MessageID, cfg)
+							session.GetSend() <- cfg
 						}
 						session.SignalSuccess(m.MessageID, "Default Config Retrieved")
-						logger.Info("User %v default configuration served", session.GetGUID())
+						sm.log.Info("User %v default configuration served", session.GetGUID())
 					}
 				} else {
-					logger.Info("User %v permission denied to default configurations", session.GetGUID())
+					sm.log.Info("User %v permission denied to default configurations", session.GetGUID())
 					session.SignalError(m.MessageID, "Permission Denied")
 				}
-				*/
 			case "GetConfig":
-				/*logger.Info("User %v requesting region configuration", session.GetGUID())
+				sm.log.Info("User %v requesting region configuration", session.GetGUID())
 				if session.GetAccessLevel() > 249 {
 					rid, err := m.readRegionID()
 					if err != nil {
-						logger.Error("Error reading region id for configs: ", err)
+						sm.log.Error("Error reading region id for configs: ", err)
 						session.SignalError(m.MessageID, "Error loading region")
 					} else {
-						logger.Info("Serving Region Configs for %v.", rid)
-						cfgs, err := dataStore.GetConfigs(rid)
+						sm.log.Info("Serving Region Configs for %v.", rid)
+						cfgs, err := sm.datastore.GetConfigs(rid)
 						if err != nil {
-							logger.Error("Error getting configs: ", err)
+							sm.log.Error("Error getting configs: ", err)
 						} else {
 							for _, cfg := range cfgs {
-								session.SendConfig(m.MessageID, cfg)
+								session.GetSend() <- cfg
 							}
 							session.SignalSuccess(m.MessageID, "Config Retrieved")
-							logger.Info("User %v config retrieved", session.GetGUID())
+							sm.log.Info("User %v config retrieved", session.GetGUID())
 						}
 					}
 				} else {
-					logger.Info("User %v permission denied to configurations", session.GetGUID())
+					sm.log.Info("User %v permission denied to configurations", session.GetGUID())
 					session.SignalError(m.MessageID, "Permission Denied")
 				}
-				*/
 			case "GetState":
 				sm.log.Info("User %v requesting state sync", session.GetGUID())
 				users, err := sm.userConn.GetUsers()
