@@ -10,9 +10,10 @@ type SessionManager interface {
 }
 
 // NewSessionManager constructs a session manager for use
-func NewSessionManager(sessionListener <-chan UserSession, jobMgr JobManager, db Database, uConn UserConnector, logger Logger) SessionManager {
+func NewSessionManager(sessionListener <-chan UserSession, jobMgr JobManager, nodeMgr NodeManager, db Database, uConn UserConnector, logger Logger) SessionManager {
 	sMgr := sessionMgr{}
 	sMgr.jobMgr = jobMgr
+	sMgr.nodeMgr = nodeMgr
 	sMgr.log = logger
 	sMgr.datastore = db
 	sMgr.userConn = uConn
@@ -27,6 +28,7 @@ type sessionMgr struct {
 	sessionListener <-chan UserSession
 	datastore       Database
 	jobMgr          JobManager
+	nodeMgr         NodeManager
 	userConn        UserConnector
 	log             Logger
 }
@@ -80,14 +82,21 @@ func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exit
 
 	go session.Read(clientMsg)
 
+	host := sm.nodeMgr.SubscribeHost()
+	hostStats := sm.nodeMgr.SubscribeHostStats()
+
 	for {
 		select {
 		case j := <-sLinks.jobLink:
 			session.GetSend() <- j
-		case s := <-sLinks.hostStatLink:
-			session.GetSend() <- s
-		case h := <-sLinks.hostLink:
-			session.GetSend() <- h
+		case h := <-host.GetReceive():
+			if session.GetAccessLevel() > 249 {
+				session.GetSend() <- h
+			}
+		case hs := <-hostStats.GetReceive():
+			if session.GetAccessLevel() > 249 {
+				session.GetSend() <- hs
+			}
 		case msg := <-clientMsg:
 			//message from client
 			m := userRequest{}
@@ -305,6 +314,8 @@ func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exit
 			}
 		case <-session.GetClosingSignal():
 			//the client connection has closed
+			host.Unsubscribe()
+			hostStats.Unsubscribe()
 			exitLink <- session.GetGUID()
 			return
 		}
