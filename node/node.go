@@ -62,7 +62,7 @@ func main() {
 	for {
 		conn, err := net.Dial("tcp", config.Node.MGMAddress)
 		if err != nil {
-			n.logger.Fatal("Cannot connect to MGM: ", err)
+			n.logger.Fatal("Cannot connect to MGM") //: ", err)
 			time.Sleep(10 * time.Second)
 			continue
 		}
@@ -73,6 +73,7 @@ func main() {
 		for {
 			select {
 			case <-socketClosed:
+				n.logger.Error("Disconnected from MGM")
 				break ProcessingPackets
 			case msg := <-mgmCommands:
 				n.logger.Info("recieved message from MGM: ", string(msg))
@@ -103,7 +104,7 @@ func (node mgmNode) readConnection(conn net.Conn, out chan []byte, closing chan 
 		data := make([]byte, 512)
 		_, err := conn.Read(data)
 		if err != nil {
-			node.logger.Error("Error reading from socket: ", err)
+			//node.logger.Error("Error reading from socket: ", err)
 			closing <- true
 			return
 		}
