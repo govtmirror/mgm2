@@ -34,20 +34,23 @@ type UserConnector interface {
 // Database is the connection to the persistant storage
 type Database interface {
 	TestConnection() error
+
 	GetRegionsForUser(uuid.UUID) ([]mgm.Region, error)
 	GetJobsForUser(uuid.UUID) ([]mgm.Job, error)
 	GetRegionsOnHost(mgm.Host) ([]mgm.Region, error)
 	GetRegions() ([]mgm.Region, error)
 	GetEstates() ([]mgm.Estate, error)
-	GetHosts() ([]mgm.Host, error)
+
 	PlaceHostOnline(uint) (mgm.Host, error)
 	PlaceHostOffline(uint) (mgm.Host, error)
+
+	GetHosts() ([]mgm.Host, error)
 	GetHostByAddress(string) (mgm.Host, error)
 
 	GetPendingUsers() ([]mgm.PendingUser, error)
 
-	GetDefaultConfigs() ([]ConfigOption, error)
-	GetConfigs(uuid.UUID) ([]ConfigOption, error)
+	GetDefaultConfigs() ([]mgm.ConfigOption, error)
+	GetConfigs(uuid.UUID) ([]mgm.ConfigOption, error)
 
 	CreateJob(string, uuid.UUID, string) (mgm.Job, error)
 	CreateLoadIarJob(uuid.UUID, string) (mgm.Job, error)
