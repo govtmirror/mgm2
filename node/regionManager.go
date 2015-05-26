@@ -2,9 +2,12 @@ package node
 
 import (
 	"errors"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/M-O-S-E-S/mgm/core"
 	"github.com/M-O-S-E-S/mgm/mgm"
@@ -34,11 +37,45 @@ type regMgr struct {
 }
 
 func (rm regMgr) AddRegion(r mgm.Region) error {
-	return nil
+	err := rm.copyBinaries("TestName")
+	return err
 }
 
 func (rm regMgr) RemoveRegion(r mgm.Region) error {
 	return nil
+}
+
+func (rm regMgr) copyBinaries(name string) error {
+	copyTo := filepath.Join(rm.regionDir, name)
+	err := os.Mkdir(copyTo, 0700)
+	if err != nil {
+		return err
+	}
+	return filepath.Walk(rm.copyFrom, func(path string, info os.FileInfo, err error) error {
+		if path == rm.copyFrom {
+			return nil
+		}
+
+		if info.IsDir() {
+			return os.Mkdir(strings.Replace(path, rm.copyFrom, copyTo, 1), 0700)
+		}
+		src, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer src.Close()
+
+		dst, err := os.Create(strings.Replace(path, rm.copyFrom, copyTo, 1))
+		if err != nil {
+			return err
+		}
+		if _, err := io.Copy(dst, src); err != nil {
+			dst.Close()
+			return err
+		}
+		return dst.Close()
+
+	})
 }
 
 func (rm regMgr) Initialize() error {

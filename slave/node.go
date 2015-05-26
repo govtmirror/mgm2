@@ -108,7 +108,11 @@ func main() {
 				switch msg.MessageType {
 				case "AddRegion":
 					r := msg.Region
-					n.logger.Info("AddRegion: %v", r.Name)
+					err := rMgr.AddRegion(r)
+					if err != nil {
+						n.logger.Error("Error adding region: ", err.Error())
+					}
+					n.logger.Info("AddRegion: %v Complete", r.UUID.String())
 				default:
 					n.logger.Info("unexpected message from MGM: %v", msg.MessageType)
 				}
