@@ -16,7 +16,7 @@ import (
 // RegionManager interfaces with the region management objects
 type RegionManager interface {
 	Initialize() error
-	AddRegion(mgm.Region) error
+	AddRegion(mgm.Region) (Region, error)
 	RemoveRegion(mgm.Region) error
 }
 
@@ -36,9 +36,14 @@ type regMgr struct {
 	regions   []mgm.Region
 }
 
-func (rm regMgr) AddRegion(r mgm.Region) error {
+func (rm regMgr) AddRegion(r mgm.Region) (Region, error) {
 	err := rm.copyBinaries("TestName")
-	return err
+	if err != nil {
+		return region{}, err
+	}
+	reg := NewRegion(r, rm.logger)
+
+	return reg, nil
 }
 
 func (rm regMgr) RemoveRegion(r mgm.Region) error {

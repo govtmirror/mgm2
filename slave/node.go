@@ -11,6 +11,7 @@ import (
 	"github.com/M-O-S-E-S/mgm/mgm"
 	"github.com/M-O-S-E-S/mgm/node"
 	"github.com/jcelliott/lumber"
+	"github.com/satori/go.uuid"
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psmem "github.com/shirou/gopsutil/mem"
 	psnet "github.com/shirou/gopsutil/net"
@@ -52,9 +53,9 @@ func main() {
 	}
 
 	n.logger.Info("config loaded successfully")
+	regions := map[uuid.UUID]node.Region{}
 
 	hStats := make(chan mgm.HostStat, 8)
-
 	go n.collectHostStatistics(hStats)
 
 	rMgr := node.NewRegionManager(config.Node.OpensimBinDir, config.Node.RegionDir, n.logger)
@@ -108,7 +109,8 @@ func main() {
 				switch msg.MessageType {
 				case "AddRegion":
 					r := msg.Region
-					err := rMgr.AddRegion(r)
+					region, err := rMgr.AddRegion(r)
+					regions[r.UUID] = region
 					if err != nil {
 						n.logger.Error("Error adding region: ", err.Error())
 					}
