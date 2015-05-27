@@ -112,7 +112,7 @@ func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exit
 					continue
 				}
 
-				host, err := sm.regionMgr.RequestStartPermission(region, user)
+				host, err := sm.regionMgr.RequestControlPermission(region, user)
 				if err != nil {
 					session.SignalError(m.MessageID, fmt.Sprintf("Error requesting permission: %v", err.Error()))
 					sm.log.Error("start region %v failed, RequestStartPermission error: %v", regionID, err.Error())

@@ -8,7 +8,7 @@ import (
 
 // RegionManager controls and notifies on region / estate changes and permissions
 type RegionManager interface {
-	RequestStartPermission(mgm.Region, mgm.User) (mgm.Host, error)
+	RequestControlPermission(mgm.Region, mgm.User) (mgm.Host, error)
 }
 
 // NewRegionManager constructs a RegionManager for use
@@ -26,7 +26,7 @@ type regionMgr struct {
 	log     Logger
 }
 
-func (rm regionMgr) RequestStartPermission(region mgm.Region, user mgm.User) (mgm.Host, error) {
+func (rm regionMgr) RequestControlPermission(region mgm.Region, user mgm.User) (mgm.Host, error) {
 	h := mgm.Host{}
 
 	//make sure user may control this region
