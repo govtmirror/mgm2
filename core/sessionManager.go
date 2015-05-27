@@ -98,24 +98,33 @@ func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exit
 					session.SignalError(m.MessageID, "Invalid format")
 					continue
 				}
+				sm.log.Info("User %v requesting start region %v", session.GetGUID(), regionID)
 				user, err := sm.userConn.GetUserByID(session.GetGUID())
 				if err != nil {
 					session.SignalError(m.MessageID, "Error looking up user")
+					sm.log.Error("start region %v failed, requesting user not found", regionID)
 					continue
 				}
 				region, err := sm.datastore.GetRegionByID(regionID)
 				if err != nil {
 					session.SignalError(m.MessageID, fmt.Sprintf("Error locating region: %v", err.Error()))
+					sm.log.Error("start region %v failed, region not found", regionID)
 					continue
 				}
 
-				host, err := sm.regionMgr.RequestStart(region, user)
+				host, err := sm.regionMgr.RequestStartPermission(region, user)
 				if err != nil {
-					session.SignalError(m.MessageID, fmt.Sprintf("Error signalling region: %v", err.Error()))
+					session.SignalError(m.MessageID, fmt.Sprintf("Error requesting permission: %v", err.Error()))
+					sm.log.Error("start region %v failed, RequestStartPermission error: %v", regionID, err.Error())
 					continue
 				}
 
 				err = sm.nodeMgr.StartRegionOnHost(region, host)
+				if err != nil {
+					session.SignalError(m.MessageID, fmt.Sprintf("Error signalling region: %v", err.Error()))
+					sm.log.Error("start region %v failed: %v", regionID, err.Error())
+					continue
+				}
 
 				session.SignalSuccess(m.MessageID, "Region flagged for start")
 			case "DeleteJob":

@@ -37,6 +37,9 @@ type nm struct {
 }
 
 func (nm nm) StartRegionOnHost(region mgm.Region, host mgm.Host) error {
+	if !host.Running {
+		return errors.New("Host for requested region is not connected")
+	}
 	return errors.New("Start Region Not Implemented")
 }
 

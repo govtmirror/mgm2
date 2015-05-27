@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/M-O-S-E-S/mgm/mgm"
@@ -63,6 +64,9 @@ func (db db) GetHostByAddress(address string) (mgm.Host, error) {
 		&h.Running,
 	)
 	if err != nil {
+		if err.Error() == "sql: no rows in result set" {
+			return h, errors.New("Host not found")
+		}
 		db.log.Error("Error in database query: ", err.Error())
 		return h, err
 	}

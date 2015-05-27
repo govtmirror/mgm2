@@ -143,6 +143,8 @@ func (db db) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error) {
 	}
 	defer con.Close()
 
+	var regions []mgm.Region
+
 	rows, err := con.Query(
 		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, externalAddress, slaveAddress, isRunning, EstateName from regions, estate_map, estate_settings " +
 			"where estate_map.RegionID = regions.uuid AND estate_map.EstateID = estate_settings.EstateID AND uuid in " +
@@ -152,10 +154,12 @@ func (db db) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error) {
 	defer rows.Close()
 	if err != nil {
 		db.log.Error("Error in database query: ", err.Error())
+		if err.Error() == "sql: no rows in result set" {
+			return regions, nil
+		}
 		return nil, err
 	}
 
-	var regions []mgm.Region
 	for rows.Next() {
 		r := mgm.Region{}
 		err = rows.Scan(

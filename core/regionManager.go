@@ -8,7 +8,7 @@ import (
 
 // RegionManager controls and notifies on region / estate changes and permissions
 type RegionManager interface {
-	RequestStart(mgm.Region, mgm.User) (mgm.Host, error)
+	RequestStartPermission(mgm.Region, mgm.User) (mgm.Host, error)
 }
 
 // NewRegionManager constructs a RegionManager for use
@@ -26,8 +26,25 @@ type regionMgr struct {
 	log     Logger
 }
 
-func (rm regionMgr) RequestStart(region mgm.Region, user mgm.User) (mgm.Host, error) {
-	host := mgm.Host{}
+func (rm regionMgr) RequestStartPermission(region mgm.Region, user mgm.User) (mgm.Host, error) {
+	h := mgm.Host{}
 
-	return host, errors.New("Not Implemented")
+	//make sure user may control this region
+	regions, err := rm.db.GetRegionsForUser(user.UserID)
+	if err != nil {
+		rm.log.Error("Error retrieving regions for user: %v", err.Error())
+		return h, err
+	}
+
+	for _, r := range regions {
+		if r.UUID == region.UUID {
+			h, err = rm.db.GetHostByAddress(r.SlaveAddress)
+			if err != nil {
+				rm.log.Error("Error host by address: %v", err.Error())
+				return h, err
+			}
+			return h, nil
+		}
+	}
+	return h, errors.New("Permission Denied")
 }

@@ -20,6 +20,7 @@ angular.module('mgmApp')
 
     $scope.region = {
       start: function(region){
+        console.log("Requesting start region: " + region.Name);
         mgm.request("StartRegion", {RegionUUID: region.UUID}, function(success, msg){
           console.log(msg)
         })
