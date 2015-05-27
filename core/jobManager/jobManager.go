@@ -1,17 +1,18 @@
-package core
+package jobManager
 
 import (
 	"encoding/json"
 	"io/ioutil"
 	"path"
 
-	"github.com/M-O-S-E-S/mgm/mgm"
+	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
 
 // JobManager manages jobs, updating database, and notifying subscribed parties
 type JobManager interface {
-	Subscribe() subscription
+	Subscribe() core.Subscription
 	FileUploaded(int, uuid.UUID, []byte)
 }
 
@@ -22,7 +23,7 @@ type fileUpload struct {
 }
 
 // NewJobManager constructs a jobManager for use
-func NewJobManager(filePath string, db Database, logger Logger) JobManager {
+func NewJobManager(filePath string, db core.Database, logger core.Logger) JobManager {
 
 	subscribeChan := make(chan chan<- mgm.Job, 32)
 	unsubscribeChan := make(chan chan<- mgm.Job, 32)
@@ -37,7 +38,7 @@ func NewJobManager(filePath string, db Database, logger Logger) JobManager {
 	j.broadcast = notifyChan
 	j.datastore = db
 
-	j.subs = newSubscriptionManager()
+	j.subs = core.NewSubscriptionManager()
 
 	go j.process()
 
@@ -49,11 +50,11 @@ type jobMgr struct {
 	subscribe   chan chan<- mgm.Job
 	unsubscribe chan chan<- mgm.Job
 	broadcast   chan mgm.Job
-	datastore   Database
+	datastore   core.Database
 
-	subs subscriptionManager
+	subs core.SubscriptionManager
 
-	log Logger
+	log core.Logger
 
 	localPath string
 }
@@ -62,7 +63,7 @@ func (jm jobMgr) FileUploaded(id int, user uuid.UUID, data []byte) {
 	jm.fileUp <- fileUpload{id, user, data}
 }
 
-func (jm jobMgr) Subscribe() subscription {
+func (jm jobMgr) Subscribe() core.Subscription {
 	return jm.subs.Subscribe()
 }
 

@@ -1,12 +1,16 @@
 package main
 
 import (
-	"github.com/M-O-S-E-S/mgm/core"
-	"github.com/M-O-S-E-S/mgm/email"
-	"github.com/M-O-S-E-S/mgm/mysql"
-	"github.com/M-O-S-E-S/mgm/simian"
-	"github.com/M-O-S-E-S/mgm/webClient"
-	//"github.com/M-O-S-E-S/mgm/opensim"
+	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/jobManager"
+	"github.com/m-o-s-e-s/mgm/core/nodeManager"
+	"github.com/m-o-s-e-s/mgm/core/regionManager"
+	"github.com/m-o-s-e-s/mgm/core/sessionManager"
+	"github.com/m-o-s-e-s/mgm/email"
+	"github.com/m-o-s-e-s/mgm/mysql"
+	"github.com/m-o-s-e-s/mgm/simian"
+	"github.com/m-o-s-e-s/mgm/webClient"
+	//"github.com/m-o-s-e-s/mgm/opensim"
 	"flag"
 	"net/http"
 	"time"
@@ -78,12 +82,12 @@ func main() {
 	//os,_ := opensim.NewOpensimListener(config.OpensimPort, nil)
 
 	//Hook up core processing...
-	jMgr := core.NewJobManager(config.MGM.LocalFileStorage, db, logger)
-	nMgr := core.NewNodeManager(config.MGM.NodePort, db, logger)
-	rMgr := core.NewRegionManager(nMgr, db, logger)
+	jMgr := jobManager.NewJobManager(config.MGM.LocalFileStorage, db, logger)
+	nMgr := nodeManager.NewNodeManager(config.MGM.NodePort, db, logger)
+	rMgr := regionManager.NewRegionManager(nMgr, db, logger)
 	sessionListenerChan := make(chan core.UserSession, 64)
 
-	_ = core.NewSessionManager(sessionListenerChan, jMgr, nMgr, rMgr, db, sim, logger)
+	_ = sessionManager.NewSessionManager(sessionListenerChan, jMgr, nMgr, rMgr, db, sim, logger)
 
 	httpCon := webClient.NewHTTPConnector(config.MGM.SessionSecret, jMgr, sim, db, mailer, logger)
 	sockCon := webClient.NewWebsocketConnector(httpCon, sessionListenerChan, logger)

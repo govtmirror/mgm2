@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/M-O-S-E-S/mgm/mgm"
+	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
 

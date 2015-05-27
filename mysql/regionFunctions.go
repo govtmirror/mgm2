@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/M-O-S-E-S/mgm/mgm"
+	"github.com/m-o-s-e-s/mgm/mgm"
 	//import mysql driver
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/satori/go.uuid"

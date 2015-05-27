@@ -1,7 +1,7 @@
 package core
 
 import "github.com/satori/go.uuid"
-import "github.com/M-O-S-E-S/mgm/mgm"
+import "github.com/m-o-s-e-s/mgm/mgm"
 
 // UserSession is the connection to the web client
 type UserSession interface {

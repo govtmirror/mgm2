@@ -1,54 +1,81 @@
-package core
+package nodeManager
 
 import (
 	"encoding/json"
-	"errors"
 	"net"
 
-	"github.com/M-O-S-E-S/mgm/mgm"
+	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
 // NodeManager is the interface to mgmNodes
 type NodeManager interface {
-	SubscribeHost() subscription
-	SubscribeHostStats() subscription
-	StartRegionOnHost(mgm.Region, mgm.Host) error
+	SubscribeHost() core.Subscription
+	SubscribeHostStats() core.Subscription
+	StartRegionOnHost(mgm.Region, mgm.Host, core.ServiceRequest)
 }
 
 // NewNodeManager constructs NodeManager instances
-func NewNodeManager(port string, db Database, log Logger) NodeManager {
+func NewNodeManager(port string, db core.Database, log core.Logger) NodeManager {
 	mgr := nm{}
 	mgr.listenPort = port
 	mgr.db = db
 	mgr.logger = log
-	mgr.hostSubs = newSubscriptionManager()
-	mgr.hostStatSubs = newSubscriptionManager()
+	mgr.hostSubs = core.NewSubscriptionManager()
+	mgr.hostStatSubs = core.NewSubscriptionManager()
+	mgr.hostChan = make(chan mgm.Host, 16)
+	mgr.requestChan = make(chan nodeControl, 32)
 	go mgr.listen()
+	go mgr.process()
 	return mgr
 }
 
 type nm struct {
 	listenPort   string
-	logger       Logger
+	logger       core.Logger
 	listener     net.Listener
-	db           Database
-	hostSubs     subscriptionManager
-	hostStatSubs subscriptionManager
+	db           core.Database
+	hostSubs     core.SubscriptionManager
+	hostStatSubs core.SubscriptionManager
+
+	hostChan    chan mgm.Host
+	requestChan chan nodeControl
 }
 
-func (nm nm) StartRegionOnHost(region mgm.Region, host mgm.Host) error {
-	if !host.Running {
-		return errors.New("Host for requested region is not connected")
+type nodeControl struct {
+	MessageType string
+	Region      mgm.Region
+	Host        mgm.Host
+	SR          core.ServiceRequest
+}
+
+func (nm nm) StartRegionOnHost(region mgm.Region, host mgm.Host, sr core.ServiceRequest) {
+	nm.requestChan <- nodeControl{
+		MessageType: "StartRegion",
+		Region:      region,
+		Host:        host,
+		SR:          sr,
 	}
-	return errors.New("Start Region Not Implemented")
 }
 
-func (nm nm) SubscribeHost() subscription {
+func (nm nm) SubscribeHost() core.Subscription {
 	return nm.hostSubs.Subscribe()
 }
 
-func (nm nm) SubscribeHostStats() subscription {
+func (nm nm) SubscribeHostStats() core.Subscription {
 	return nm.hostStatSubs.Subscribe()
+}
+
+func (nm nm) process() {
+	hosts := make(map[uint]mgm.Host)
+	for {
+		select {
+		case host := <-nm.hostChan:
+			hosts[host.ID] = host
+		case nc := <-nm.requestChan:
+			nc.SR(false, "This part isnt here yet")
+		}
+	}
 }
 
 // NodeManager receives and communicates with mgm Node processes
@@ -94,11 +121,12 @@ func (nm nm) connectionHandler(h mgm.Host, conn net.Conn) {
 	}
 	nm.hostSubs.Broadcast(h)
 
-	readMsgs := make(chan NetworkMessage, 32)
-	writeMsgs := make(chan NetworkMessage, 32)
+	readMsgs := make(chan core.NetworkMessage, 32)
+	writeMsgs := make(chan core.NetworkMessage, 32)
 	nc := NodeConns{
-		Connection: conn, Closing: make(chan bool),
-		Log: nm.logger,
+		Connection: conn,
+		Closing:    make(chan bool),
+		Log:        nm.logger,
 	}
 	go nc.ReadConnection(readMsgs)
 	go nc.WriteConnection(writeMsgs)
@@ -127,7 +155,7 @@ func (nm nm) connectionHandler(h mgm.Host, conn net.Conn) {
 					nm.logger.Error("Error getting regions for host: ", err.Error())
 				} else {
 					for _, r := range regions {
-						writeMsgs <- NetworkMessage{MessageType: "AddRegion", Region: r}
+						writeMsgs <- core.NetworkMessage{MessageType: "AddRegion", Region: r}
 					}
 				}
 			default:
@@ -143,15 +171,15 @@ func (nm nm) connectionHandler(h mgm.Host, conn net.Conn) {
 type NodeConns struct {
 	Connection net.Conn
 	Closing    chan bool
-	Log        Logger
+	Log        core.Logger
 }
 
 // ReadConnection is a processing loop for reading a socket and parsing messages
-func (node NodeConns) ReadConnection(readMsgs chan<- NetworkMessage) {
+func (node NodeConns) ReadConnection(readMsgs chan<- core.NetworkMessage) {
 	d := json.NewDecoder(node.Connection)
 
 	for {
-		nmsg := NetworkMessage{}
+		nmsg := core.NetworkMessage{}
 		err := d.Decode(&nmsg)
 		if err != nil {
 			if err.Error() == "EOF" {
@@ -167,7 +195,7 @@ func (node NodeConns) ReadConnection(readMsgs chan<- NetworkMessage) {
 }
 
 // WriteConnection is a processing loop for json encoding messages to a socket
-func (node NodeConns) WriteConnection(writeMsgs <-chan NetworkMessage) {
+func (node NodeConns) WriteConnection(writeMsgs <-chan core.NetworkMessage) {
 
 	for {
 		select {

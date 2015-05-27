@@ -1,9 +1,13 @@
-package core
+package sessionManager
 
 import (
 	"fmt"
 
-	"github.com/M-O-S-E-S/mgm/mgm"
+	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/jobManager"
+	"github.com/m-o-s-e-s/mgm/core/nodeManager"
+	"github.com/m-o-s-e-s/mgm/core/regionManager"
+	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
 
@@ -12,7 +16,7 @@ type SessionManager interface {
 }
 
 // NewSessionManager constructs a session manager for use
-func NewSessionManager(sessionListener <-chan UserSession, jobMgr JobManager, nodeMgr NodeManager, regionMgr RegionManager, db Database, uConn UserConnector, logger Logger) SessionManager {
+func NewSessionManager(sessionListener <-chan core.UserSession, jobMgr jobManager.JobManager, nodeMgr nodeManager.NodeManager, regionMgr regionManager.RegionManager, db core.Database, uConn core.UserConnector, logger core.Logger) SessionManager {
 	sMgr := sessionMgr{}
 	sMgr.jobMgr = jobMgr
 	sMgr.nodeMgr = nodeMgr
@@ -28,18 +32,18 @@ func NewSessionManager(sessionListener <-chan UserSession, jobMgr JobManager, no
 }
 
 type sessionMgr struct {
-	sessionListener <-chan UserSession
-	datastore       Database
-	jobMgr          JobManager
-	nodeMgr         NodeManager
-	regionMgr       RegionManager
-	userConn        UserConnector
-	log             Logger
+	sessionListener <-chan core.UserSession
+	datastore       core.Database
+	jobMgr          jobManager.JobManager
+	nodeMgr         nodeManager.NodeManager
+	regionMgr       regionManager.RegionManager
+	userConn        core.UserConnector
+	log             core.Logger
 }
 
 func (sm sessionMgr) process() {
 
-	userMap := make(map[uuid.UUID]sessionLookup)
+	userMap := make(map[uuid.UUID]core.SessionLookup)
 	clientClosed := make(chan uuid.UUID, 64)
 
 	//listen for user sessions and hook them in
@@ -48,7 +52,7 @@ func (sm sessionMgr) process() {
 			select {
 			case s := <-sm.sessionListener:
 				//new user session
-				userMap[s.GetGUID()] = sessionLookup{
+				userMap[s.GetGUID()] = core.SessionLookup{
 					make(chan mgm.Job, 32),
 					make(chan mgm.HostStat, 32),
 					make(chan mgm.Host, 8),
@@ -66,7 +70,7 @@ func (sm sessionMgr) process() {
 
 }
 
-func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exitLink chan<- uuid.UUID) {
+func (sm sessionMgr) userSession(session core.UserSession, sLinks core.SessionLookup, exitLink chan<- uuid.UUID) {
 
 	clientMsg := make(chan []byte, 32)
 
@@ -77,7 +81,7 @@ func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exit
 
 	for {
 		select {
-		case j := <-sLinks.jobLink:
+		case j := <-sLinks.JobLink:
 			session.GetSend() <- j
 		case h := <-host.GetReceive():
 			if session.GetAccessLevel() > 249 {
@@ -89,11 +93,11 @@ func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exit
 			}
 		case msg := <-clientMsg:
 			//message from client
-			m := userRequest{}
-			m.load(msg)
+			m := core.UserRequest{}
+			m.Load(msg)
 			switch m.MessageType {
 			case "StartRegion":
-				regionID, err := m.readRegionID()
+				regionID, err := m.ReadRegionID()
 				if err != nil {
 					session.SignalError(m.MessageID, "Invalid format")
 					continue
@@ -119,17 +123,16 @@ func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exit
 					continue
 				}
 
-				err = sm.nodeMgr.StartRegionOnHost(region, host)
-				if err != nil {
-					session.SignalError(m.MessageID, fmt.Sprintf("Error signalling region: %v", err.Error()))
-					sm.log.Error("start region %v failed: %v", regionID, err.Error())
-					continue
-				}
-
-				session.SignalSuccess(m.MessageID, "Region flagged for start")
+				sm.nodeMgr.StartRegionOnHost(region, host, func(success bool, message string) {
+					if success {
+						session.SignalSuccess(m.MessageID, message)
+					} else {
+						session.SignalError(m.MessageID, message)
+					}
+				})
 			case "DeleteJob":
 				sm.log.Info("User %v requesting delete job", session.GetGUID())
-				id, err := m.readID()
+				id, err := m.ReadID()
 				if err != nil {
 					session.SignalError(m.MessageID, "Invalid format")
 					continue
@@ -154,7 +157,7 @@ func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exit
 				session.SignalSuccess(m.MessageID, "Job Deleted")
 			case "IarUpload":
 				sm.log.Info("User %v requesting iar upload", session.GetGUID())
-				userID, password, err := m.readPassword()
+				userID, password, err := m.ReadPassword()
 				if err != nil {
 					sm.log.Error("Error reading iar upload request")
 					continue
@@ -179,7 +182,7 @@ func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exit
 				}
 			case "SetPassword":
 				sm.log.Info("User %v requesting password change", session.GetGUID())
-				userID, password, err := m.readPassword()
+				userID, password, err := m.ReadPassword()
 				if err != nil {
 					sm.log.Error("Error reading password request")
 					continue
@@ -219,7 +222,7 @@ func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exit
 			case "GetConfig":
 				sm.log.Info("User %v requesting region configuration", session.GetGUID())
 				if session.GetAccessLevel() > 249 {
-					rid, err := m.readRegionID()
+					rid, err := m.ReadRegionID()
 					if err != nil {
 						sm.log.Error("Error reading region id for configs: ", err)
 						session.SignalError(m.MessageID, "Error loading region")

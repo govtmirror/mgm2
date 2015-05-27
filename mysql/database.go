@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/M-O-S-E-S/mgm/core"
-	"github.com/M-O-S-E-S/mgm/mgm"
+	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 	// load mysql driver
 	_ "github.com/go-sql-driver/mysql"

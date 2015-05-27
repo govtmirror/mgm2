@@ -3,8 +3,8 @@ package webClient
 import (
 	"encoding/json"
 
-	"github.com/M-O-S-E-S/mgm/core"
 	"github.com/gorilla/websocket"
+	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/satori/go.uuid"
 )
 

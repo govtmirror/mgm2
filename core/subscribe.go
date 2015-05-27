@@ -1,6 +1,7 @@
 package core
 
-type subscription interface {
+// Subscription is a generic interface for MGM object subscriptions
+type Subscription interface {
 	GetReceive() <-chan UserObject
 	Unsubscribe()
 }
@@ -18,8 +19,9 @@ func (s sub) GetReceive() <-chan UserObject {
 	return s.pipe
 }
 
-type subscriptionManager interface {
-	Subscribe() subscription
+// SubscriptionManager allows for creation of Subscription objects against a data source
+type SubscriptionManager interface {
+	Subscribe() Subscription
 	Broadcast(UserObject)
 }
 
@@ -29,7 +31,8 @@ type subMgr struct {
 	broadcast        chan UserObject
 }
 
-func newSubscriptionManager() subscriptionManager {
+// NewSubscriptionManager creates a new subscription mechanism for mgm subscriptions
+func NewSubscriptionManager() SubscriptionManager {
 	sm := subMgr{}
 	sm.newSubscriptions = make(chan sub, 8)
 	sm.unsubscribe = make(chan sub, 8)
@@ -38,7 +41,7 @@ func newSubscriptionManager() subscriptionManager {
 	return sm
 }
 
-func (sm subMgr) Subscribe() subscription {
+func (sm subMgr) Subscribe() Subscription {
 	ch := make(chan UserObject, 8)
 	s := sub{ch, sm.unsubscribe}
 	sm.newSubscriptions <- s

@@ -6,10 +6,11 @@ import (
 	"net/http"
 	"net/mail"
 
-	"github.com/M-O-S-E-S/mgm/core"
-	"github.com/M-O-S-E-S/mgm/email"
-	"github.com/M-O-S-E-S/mgm/simian"
 	"github.com/gorilla/sessions"
+	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/jobManager"
+	"github.com/m-o-s-e-s/mgm/email"
+	"github.com/m-o-s-e-s/mgm/simian"
 	"github.com/satori/go.uuid"
 )
 
@@ -38,11 +39,11 @@ type httpConn struct {
 	logger        core.Logger
 	db            core.Database
 	mailer        email.ClientEmailer
-	jMgr          core.JobManager
+	jMgr          jobManager.JobManager
 }
 
 // NewHTTPConnector constructs an http connector for use
-func NewHTTPConnector(sessionKey string, jobMgr core.JobManager, authenticator simian.Connector, db core.Database, mailer email.ClientEmailer, logger core.Logger) HTTPConnector {
+func NewHTTPConnector(sessionKey string, jobMgr jobManager.JobManager, authenticator simian.Connector, db core.Database, mailer email.ClientEmailer, logger core.Logger) HTTPConnector {
 	gob.Register(uuid.UUID{})
 
 	store := sessions.NewCookieStore([]byte(sessionKey))

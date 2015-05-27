@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/M-O-S-E-S/mgm/core"
-	"github.com/M-O-S-E-S/mgm/mgm"
+	"github.com/m-o-s-e-s/mgm/core/jobManager"
+	"github.com/m-o-s-e-s/mgm/mgm"
 	//import mysql driver
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/satori/go.uuid"
@@ -97,7 +97,7 @@ func (db db) GetJobsForUser(userID uuid.UUID) ([]mgm.Job, error) {
 
 // CreateLoadIarJob utility function to create job of type load_iar
 func (db db) CreateLoadIarJob(owner uuid.UUID, inventoryPath string) (mgm.Job, error) {
-	loadIar := core.LoadIarJob{InventoryPath: "/"}
+	loadIar := jobManager.LoadIarJob{InventoryPath: "/"}
 	data, err := json.Marshal(loadIar)
 	if err != nil {
 		return mgm.Job{}, err

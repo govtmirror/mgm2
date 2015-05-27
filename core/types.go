@@ -1,16 +1,9 @@
 package core
 
 import (
-	"github.com/M-O-S-E-S/mgm/mgm"
+	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
-
-// LoadIarJob is the data field for jobs that are of type load_iar
-type LoadIarJob struct {
-	InventoryPath string
-	Filename      uuid.UUID
-	Status        string
-}
 
 // Identity is a simiangrid credential record
 type Identity struct {
@@ -21,9 +14,13 @@ type Identity struct {
 	Enabled    bool
 }
 
-type sessionLookup struct {
-	jobLink      chan mgm.Job
-	hostStatLink chan mgm.HostStat
-	hostLink     chan mgm.Host
-	accessLevel  uint8
+// SessionLookup is a struct for session lookup tables
+type SessionLookup struct {
+	JobLink      chan mgm.Job
+	HostStatLink chan mgm.HostStat
+	HostLink     chan mgm.Host
+	AccessLevel  uint8
 }
+
+// ServiceRequest is a callback template for MGM services
+type ServiceRequest func(bool, string)

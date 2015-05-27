@@ -1,9 +1,11 @@
-package core
+package regionManager
 
 import (
 	"errors"
 
-	"github.com/M-O-S-E-S/mgm/mgm"
+	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/nodeManager"
+	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
 // RegionManager controls and notifies on region / estate changes and permissions
@@ -12,7 +14,7 @@ type RegionManager interface {
 }
 
 // NewRegionManager constructs a RegionManager for use
-func NewRegionManager(nMgr NodeManager, db Database, log Logger) RegionManager {
+func NewRegionManager(nMgr nodeManager.NodeManager, db core.Database, log core.Logger) RegionManager {
 	rMgr := regionMgr{}
 	rMgr.nodeMgr = nMgr
 	rMgr.db = db
@@ -21,9 +23,9 @@ func NewRegionManager(nMgr NodeManager, db Database, log Logger) RegionManager {
 }
 
 type regionMgr struct {
-	nodeMgr NodeManager
-	db      Database
-	log     Logger
+	nodeMgr nodeManager.NodeManager
+	db      core.Database
+	log     core.Logger
 }
 
 func (rm regionMgr) RequestControlPermission(region mgm.Region, user mgm.User) (mgm.Host, error) {

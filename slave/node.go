@@ -7,10 +7,11 @@ import (
 
 	"code.google.com/p/gcfg"
 
-	"github.com/M-O-S-E-S/mgm/core"
-	"github.com/M-O-S-E-S/mgm/mgm"
-	"github.com/M-O-S-E-S/mgm/node"
 	"github.com/jcelliott/lumber"
+	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/nodeManager"
+	"github.com/m-o-s-e-s/mgm/mgm"
+	"github.com/m-o-s-e-s/mgm/node"
 	"github.com/satori/go.uuid"
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psmem "github.com/shirou/gopsutil/mem"
@@ -78,7 +79,7 @@ func main() {
 		socketClosed := make(chan bool)
 		receiveChan := make(chan core.NetworkMessage, 32)
 		sendChan := make(chan core.NetworkMessage, 32)
-		nc := core.NodeConns{
+		nc := nodeManager.NodeConns{
 			Connection: conn,
 			Closing:    make(chan bool),
 			Log:        n.logger,
