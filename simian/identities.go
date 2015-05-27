@@ -165,3 +165,33 @@ func (sc simian) GetIdentities(userID uuid.UUID) ([]core.Identity, error) {
 	}
 	return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
 }
+
+func (sc simian) IsNameTaken(name string) (bool, error) {
+	user, err := sc.GetUserByName(name)
+	if err != nil {
+		if err.Error() == "Could not find user in simian" {
+			return false, nil
+		}
+		//bad hack, but if simian isn't communicating
+		return true, err
+	}
+	if user.Name == name {
+		return true, nil
+	}
+	return false, nil
+}
+
+func (sc simian) IsEmailTaken(email string) (bool, error) {
+	user, err := sc.GetUserByEmail(email)
+	if err != nil {
+		if err.Error() == "Could not find user in simian" {
+			return false, nil
+		}
+		//bad hack, but if simian isn't communicating
+		return true, err
+	}
+	if user.Email == email {
+		return true, nil
+	}
+	return false, nil
+}

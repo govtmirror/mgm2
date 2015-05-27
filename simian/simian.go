@@ -16,13 +16,15 @@ import (
 type Connector interface {
 	Auth(username string, password string) (bool, uuid.UUID, error)
 	GetUsers() ([]mgm.User, error)
-	GetUserByID(id uuid.UUID) (*mgm.User, error)
-	GetUserByEmail(email string) (*mgm.User, error)
-	GetUserByName(name string) (*mgm.User, error)
+	GetUserByID(id uuid.UUID) (mgm.User, error)
+	GetUserByEmail(email string) (mgm.User, error)
+	GetUserByName(name string) (mgm.User, error)
 	GetIdentities(userID uuid.UUID) ([]core.Identity, error)
 	SetPassword(userID uuid.UUID, password string) error
 	ValidatePassword(userID uuid.UUID, password string) (bool, error)
 	GetGroups() ([]mgm.Group, error)
+	IsNameTaken(string) (bool, error)
+	IsEmailTaken(string) (bool, error)
 }
 
 type simian struct {
@@ -31,7 +33,7 @@ type simian struct {
 
 // NewConnector constructs a connector to communicate with Simian Grid
 func NewConnector(simianURL string) (Connector, error) {
-	sim := &simian{url: simianURL}
+	sim := simian{url: simianURL}
 
 	//Test a connection from simianInstance to
 	url := fmt.Sprintf("http://%v/Grid/", sim.url)

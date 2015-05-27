@@ -2,6 +2,7 @@ package simian
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 
@@ -9,7 +10,8 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-func (sc simian) GetUserByEmail(email string) (*mgm.User, error) {
+func (sc simian) GetUserByEmail(email string) (mgm.User, error) {
+	m := mgm.User{}
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
 			"RequestMethod": {"GetUser"},
@@ -17,21 +19,22 @@ func (sc simian) GetUserByEmail(email string) (*mgm.User, error) {
 		})
 
 	if err != nil {
-		return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+		return m, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
 	}
 
-	var m userRequest
-	err = json.Unmarshal(response, &m)
+	var rq userRequest
+	err = json.Unmarshal(response, &rq)
 	if err != nil {
-		return nil, err
+		return rq.User, err
 	}
-	if m.Success {
-		return &m.User, nil
+	if rq.Success {
+		return rq.User, nil
 	}
-	return nil, nil
+	return m, errors.New("Could not find user in simian")
 }
 
-func (sc simian) GetUserByName(name string) (*mgm.User, error) {
+func (sc simian) GetUserByName(name string) (mgm.User, error) {
+	m := mgm.User{}
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
 			"RequestMethod": {"GetUser"},
@@ -39,36 +42,37 @@ func (sc simian) GetUserByName(name string) (*mgm.User, error) {
 		})
 
 	if err != nil {
-		return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+		return m, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
 	}
 
-	var m userRequest
-	err = json.Unmarshal(response, &m)
+	var rq userRequest
+	err = json.Unmarshal(response, &rq)
 	if err != nil {
-		return nil, err
+		return m, err
 	}
-	if m.Success {
-		return &m.User, nil
+	if rq.Success {
+		return rq.User, nil
 	}
-	return nil, nil
+	return m, errors.New("Could not find user in simian")
 }
 
-func (sc simian) GetUserByID(id uuid.UUID) (*mgm.User, error) {
+func (sc simian) GetUserByID(id uuid.UUID) (mgm.User, error) {
+	m := mgm.User{}
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
 			"RequestMethod": {"GetUser"},
 			"UserID":        {id.String()},
 		})
 
-	var m userRequest
-	err = json.Unmarshal(response, &m)
+	var rq userRequest
+	err = json.Unmarshal(response, &rq)
 	if err != nil {
-		return nil, err
+		return m, err
 	}
-	if m.Success {
-		return &m.User, nil
+	if rq.Success {
+		return rq.User, nil
 	}
-	return nil, nil
+	return m, errors.New("Cannot locate user in simian")
 }
 
 func (sc simian) GetUsers() ([]mgm.User, error) {
