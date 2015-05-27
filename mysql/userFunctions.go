@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/M-O-S-E-S/mgm/mgm"
+
 	//mysql driver
 	_ "github.com/go-sql-driver/mysql"
 )

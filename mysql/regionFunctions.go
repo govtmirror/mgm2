@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/M-O-S-E-S/mgm/mgm"
@@ -53,6 +54,41 @@ func (db db) GetRegions() ([]mgm.Region, error) {
 		regions = append(regions, r)
 	}
 	return regions, nil
+}
+
+// GetRegionByID retrieves a single region that matches the id given
+func (db db) GetRegionByID(id uuid.UUID) (mgm.Region, error) {
+	r := mgm.Region{}
+	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
+	if err != nil {
+		return r, err
+	}
+	defer con.Close()
+
+	err = con.QueryRow(
+		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, externalAddress, slaveAddress, isRunning from regions "+
+			"where uuid=?", id.String()).Scan(
+		&r.UUID,
+		&r.Name,
+		&r.Size,
+		&r.HTTPPort,
+		&r.ConsolePort,
+		&r.ConsoleUname,
+		&r.ConsolePass,
+		&r.LocX,
+		&r.LocY,
+		&r.ExternalAddress,
+		&r.SlaveAddress,
+		&r.IsRunning,
+	)
+	if err != nil {
+		db.log.Error("Error in database query: ", err.Error())
+		return r, err
+	}
+	if id != r.UUID {
+		return r, errors.New("Region Not Found")
+	}
+	return r, nil
 }
 
 // GetRegionsOnHost retrieves all region records for a specified host
