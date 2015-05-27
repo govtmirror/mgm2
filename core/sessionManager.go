@@ -12,10 +12,11 @@ type SessionManager interface {
 }
 
 // NewSessionManager constructs a session manager for use
-func NewSessionManager(sessionListener <-chan UserSession, jobMgr JobManager, nodeMgr NodeManager, db Database, uConn UserConnector, logger Logger) SessionManager {
+func NewSessionManager(sessionListener <-chan UserSession, jobMgr JobManager, nodeMgr NodeManager, regionMgr RegionManager, db Database, uConn UserConnector, logger Logger) SessionManager {
 	sMgr := sessionMgr{}
 	sMgr.jobMgr = jobMgr
 	sMgr.nodeMgr = nodeMgr
+	sMgr.regionMgr = regionMgr
 	sMgr.log = logger
 	sMgr.datastore = db
 	sMgr.userConn = uConn
@@ -31,6 +32,7 @@ type sessionMgr struct {
 	datastore       Database
 	jobMgr          JobManager
 	nodeMgr         NodeManager
+	regionMgr       RegionManager
 	userConn        UserConnector
 	log             Logger
 }
@@ -90,6 +92,32 @@ func (sm sessionMgr) userSession(session UserSession, sLinks sessionLookup, exit
 			m := userRequest{}
 			m.load(msg)
 			switch m.MessageType {
+			case "StartRegion":
+				regionID, err := m.readRegionID()
+				if err != nil {
+					session.SignalError(m.MessageID, "Invalid format")
+					continue
+				}
+				user, err := sm.userConn.GetUserByID(session.GetGUID())
+				if err != nil {
+					session.SignalError(m.MessageID, "Error looking up user")
+					continue
+				}
+				region, err := sm.datastore.GetRegionByID(regionID)
+				if err != nil {
+					session.SignalError(m.MessageID, fmt.Sprintf("Error locating region: %v", err.Error()))
+					continue
+				}
+
+				host, err := sm.regionMgr.RequestStart(region, user)
+				if err != nil {
+					session.SignalError(m.MessageID, fmt.Sprintf("Error signalling region: %v", err.Error()))
+					continue
+				}
+
+				err = sm.nodeMgr.StartRegionOnHost(region, host)
+
+				session.SignalSuccess(m.MessageID, "Region flagged for start")
 			case "DeleteJob":
 				sm.log.Info("User %v requesting delete job", session.GetGUID())
 				id, err := m.readID()

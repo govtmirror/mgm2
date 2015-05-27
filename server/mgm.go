@@ -79,12 +79,11 @@ func main() {
 
 	//Hook up core processing...
 	jMgr := core.NewJobManager(config.MGM.LocalFileStorage, db, logger)
-	// regionManager := core.RegionManager{nil, db}
+	nMgr := core.NewNodeManager(config.MGM.NodePort, db, logger)
+	rMgr := core.NewRegionManager(nMgr, db, logger)
 	sessionListenerChan := make(chan core.UserSession, 64)
 
-	nMgr := core.NewNodeManager(config.MGM.NodePort, db, logger)
-
-	_ = core.NewSessionManager(sessionListenerChan, jMgr, nMgr, db, sim, logger)
+	_ = core.NewSessionManager(sessionListenerChan, jMgr, nMgr, rMgr, db, sim, logger)
 
 	httpCon := webClient.NewHTTPConnector(config.MGM.SessionSecret, jMgr, sim, db, mailer, logger)
 	sockCon := webClient.NewWebsocketConnector(httpCon, sessionListenerChan, logger)

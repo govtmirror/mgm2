@@ -2,6 +2,7 @@ package core
 
 import (
 	"encoding/json"
+	"errors"
 	"net"
 
 	"github.com/M-O-S-E-S/mgm/mgm"
@@ -11,6 +12,7 @@ import (
 type NodeManager interface {
 	SubscribeHost() subscription
 	SubscribeHostStats() subscription
+	StartRegionOnHost(mgm.Region, mgm.Host) error
 }
 
 // NewNodeManager constructs NodeManager instances
@@ -32,6 +34,10 @@ type nm struct {
 	db           Database
 	hostSubs     subscriptionManager
 	hostStatSubs subscriptionManager
+}
+
+func (nm nm) StartRegionOnHost(region mgm.Region, host mgm.Host) error {
+	return errors.New("Start Region Not Implemented")
 }
 
 func (nm nm) SubscribeHost() subscription {
@@ -130,7 +136,7 @@ func (nm nm) connectionHandler(h mgm.Host, conn net.Conn) {
 
 }
 
-// NodeConns is a structure of shared read/write funcitons between MGM and MGMNode
+// NodeConns is a structure of shared read/write functions between MGM and MGMNode
 type NodeConns struct {
 	Connection net.Conn
 	Closing    chan bool

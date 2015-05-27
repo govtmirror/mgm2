@@ -18,6 +18,15 @@ angular.module('mgmApp')
     var regions = {}
     $scope.estates = {};
 
+    $scope.region = {
+      start: function(region){
+        mgm.request("StartRegion", {RegionUUID: region.UUID}, function(success, msg){
+          console.log(msg)
+        })
+      }
+    }
+
+
     for (var ID in mgm.estates) {
       modUserEstates("", mgm.estates[ID])
     }

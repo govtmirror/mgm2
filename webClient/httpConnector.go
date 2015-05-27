@@ -94,10 +94,6 @@ func (hc httpConn) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if user == nil {
-		http.Error(w, "User account dissappeared", http.StatusInternalServerError)
-		return
-	}
 
 	session, _ := hc.store.Get(r, "MGM")
 	session.Values["guid"] = guid
@@ -105,7 +101,7 @@ func (hc httpConn) LoginHandler(w http.ResponseWriter, r *http.Request) {
 	session.Values["ulevel"] = user.AccessLevel
 	err = session.Save(r, w)
 	if err != nil {
-		hc.logger.Error("Error in httpConnector: %v", err)
+		hc.logger.Error("Error in httpConnector: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -201,22 +197,22 @@ func (hc httpConn) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	/* Test if names are unique in registered users */
-	user, err := hc.authenticator.GetUserByEmail(reg.Email)
+	exists, err := hc.authenticator.IsEmailTaken(reg.Email)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if user != nil {
-		http.Error(w, "Credentials already exist", http.StatusInternalServerError)
+	if exists {
+		http.Error(w, "Email already exists", http.StatusInternalServerError)
 		return
 	}
-	user, err = hc.authenticator.GetUserByName(reg.Name)
+	exists, err = hc.authenticator.IsNameTaken(reg.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if user != nil {
-		http.Error(w, "Credentials already exist", http.StatusInternalServerError)
+	if exists {
+		http.Error(w, "Name already exists", http.StatusInternalServerError)
 		return
 	}
 
@@ -261,10 +257,6 @@ func (hc httpConn) PasswordResetHandler(w http.ResponseWriter, r *http.Request) 
 	user, err := hc.authenticator.GetUserByName(req.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if user == nil {
-		http.Error(w, "Invalid Request, no user", http.StatusInternalServerError)
 		return
 	}
 
@@ -344,10 +336,6 @@ func (hc httpConn) PasswordTokenHandler(w http.ResponseWriter, r *http.Request) 
 	user, err := hc.authenticator.GetUserByEmail(addr.Address)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	if user == nil {
-		http.Error(w, "Invalid Request, presence", http.StatusInternalServerError)
 		return
 	}
 

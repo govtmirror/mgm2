@@ -23,7 +23,7 @@ type UserObject interface {
 
 // UserConnector is the connection to the user services
 type UserConnector interface {
-	GetUserByID(uuid.UUID) (*mgm.User, error)
+	GetUserByID(uuid.UUID) (mgm.User, error)
 	GetUsers() ([]mgm.User, error)
 	GetGroups() ([]mgm.Group, error)
 
@@ -36,9 +36,10 @@ type Database interface {
 	TestConnection() error
 
 	GetRegionsForUser(uuid.UUID) ([]mgm.Region, error)
-	GetJobsForUser(uuid.UUID) ([]mgm.Job, error)
+	GetRegionByID(id uuid.UUID) (mgm.Region, error)
 	GetRegionsOnHost(mgm.Host) ([]mgm.Region, error)
 	GetRegions() ([]mgm.Region, error)
+
 	GetEstates() ([]mgm.Estate, error)
 
 	PlaceHostOnline(uint) (mgm.Host, error)
@@ -52,12 +53,12 @@ type Database interface {
 	GetDefaultConfigs() ([]mgm.ConfigOption, error)
 	GetConfigs(uuid.UUID) ([]mgm.ConfigOption, error)
 
+	GetJobByID(int) (mgm.Job, error)
+	GetJobsForUser(uuid.UUID) ([]mgm.Job, error)
 	CreateJob(string, uuid.UUID, string) (mgm.Job, error)
 	CreateLoadIarJob(uuid.UUID, string) (mgm.Job, error)
 	UpdateJob(mgm.Job) error
 	DeleteJob(mgm.Job) error
-
-	GetJobByID(int) (mgm.Job, error)
 
 	CreatePasswordResetToken(uuid.UUID) (uuid.UUID, error)
 	ValidatePasswordToken(uuid.UUID, uuid.UUID) (bool, error)
