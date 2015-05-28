@@ -19,8 +19,8 @@ type client struct {
 	closing      chan bool
 }
 
-func (c client) GetSend() chan<- core.UserObject {
-	return c.toClientChan
+func (c client) Send(ob core.UserObject) {
+	c.toClientChan <- ob
 }
 
 func (c client) GetClosingSignal() <-chan bool {

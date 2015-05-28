@@ -5,7 +5,7 @@ import "github.com/m-o-s-e-s/mgm/mgm"
 
 // UserSession is the connection to the web client
 type UserSession interface {
-	GetSend() chan<- UserObject
+	Send(UserObject)
 	SignalSuccess(int, string)
 	SignalError(int, string)
 	Read(chan<- []byte)

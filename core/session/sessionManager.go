@@ -83,14 +83,14 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 	for {
 		select {
 		case j := <-sLinks.JobLink:
-			us.GetSend() <- j
+			us.Send(j)
 		case h := <-host.GetReceive():
 			if us.GetAccessLevel() > 249 {
-				us.GetSend() <- h
+				us.Send(h)
 			}
 		case hs := <-hostStats.GetReceive():
 			if us.GetAccessLevel() > 249 {
-				us.GetSend() <- hs
+				us.Send(hs)
 			}
 		case msg := <-clientMsg:
 			//message from client
@@ -175,7 +175,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 							sm.log.Error("Cannot creat job for load_iar: ", err)
 							us.SignalError(m.MessageID, err.Error())
 						} else {
-							us.GetSend() <- j
+							us.Send(j)
 							us.SignalSuccess(m.MessageID, fmt.Sprintf("%v", j.ID))
 						}
 					} else {
@@ -212,7 +212,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 						sm.log.Error("Error getting default configs: ", err)
 					} else {
 						for _, cfg := range cfgs {
-							us.GetSend() <- cfg
+							us.Send(cfg)
 						}
 						us.SignalSuccess(m.MessageID, "Default Config Retrieved")
 						sm.log.Info("User %v default configuration served", us.GetGUID())
@@ -235,7 +235,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 							sm.log.Error("Error getting configs: ", err)
 						} else {
 							for _, cfg := range cfgs {
-								us.GetSend() <- cfg
+								us.Send(cfg)
 							}
 							us.SignalSuccess(m.MessageID, "Config Retrieved")
 							sm.log.Info("User %v config retrieved", us.GetGUID())
@@ -257,7 +257,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 					if user.Suspended && us.GetAccessLevel() < 250 {
 						continue
 					}
-					us.GetSend() <- user
+					us.Send(user)
 				}
 				users = nil
 
@@ -268,7 +268,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 					continue
 				}
 				for _, j := range jobs {
-					us.GetSend() <- j
+					us.Send(j)
 				}
 				jobs = nil
 
@@ -279,7 +279,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 					continue
 				}
 				for _, user := range pendingUsers {
-					us.GetSend() <- user
+					us.Send(user)
 				}
 				pendingUsers = nil
 
@@ -291,7 +291,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 					continue
 				}
 				for _, r := range regions {
-					us.GetSend() <- r
+					us.Send(r)
 				}
 				regions = nil
 
@@ -303,7 +303,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 					continue
 				}
 				for _, e := range estates {
-					us.GetSend() <- e
+					us.Send(e)
 				}
 				estates = nil
 
@@ -314,7 +314,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 					continue
 				}
 				for _, g := range groups {
-					us.GetSend() <- g
+					us.Send(g)
 				}
 				groups = nil
 				//only administrative users need host access
@@ -326,7 +326,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 						continue
 					}
 					for _, h := range hosts {
-						us.GetSend() <- h
+						us.Send(h)
 					}
 				}
 
