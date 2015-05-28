@@ -8,7 +8,7 @@ import (
 
 	"github.com/gorilla/sessions"
 	"github.com/m-o-s-e-s/mgm/core"
-	"github.com/m-o-s-e-s/mgm/core/jobManager"
+	"github.com/m-o-s-e-s/mgm/core/job"
 	"github.com/m-o-s-e-s/mgm/email"
 	"github.com/m-o-s-e-s/mgm/simian"
 	"github.com/satori/go.uuid"
@@ -39,11 +39,11 @@ type httpConn struct {
 	logger        core.Logger
 	db            core.Database
 	mailer        email.ClientEmailer
-	jMgr          jobManager.JobManager
+	jMgr          job.Manager
 }
 
 // NewHTTPConnector constructs an http connector for use
-func NewHTTPConnector(sessionKey string, jobMgr jobManager.JobManager, authenticator simian.Connector, db core.Database, mailer email.ClientEmailer, logger core.Logger) HTTPConnector {
+func NewHTTPConnector(sessionKey string, jobMgr job.Manager, authenticator simian.Connector, db core.Database, mailer email.ClientEmailer, logger core.Logger) HTTPConnector {
 	gob.Register(uuid.UUID{})
 
 	store := sessions.NewCookieStore([]byte(sessionKey))
@@ -96,11 +96,11 @@ func (hc httpConn) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session, _ := hc.store.Get(r, "MGM")
-	session.Values["guid"] = guid
-	session.Values["address"] = r.RemoteAddr
-	session.Values["ulevel"] = user.AccessLevel
-	err = session.Save(r, w)
+	s, _ := hc.store.Get(r, "MGM")
+	s.Values["guid"] = guid
+	s.Values["address"] = r.RemoteAddr
+	s.Values["ulevel"] = user.AccessLevel
+	err = s.Save(r, w)
 	if err != nil {
 		hc.logger.Error("Error in httpConnector: ", err.Error())
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -121,18 +121,18 @@ func (hc httpConn) LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func (hc httpConn) LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	session, _ := hc.store.Get(r, "MGM")
-	delete(session.Values, "guid")
-	delete(session.Values, "address")
-	session.Save(r, w)
+	s, _ := hc.store.Get(r, "MGM")
+	delete(s.Values, "guid")
+	delete(s.Values, "address")
+	s.Save(r, w)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write([]byte("{\"Success\": true}"))
 }
 
 func (hc httpConn) ResumeHandler(w http.ResponseWriter, r *http.Request) {
-	session, _ := hc.store.Get(r, "MGM")
+	s, _ := hc.store.Get(r, "MGM")
 
-	if session.Values["guid"] == nil {
+	if s.Values["guid"] == nil {
 		response := clientAuthResponse{}
 		js, err := json.Marshal(response)
 		if err != nil {
@@ -144,7 +144,7 @@ func (hc httpConn) ResumeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response := clientAuthResponse{session.Values["guid"].(uuid.UUID), session.Values["ulevel"].(uint8), "", true}
+	response := clientAuthResponse{s.Values["guid"].(uuid.UUID), s.Values["ulevel"].(uint8), "", true}
 	js, err := json.Marshal(response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

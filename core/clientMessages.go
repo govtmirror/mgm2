@@ -12,7 +12,7 @@ type UserRequest struct {
 	Message     json.RawMessage
 }
 
-func (ur UserRequest) Load(msg []byte) {
+func (ur *UserRequest) Load(msg []byte) {
 	err := json.Unmarshal(msg, ur)
 	if err != nil {
 		ur.MessageType = err.Error()

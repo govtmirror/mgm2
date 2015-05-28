@@ -1,4 +1,4 @@
-package node
+package remote
 
 import (
 	"github.com/m-o-s-e-s/mgm/core"

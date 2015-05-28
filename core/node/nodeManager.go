@@ -1,4 +1,4 @@
-package nodeManager
+package node
 
 import (
 	"encoding/json"
@@ -8,15 +8,15 @@ import (
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
-// NodeManager is the interface to mgmNodes
-type NodeManager interface {
+// Manager is the interface to mgmNodes
+type Manager interface {
 	SubscribeHost() core.Subscription
 	SubscribeHostStats() core.Subscription
 	StartRegionOnHost(mgm.Region, mgm.Host, core.ServiceRequest)
 }
 
-// NewNodeManager constructs NodeManager instances
-func NewNodeManager(port string, db core.Database, log core.Logger) NodeManager {
+// NewManager constructs NodeManager instances
+func NewManager(port string, db core.Database, log core.Logger) Manager {
 	mgr := nm{}
 	mgr.listenPort = port
 	mgr.db = db

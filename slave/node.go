@@ -9,9 +9,9 @@ import (
 
 	"github.com/jcelliott/lumber"
 	"github.com/m-o-s-e-s/mgm/core"
-	"github.com/m-o-s-e-s/mgm/core/nodeManager"
+	"github.com/m-o-s-e-s/mgm/core/node"
 	"github.com/m-o-s-e-s/mgm/mgm"
-	"github.com/m-o-s-e-s/mgm/node"
+	"github.com/m-o-s-e-s/mgm/remote"
 	"github.com/satori/go.uuid"
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psmem "github.com/shirou/gopsutil/mem"
@@ -54,12 +54,12 @@ func main() {
 	}
 
 	n.logger.Info("config loaded successfully")
-	regions := map[uuid.UUID]node.Region{}
+	regions := map[uuid.UUID]remote.Region{}
 
 	hStats := make(chan mgm.HostStat, 8)
 	go n.collectHostStatistics(hStats)
 
-	rMgr := node.NewRegionManager(config.Node.OpensimBinDir, config.Node.RegionDir, n.logger)
+	rMgr := remote.NewRegionManager(config.Node.OpensimBinDir, config.Node.RegionDir, n.logger)
 	err = rMgr.Initialize()
 	if err != nil {
 		n.logger.Error("Error instantiating RegionManager: ", err.Error())
@@ -79,7 +79,7 @@ func main() {
 		socketClosed := make(chan bool)
 		receiveChan := make(chan core.NetworkMessage, 32)
 		sendChan := make(chan core.NetworkMessage, 32)
-		nc := nodeManager.NodeConns{
+		nc := node.NodeConns{
 			Connection: conn,
 			Closing:    make(chan bool),
 			Log:        n.logger,
@@ -110,8 +110,8 @@ func main() {
 				switch msg.MessageType {
 				case "AddRegion":
 					r := msg.Region
-					region, err := rMgr.AddRegion(r)
-					regions[r.UUID] = region
+					reg, err := rMgr.AddRegion(r)
+					regions[r.UUID] = reg
 					if err != nil {
 						n.logger.Error("Error adding region: ", err.Error())
 					}

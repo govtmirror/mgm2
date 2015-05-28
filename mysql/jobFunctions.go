@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/m-o-s-e-s/mgm/core/jobManager"
+	"github.com/m-o-s-e-s/mgm/core/job"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	//import mysql driver
 	_ "github.com/go-sql-driver/mysql"
@@ -20,13 +20,13 @@ func (db db) GetJobByID(id int) (mgm.Job, error) {
 	}
 	defer con.Close()
 
-	job := mgm.Job{}
-	err = con.QueryRow("SELECT * FROM jobs WHERE id=?", id).Scan(&job.ID, &job.Timestamp, &job.Type, &job.User, &job.Data)
+	j := mgm.Job{}
+	err = con.QueryRow("SELECT * FROM jobs WHERE id=?", id).Scan(&j.ID, &j.Timestamp, &j.Type, &j.User, &j.Data)
 	if err != nil {
 		return mgm.Job{}, err
 	}
 
-	return job, nil
+	return j, nil
 }
 
 // UpdateJob record an updated job record
@@ -97,7 +97,7 @@ func (db db) GetJobsForUser(userID uuid.UUID) ([]mgm.Job, error) {
 
 // CreateLoadIarJob utility function to create job of type load_iar
 func (db db) CreateLoadIarJob(owner uuid.UUID, inventoryPath string) (mgm.Job, error) {
-	loadIar := jobManager.LoadIarJob{InventoryPath: "/"}
+	loadIar := job.LoadIarJob{InventoryPath: "/"}
 	data, err := json.Marshal(loadIar)
 	if err != nil {
 		return mgm.Job{}, err
@@ -118,11 +118,11 @@ func (db db) CreateJob(taskType string, userID uuid.UUID, data string) (mgm.Job,
 		return mgm.Job{}, err
 	}
 	id, _ := res.LastInsertId()
-	job := mgm.Job{}
-	err = con.QueryRow("SELECT * FROM jobs WHERE id=?", id).Scan(&job.ID, &job.Timestamp, &job.Type, &job.User, &job.Data)
+	j := mgm.Job{}
+	err = con.QueryRow("SELECT * FROM jobs WHERE id=?", id).Scan(&j.ID, &j.Timestamp, &j.Type, &j.User, &j.Data)
 	if err != nil {
 		return mgm.Job{}, err
 	}
 
-	return job, nil
+	return j, nil
 }

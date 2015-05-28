@@ -19,8 +19,8 @@ func (hc httpConn) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//confirm that this is attached to a user session
-	session, _ := hc.store.Get(r, "MGM")
-	if session.Values["guid"] == nil {
+	s, _ := hc.store.Get(r, "MGM")
+	if s.Values["guid"] == nil {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte("Access Denied"))
 		return
@@ -50,7 +50,7 @@ func (hc httpConn) UploadHandler(w http.ResponseWriter, r *http.Request) {
 
 	hc.logger.Info("Read %v bytes from %v", len(data), id)
 
-	hc.jMgr.FileUploaded(id, session.Values["guid"].(uuid.UUID), data)
+	hc.jMgr.FileUploaded(id, s.Values["guid"].(uuid.UUID), data)
 
 	w.Write([]byte("OK"))
 }

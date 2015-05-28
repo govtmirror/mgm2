@@ -1,4 +1,4 @@
-package jobManager
+package job
 
 import "github.com/satori/go.uuid"
 

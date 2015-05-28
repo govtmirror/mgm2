@@ -2,10 +2,11 @@ package main
 
 import (
 	"github.com/m-o-s-e-s/mgm/core"
-	"github.com/m-o-s-e-s/mgm/core/jobManager"
-	"github.com/m-o-s-e-s/mgm/core/nodeManager"
-	"github.com/m-o-s-e-s/mgm/core/regionManager"
-	"github.com/m-o-s-e-s/mgm/core/sessionManager"
+	"github.com/m-o-s-e-s/mgm/core/job"
+	"github.com/m-o-s-e-s/mgm/core/node"
+	"github.com/m-o-s-e-s/mgm/core/region"
+	"github.com/m-o-s-e-s/mgm/core/session"
+
 	"github.com/m-o-s-e-s/mgm/email"
 	"github.com/m-o-s-e-s/mgm/mysql"
 	"github.com/m-o-s-e-s/mgm/simian"
@@ -82,12 +83,12 @@ func main() {
 	//os,_ := opensim.NewOpensimListener(config.OpensimPort, nil)
 
 	//Hook up core processing...
-	jMgr := jobManager.NewJobManager(config.MGM.LocalFileStorage, db, logger)
-	nMgr := nodeManager.NewNodeManager(config.MGM.NodePort, db, logger)
-	rMgr := regionManager.NewRegionManager(nMgr, db, logger)
+	jMgr := job.NewManager(config.MGM.LocalFileStorage, db, logger)
+	nMgr := node.NewManager(config.MGM.NodePort, db, logger)
+	rMgr := region.NewManager(nMgr, db, logger)
 	sessionListenerChan := make(chan core.UserSession, 64)
 
-	_ = sessionManager.NewSessionManager(sessionListenerChan, jMgr, nMgr, rMgr, db, sim, logger)
+	_ = session.NewSessionManager(sessionListenerChan, jMgr, nMgr, rMgr, db, sim, logger)
 
 	httpCon := webClient.NewHTTPConnector(config.MGM.SessionSecret, jMgr, sim, db, mailer, logger)
 	sockCon := webClient.NewWebsocketConnector(httpCon, sessionListenerChan, logger)

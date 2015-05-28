@@ -1,12 +1,13 @@
-package sessionManager
+package session
 
 import (
 	"fmt"
 
 	"github.com/m-o-s-e-s/mgm/core"
-	"github.com/m-o-s-e-s/mgm/core/jobManager"
-	"github.com/m-o-s-e-s/mgm/core/nodeManager"
-	"github.com/m-o-s-e-s/mgm/core/regionManager"
+	"github.com/m-o-s-e-s/mgm/core/job"
+	"github.com/m-o-s-e-s/mgm/core/node"
+	"github.com/m-o-s-e-s/mgm/core/region"
+
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
@@ -16,7 +17,7 @@ type SessionManager interface {
 }
 
 // NewSessionManager constructs a session manager for use
-func NewSessionManager(sessionListener <-chan core.UserSession, jobMgr jobManager.JobManager, nodeMgr nodeManager.NodeManager, regionMgr regionManager.RegionManager, db core.Database, uConn core.UserConnector, logger core.Logger) SessionManager {
+func NewSessionManager(sessionListener <-chan core.UserSession, jobMgr job.Manager, nodeMgr node.Manager, regionMgr region.Manager, db core.Database, uConn core.UserConnector, logger core.Logger) SessionManager {
 	sMgr := sessionMgr{}
 	sMgr.jobMgr = jobMgr
 	sMgr.nodeMgr = nodeMgr
@@ -34,9 +35,9 @@ func NewSessionManager(sessionListener <-chan core.UserSession, jobMgr jobManage
 type sessionMgr struct {
 	sessionListener <-chan core.UserSession
 	datastore       core.Database
-	jobMgr          jobManager.JobManager
-	nodeMgr         nodeManager.NodeManager
-	regionMgr       regionManager.RegionManager
+	jobMgr          job.Manager
+	nodeMgr         node.Manager
+	regionMgr       region.Manager
 	userConn        core.UserConnector
 	log             core.Logger
 }
@@ -70,11 +71,11 @@ func (sm sessionMgr) process() {
 
 }
 
-func (sm sessionMgr) userSession(session core.UserSession, sLinks core.SessionLookup, exitLink chan<- uuid.UUID) {
+func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup, exitLink chan<- uuid.UUID) {
 
 	clientMsg := make(chan []byte, 32)
 
-	go session.Read(clientMsg)
+	go us.Read(clientMsg)
 
 	host := sm.nodeMgr.SubscribeHost()
 	hostStats := sm.nodeMgr.SubscribeHostStats()
@@ -82,81 +83,82 @@ func (sm sessionMgr) userSession(session core.UserSession, sLinks core.SessionLo
 	for {
 		select {
 		case j := <-sLinks.JobLink:
-			session.GetSend() <- j
+			us.GetSend() <- j
 		case h := <-host.GetReceive():
-			if session.GetAccessLevel() > 249 {
-				session.GetSend() <- h
+			if us.GetAccessLevel() > 249 {
+				us.GetSend() <- h
 			}
 		case hs := <-hostStats.GetReceive():
-			if session.GetAccessLevel() > 249 {
-				session.GetSend() <- hs
+			if us.GetAccessLevel() > 249 {
+				us.GetSend() <- hs
 			}
 		case msg := <-clientMsg:
 			//message from client
+			sm.log.Info(string(msg))
 			m := core.UserRequest{}
 			m.Load(msg)
 			switch m.MessageType {
 			case "StartRegion":
 				regionID, err := m.ReadRegionID()
 				if err != nil {
-					session.SignalError(m.MessageID, "Invalid format")
+					us.SignalError(m.MessageID, "Invalid format")
 					continue
 				}
-				sm.log.Info("User %v requesting start region %v", session.GetGUID(), regionID)
-				user, err := sm.userConn.GetUserByID(session.GetGUID())
+				sm.log.Info("User %v requesting start region %v", us.GetGUID(), regionID)
+				user, err := sm.userConn.GetUserByID(us.GetGUID())
 				if err != nil {
-					session.SignalError(m.MessageID, "Error looking up user")
+					us.SignalError(m.MessageID, "Error looking up user")
 					sm.log.Error("start region %v failed, requesting user not found", regionID)
 					continue
 				}
-				region, err := sm.datastore.GetRegionByID(regionID)
+				r, err := sm.datastore.GetRegionByID(regionID)
 				if err != nil {
-					session.SignalError(m.MessageID, fmt.Sprintf("Error locating region: %v", err.Error()))
+					us.SignalError(m.MessageID, fmt.Sprintf("Error locating region: %v", err.Error()))
 					sm.log.Error("start region %v failed, region not found", regionID)
 					continue
 				}
 
-				host, err := sm.regionMgr.RequestControlPermission(region, user)
+				h, err := sm.regionMgr.RequestControlPermission(r, user)
 				if err != nil {
-					session.SignalError(m.MessageID, fmt.Sprintf("Error requesting permission: %v", err.Error()))
+					us.SignalError(m.MessageID, fmt.Sprintf("Error requesting permission: %v", err.Error()))
 					sm.log.Error("start region %v failed, RequestStartPermission error: %v", regionID, err.Error())
 					continue
 				}
 
-				sm.nodeMgr.StartRegionOnHost(region, host, func(success bool, message string) {
+				sm.nodeMgr.StartRegionOnHost(r, h, func(success bool, message string) {
 					if success {
-						session.SignalSuccess(m.MessageID, message)
+						us.SignalSuccess(m.MessageID, message)
 					} else {
-						session.SignalError(m.MessageID, message)
+						us.SignalError(m.MessageID, message)
 					}
 				})
 			case "DeleteJob":
-				sm.log.Info("User %v requesting delete job", session.GetGUID())
+				sm.log.Info("User %v requesting delete job", us.GetGUID())
 				id, err := m.ReadID()
 				if err != nil {
-					session.SignalError(m.MessageID, "Invalid format")
+					us.SignalError(m.MessageID, "Invalid format")
 					continue
 				}
-				job, err := sm.datastore.GetJobByID(id)
+				j, err := sm.datastore.GetJobByID(id)
 				if err != nil {
-					session.SignalError(m.MessageID, "Error retrieving job")
+					us.SignalError(m.MessageID, "Error retrieving job")
 					continue
 				}
-				if job.ID != id {
-					session.SignalError(m.MessageID, "Job not found")
+				if j.ID != id {
+					us.SignalError(m.MessageID, "Job not found")
 					continue
 				}
-				err = sm.datastore.DeleteJob(job)
+				err = sm.datastore.DeleteJob(j)
 				if err != nil {
 					sm.log.Error("Error deleting job: ", err)
-					session.SignalError(m.MessageID, "Error deleting job")
+					us.SignalError(m.MessageID, "Error deleting job")
 					continue
 				}
 				//TODO some jobs may need files cleaned up... should we delete them here
 				// or leave them and create a cleanup coroutine?
-				session.SignalSuccess(m.MessageID, "Job Deleted")
+				us.SignalSuccess(m.MessageID, "Job Deleted")
 			case "IarUpload":
-				sm.log.Info("User %v requesting iar upload", session.GetGUID())
+				sm.log.Info("User %v requesting iar upload", us.GetGUID())
 				userID, password, err := m.ReadPassword()
 				if err != nil {
 					sm.log.Error("Error reading iar upload request")
@@ -164,68 +166,68 @@ func (sm sessionMgr) userSession(session core.UserSession, sLinks core.SessionLo
 				}
 				isValid, err := sm.userConn.ValidatePassword(userID, password)
 				if err != nil {
-					session.SignalError(m.MessageID, err.Error())
+					us.SignalError(m.MessageID, err.Error())
 				} else {
 					if isValid {
 						//password is valid, create the upload job
-						job, err := sm.datastore.CreateLoadIarJob(userID, "/")
+						j, err := sm.datastore.CreateLoadIarJob(userID, "/")
 						if err != nil {
 							sm.log.Error("Cannot creat job for load_iar: ", err)
-							session.SignalError(m.MessageID, err.Error())
+							us.SignalError(m.MessageID, err.Error())
 						} else {
-							session.GetSend() <- job
-							session.SignalSuccess(m.MessageID, fmt.Sprintf("%v", job.ID))
+							us.GetSend() <- j
+							us.SignalSuccess(m.MessageID, fmt.Sprintf("%v", j.ID))
 						}
 					} else {
-						session.SignalError(m.MessageID, "Invalid Password")
+						us.SignalError(m.MessageID, "Invalid Password")
 					}
 				}
 			case "SetPassword":
-				sm.log.Info("User %v requesting password change", session.GetGUID())
+				sm.log.Info("User %v requesting password change", us.GetGUID())
 				userID, password, err := m.ReadPassword()
 				if err != nil {
 					sm.log.Error("Error reading password request")
 					continue
 				}
-				if userID != session.GetGUID() && session.GetAccessLevel() < 250 {
-					session.SignalError(m.MessageID, "Permission Denied")
+				if userID != us.GetGUID() && us.GetAccessLevel() < 250 {
+					us.SignalError(m.MessageID, "Permission Denied")
 				} else {
 					if password == "" {
-						session.SignalError(m.MessageID, "Password Cannot be blank")
+						us.SignalError(m.MessageID, "Password Cannot be blank")
 					} else {
-						err = sm.userConn.SetPassword(session.GetGUID(), password)
+						err = sm.userConn.SetPassword(us.GetGUID(), password)
 						if err != nil {
-							session.SignalError(m.MessageID, err.Error())
+							us.SignalError(m.MessageID, err.Error())
 						} else {
-							session.SignalSuccess(m.MessageID, "Password Set Successfully")
-							sm.log.Info("User %v password changed", session.GetGUID())
+							us.SignalSuccess(m.MessageID, "Password Set Successfully")
+							sm.log.Info("User %v password changed", us.GetGUID())
 						}
 					}
 				}
 			case "GetDefaultConfig":
-				sm.log.Info("User %v requesting default configuration", session.GetGUID())
-				if session.GetAccessLevel() > 249 {
+				sm.log.Info("User %v requesting default configuration", us.GetGUID())
+				if us.GetAccessLevel() > 249 {
 					cfgs, err := sm.datastore.GetDefaultConfigs()
 					if err != nil {
 						sm.log.Error("Error getting default configs: ", err)
 					} else {
 						for _, cfg := range cfgs {
-							session.GetSend() <- cfg
+							us.GetSend() <- cfg
 						}
-						session.SignalSuccess(m.MessageID, "Default Config Retrieved")
-						sm.log.Info("User %v default configuration served", session.GetGUID())
+						us.SignalSuccess(m.MessageID, "Default Config Retrieved")
+						sm.log.Info("User %v default configuration served", us.GetGUID())
 					}
 				} else {
-					sm.log.Info("User %v permission denied to default configurations", session.GetGUID())
-					session.SignalError(m.MessageID, "Permission Denied")
+					sm.log.Info("User %v permission denied to default configurations", us.GetGUID())
+					us.SignalError(m.MessageID, "Permission Denied")
 				}
 			case "GetConfig":
-				sm.log.Info("User %v requesting region configuration", session.GetGUID())
-				if session.GetAccessLevel() > 249 {
+				sm.log.Info("User %v requesting region configuration", us.GetGUID())
+				if us.GetAccessLevel() > 249 {
 					rid, err := m.ReadRegionID()
 					if err != nil {
 						sm.log.Error("Error reading region id for configs: ", err)
-						session.SignalError(m.MessageID, "Error loading region")
+						us.SignalError(m.MessageID, "Error loading region")
 					} else {
 						sm.log.Info("Serving Region Configs for %v.", rid)
 						cfgs, err := sm.datastore.GetConfigs(rid)
@@ -233,51 +235,51 @@ func (sm sessionMgr) userSession(session core.UserSession, sLinks core.SessionLo
 							sm.log.Error("Error getting configs: ", err)
 						} else {
 							for _, cfg := range cfgs {
-								session.GetSend() <- cfg
+								us.GetSend() <- cfg
 							}
-							session.SignalSuccess(m.MessageID, "Config Retrieved")
-							sm.log.Info("User %v config retrieved", session.GetGUID())
+							us.SignalSuccess(m.MessageID, "Config Retrieved")
+							sm.log.Info("User %v config retrieved", us.GetGUID())
 						}
 					}
 				} else {
-					sm.log.Info("User %v permission denied to configurations", session.GetGUID())
-					session.SignalError(m.MessageID, "Permission Denied")
+					sm.log.Info("User %v permission denied to configurations", us.GetGUID())
+					us.SignalError(m.MessageID, "Permission Denied")
 				}
 			case "GetState":
-				sm.log.Info("User %v requesting state sync", session.GetGUID())
+				sm.log.Info("User %v requesting state sync", us.GetGUID())
 				users, err := sm.userConn.GetUsers()
 				if err != nil {
 					sm.log.Error("Error lookin up activeuser account: ", err)
-					session.SignalError(m.MessageID, "Error loading user accounts")
+					us.SignalError(m.MessageID, "Error loading user accounts")
 					continue
 				}
 				for _, user := range users {
-					if user.Suspended && session.GetAccessLevel() < 250 {
+					if user.Suspended && us.GetAccessLevel() < 250 {
 						continue
 					}
-					session.GetSend() <- user
+					us.GetSend() <- user
 				}
 				users = nil
 
-				jobs, err := sm.datastore.GetJobsForUser(session.GetGUID())
+				jobs, err := sm.datastore.GetJobsForUser(us.GetGUID())
 				if err != nil {
 					sm.log.Error("Error lookin up tasks: ", err)
-					session.SignalError(m.MessageID, "Error loading tasks")
+					us.SignalError(m.MessageID, "Error loading tasks")
 					continue
 				}
-				for _, job := range jobs {
-					session.GetSend() <- job
+				for _, j := range jobs {
+					us.GetSend() <- j
 				}
 				jobs = nil
 
 				pendingUsers, err := sm.datastore.GetPendingUsers()
 				if err != nil {
 					sm.log.Error("Error lookin up pending user account: ", err)
-					session.SignalError(m.MessageID, "Error looking up pending users")
+					us.SignalError(m.MessageID, "Error looking up pending users")
 					continue
 				}
 				for _, user := range pendingUsers {
-					session.GetSend() <- user
+					us.GetSend() <- user
 				}
 				pendingUsers = nil
 
@@ -285,11 +287,11 @@ func (sm sessionMgr) userSession(session core.UserSession, sLinks core.SessionLo
 				regions, err := sm.datastore.GetRegions()
 				if err != nil {
 					sm.log.Error("Error lookin up user regions: ", err)
-					session.SignalError(m.MessageID, "Error looking up regions")
+					us.SignalError(m.MessageID, "Error looking up regions")
 					continue
 				}
 				for _, r := range regions {
-					session.GetSend() <- r
+					us.GetSend() <- r
 				}
 				regions = nil
 
@@ -297,50 +299,50 @@ func (sm sessionMgr) userSession(session core.UserSession, sLinks core.SessionLo
 				estates, err := sm.datastore.GetEstates()
 				if err != nil {
 					sm.log.Error("Error lookin up estates: ", err)
-					session.SignalError(m.MessageID, "Error looking up estates")
+					us.SignalError(m.MessageID, "Error looking up estates")
 					continue
 				}
 				for _, e := range estates {
-					session.GetSend() <- e
+					us.GetSend() <- e
 				}
 				estates = nil
 
 				groups, err := sm.userConn.GetGroups()
 				if err != nil {
 					sm.log.Error("Error lookin up groups: ", err)
-					session.SignalError(m.MessageID, "Error looking up groups")
+					us.SignalError(m.MessageID, "Error looking up groups")
 					continue
 				}
 				for _, g := range groups {
-					session.GetSend() <- g
+					us.GetSend() <- g
 				}
 				groups = nil
 				//only administrative users need host access
-				if session.GetAccessLevel() > 249 {
+				if us.GetAccessLevel() > 249 {
 					hosts, err := sm.datastore.GetHosts()
 					if err != nil {
 						sm.log.Error("Error lookin up hosts: ", err)
-						session.SignalError(m.MessageID, "Error enumerating hosts")
+						us.SignalError(m.MessageID, "Error enumerating hosts")
 						continue
 					}
 					for _, h := range hosts {
-						session.GetSend() <- h
+						us.GetSend() <- h
 					}
 				}
 
-				sm.log.Info("User %v state sync complete", session.GetGUID())
+				sm.log.Info("User %v state sync complete", us.GetGUID())
 				//signal to the client that we have completed initial state sync
-				session.SignalSuccess(m.MessageID, "State Sync Complete")
+				us.SignalSuccess(m.MessageID, "State Sync Complete")
 
 			default:
 				sm.log.Error("Error on message from client: ", m.MessageType)
-				session.SignalError(m.MessageID, "Invalid request")
+				us.SignalError(m.MessageID, "Invalid request")
 			}
-		case <-session.GetClosingSignal():
+		case <-us.GetClosingSignal():
 			//the client connection has closed
 			host.Unsubscribe()
 			hostStats.Unsubscribe()
-			exitLink <- session.GetGUID()
+			exitLink <- us.GetGUID()
 			return
 		}
 

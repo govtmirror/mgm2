@@ -27,8 +27,8 @@ type wsConn struct {
 }
 
 // NewWebsocketConnector constructs a websocket handler for use
-func NewWebsocketConnector(hc HTTPConnector, session chan<- core.UserSession, logger core.Logger) WebSocketConnector {
-	return wsConn{hc, session, logger}
+func NewWebsocketConnector(hc HTTPConnector, s chan<- core.UserSession, logger core.Logger) WebSocketConnector {
+	return wsConn{hc, s, logger}
 }
 
 var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
@@ -36,8 +36,8 @@ var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}
 func (wc wsConn) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 
 	// test if session exists
-	session, _ := wc.httpConnector.GetStore().Get(r, "MGM")
-	if len(session.Values) == 0 {
+	s, _ := wc.httpConnector.GetStore().Get(r, "MGM")
+	if len(s.Values) == 0 {
 		wc.logger.Info("Websocket closed, no existing session")
 
 		response := clientResponse{MessageType: "AccessDenied", Message: []byte("No Session Found")}
@@ -59,8 +59,8 @@ func (wc wsConn) WebsocketHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	guid := session.Values["guid"].(uuid.UUID)
-	uLevel := session.Values["ulevel"].(uint8)
+	guid := s.Values["guid"].(uuid.UUID)
+	uLevel := s.Values["ulevel"].(uint8)
 
 	c := client{
 		ws,

@@ -1,4 +1,4 @@
-package jobManager
+package job
 
 import (
 	"encoding/json"
@@ -10,8 +10,8 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-// JobManager manages jobs, updating database, and notifying subscribed parties
-type JobManager interface {
+// Manager manages jobs, updating database, and notifying subscribed parties
+type Manager interface {
 	Subscribe() core.Subscription
 	FileUploaded(int, uuid.UUID, []byte)
 }
@@ -22,8 +22,8 @@ type fileUpload struct {
 	File  []byte
 }
 
-// NewJobManager constructs a jobManager for use
-func NewJobManager(filePath string, db core.Database, logger core.Logger) JobManager {
+// NewManager constructs a jobManager for use
+func NewManager(filePath string, db core.Database, logger core.Logger) Manager {
 
 	subscribeChan := make(chan chan<- mgm.Job, 32)
 	unsubscribeChan := make(chan chan<- mgm.Job, 32)
@@ -76,24 +76,24 @@ func (jm jobMgr) process() {
 			case s := <-jm.fileUp:
 				jm.log.Info("File Upload Received for task %v", s.JobID)
 				// look up job
-				job, err := jm.datastore.GetJobByID(s.JobID)
+				j, err := jm.datastore.GetJobByID(s.JobID)
 				if err != nil {
 					//anything could have happened, but the job doesn't seem to exist, drop file
 					continue
 				}
 
 				//make sure uploader owns the job in question
-				if s.User != job.User {
-					jm.log.Info("Attempted upload to job %v by %v, owned by %v", job.ID, s.User, job.User)
+				if s.User != j.User {
+					jm.log.Info("Attempted upload to job %v by %v, owned by %v", j.ID, s.User, j.User)
 					continue
 				}
 
-				jm.log.Info("Retrieved job %v for %v", job.Type, job.User)
+				jm.log.Info("Retrieved job %v for %v", j.Type, j.User)
 
-				switch job.Type {
+				switch j.Type {
 				case "load_iar":
 					iarJob := LoadIarJob{}
-					err := json.Unmarshal([]byte(job.Data), &iarJob)
+					err := json.Unmarshal([]byte(j.Data), &iarJob)
 					if err != nil {
 						jm.log.Info("Error parsing Load Iar job: %v", err.Error())
 					}
@@ -108,11 +108,11 @@ func (jm jobMgr) process() {
 					iarJob.Status = "Iar upload to MGM"
 
 					data, _ := json.Marshal(iarJob)
-					job.Data = string(data)
+					j.Data = string(data)
 
-					jm.datastore.UpdateJob(job)
+					jm.datastore.UpdateJob(j)
 
-					jm.broadcast <- job
+					jm.broadcast <- j
 				}
 			}
 		}
