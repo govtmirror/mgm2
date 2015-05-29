@@ -5,13 +5,22 @@ import (
 	"net"
 
 	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
-// NodeConns is a structure of shared read/write functions between MGM and MGMNode
+// HostComms is a structure of shared read/write functions between MGM and MGMNode
 type HostComms struct {
 	Connection net.Conn
 	Closing    chan bool
 	Log        core.Logger
+}
+
+type HostMessage struct {
+	Region      mgm.Region
+	MessageType string
+	Message     string              `json:",omitempty"`
+	Host        mgm.Host            `json:"-"`
+	SR          core.ServiceRequest `json:"-"`
 }
 
 // ReadConnection is a processing loop for reading a socket and parsing messages

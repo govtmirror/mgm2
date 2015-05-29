@@ -8,19 +8,18 @@ import (
 
 // Region is an opensim region record
 type Region struct {
-	UUID            uuid.UUID
-	Name            string
-	Size            uint
-	HTTPPort        int       `json:"-"`
-	ConsolePort     int       `json:"-"`
-	ConsoleUname    uuid.UUID `json:"-"`
-	ConsolePass     uuid.UUID `json:"-"`
-	LocX            uint
-	LocY            uint
-	ExternalAddress string `json:"-"`
-	SlaveAddress    string `json:"-"`
-	IsRunning       bool
-	EstateName      string
+	UUID         uuid.UUID
+	Name         string
+	Size         uint
+	HTTPPort     int       `json:"-"`
+	ConsolePort  int       `json:"-"`
+	ConsoleUname uuid.UUID `json:"-"`
+	ConsolePass  uuid.UUID `json:"-"`
+	LocX         uint
+	LocY         uint
+	Host         uint `json:"-"`
+	IsRunning    bool
+	EstateName   string
 
 	frames chan int `json:"-"`
 }

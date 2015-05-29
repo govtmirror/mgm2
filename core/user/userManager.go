@@ -123,7 +123,7 @@ func (um userManager) RequestControlPermission(region mgm.Region, user mgm.User)
 
 	for _, r := range regions {
 		if r.UUID == region.UUID {
-			h, err = um.hMgr.GetHostByAddress(r.SlaveAddress)
+			h, err = um.hMgr.GetHostByID(r.Host)
 			if err != nil {
 				um.log.Error("Error host by address: %v", err.Error())
 				return h, err

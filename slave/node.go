@@ -9,7 +9,7 @@ import (
 
 	"github.com/jcelliott/lumber"
 	"github.com/m-o-s-e-s/mgm/core"
-	"github.com/m-o-s-e-s/mgm/core/node"
+	"github.com/m-o-s-e-s/mgm/core/host"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/m-o-s-e-s/mgm/remote"
 	"github.com/satori/go.uuid"
@@ -79,7 +79,7 @@ func main() {
 		socketClosed := make(chan bool)
 		receiveChan := make(chan core.NetworkMessage, 32)
 		sendChan := make(chan core.NetworkMessage, 32)
-		nc := node.NodeConns{
+		nc := host.HostComms{
 			Connection: conn,
 			Closing:    make(chan bool),
 			Log:        n.logger,

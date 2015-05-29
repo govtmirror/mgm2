@@ -13,7 +13,7 @@ type Manager interface {
 	SubscribeHost() core.Subscription
 	SubscribeHostStats() core.Subscription
 	StartRegionOnHost(mgm.Region, mgm.Host, core.ServiceRequest)
-	GetHostByAddress(address string) (mgm.Host, error)
+	GetHostByID(id uint) (mgm.Host, error)
 	GetHosts() ([]mgm.Host, error)
 }
 
@@ -26,7 +26,7 @@ func NewManager(port string, db database.Database, log core.Logger) Manager {
 	mgr.hostSubs = core.NewSubscriptionManager()
 	mgr.hostStatSubs = core.NewSubscriptionManager()
 	mgr.hostChan = make(chan mgm.Host, 16)
-	mgr.requestChan = make(chan nodeControl, 32)
+	mgr.requestChan = make(chan HostMessage, 32)
 	go mgr.listen()
 	go mgr.process()
 	return mgr
@@ -41,31 +41,25 @@ type nm struct {
 	hostStatSubs core.SubscriptionManager
 
 	hostChan    chan mgm.Host
-	requestChan chan nodeControl
-}
-
-type nodeControl struct {
-	MessageType string
-	Region      mgm.Region
-	Host        mgm.Host
-	SR          core.ServiceRequest
+	requestChan chan HostMessage
 }
 
 func (nm nm) GetHosts() ([]mgm.Host, error) {
 	return nm.db.GetHosts()
 }
 
-func (nm nm) GetHostByAddress(address string) (mgm.Host, error) {
-	return nm.db.GetHostByAddress(address)
+func (nm nm) GetHostByID(id uint) (mgm.Host, error) {
+	return nm.db.GetHostByID(id)
 }
 
 func (nm nm) StartRegionOnHost(region mgm.Region, host mgm.Host, sr core.ServiceRequest) {
-	nm.requestChan <- nodeControl{
+	nm.requestChan <- HostMessage{
 		MessageType: "StartRegion",
 		Region:      region,
 		Host:        host,
 		SR:          sr,
 	}
+
 }
 
 func (nm nm) SubscribeHost() core.Subscription {

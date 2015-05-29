@@ -8,13 +8,14 @@ import (
 
 // Host is an MGM server record
 type Host struct {
-	ID       uint
-	Address  string
-	Port     uint `json:"-"`
-	Hostname string
-	Regions  []uuid.UUID
-	Slots    uint
-	Running  bool
+	ID              uint
+	Address         string
+	ExternalAddress string
+	Port            uint `json:"-"`
+	Hostname        string
+	Regions         []uuid.UUID
+	Slots           uint
+	Running         bool
 }
 
 // Serialize implements UserObject interface Serialize function
