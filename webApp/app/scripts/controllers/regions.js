@@ -22,7 +22,7 @@ angular.module('mgmApp')
       start: function(region){
         console.log("Requesting start region: " + region.Name);
         mgm.request("StartRegion", {RegionUUID: region.UUID}, function(success, msg){
-          console.log(msg)
+          console.log(success + " " + msg)
         })
       }
     }
@@ -37,23 +37,30 @@ angular.module('mgmApp')
     }
 
     $scope.$on("EstateUpdate", modUserEstates);
-    $scope.$on("RegionChange", estateifyRegion);
+    $scope.$on("RegionUpdate", estateifyRegion);
 
     function estateifyRegion(event, region) {
       if (region.UUID in regions) {
-        angular.copy(regions, regions[region.UUID]);
+        regions[region.UUID] = region;
       } else {
         if (region.EstateName in $scope.estates) {
           regions[region.UUID] = region;
-          $scope.estates[region.EstateName].push(region);
+          $scope.estates[region.EstateName][region.UUID] = region;
+        } else {
+          $scope.estates[region.EstateName] = {};
+          regions[region.UUID] = region;
+          $scope.estates[region.EstateName][region.UUID] = region;
         }
       }
     }
 
     function modUserEstates(event, estate) {
       if ($scope.auth.UUID === estate.Owner || $scope.auth.UUID in estate.Managers || $scope.auth.AccessLevel > 249) {
-        $scope.estates[estate.Name] = [];
+        if( !estate.Name in $scope.estates){
+          $scope.estates[estate.Name] = {};
+        }
       } else {
+        //remove estate, this user no longer controlls it
         if (estate.Name in $scope.estates) {
           delete $scope.estates[estate.Name];
           for (uuid in estate.Regions) {
