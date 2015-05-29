@@ -104,7 +104,7 @@ func (sc simian) SetPassword(userID uuid.UUID, password string) error {
 	hasher := md5.New()
 	hasher.Write([]byte(password))
 
-	user, _ := sc.GetUserByID(userID)
+	user, _, _ := sc.GetUserByID(userID)
 
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
@@ -123,9 +123,12 @@ func (sc simian) SetPassword(userID uuid.UUID, password string) error {
 }
 
 func (sc simian) ValidatePassword(userID uuid.UUID, password string) (bool, error) {
-	user, err := sc.GetUserByID(userID)
+	user, exists, err := sc.GetUserByID(userID)
 	if err != nil {
 		return false, err
+	}
+	if !exists {
+		return false, nil
 	}
 	valid, uid, err := sc.Auth(user.Name, password)
 	if err != nil {
@@ -167,30 +170,22 @@ func (sc simian) GetIdentities(userID uuid.UUID) ([]core.Identity, error) {
 }
 
 func (sc simian) IsNameTaken(name string) (bool, error) {
-	user, err := sc.GetUserByName(name)
+	_, exists, err := sc.GetUserByName(name)
 	if err != nil {
-		if err.Error() == "Could not find user in simian" {
-			return false, nil
-		}
-		//bad hack, but if simian isn't communicating
 		return true, err
 	}
-	if user.Name == name {
+	if exists {
 		return true, nil
 	}
 	return false, nil
 }
 
 func (sc simian) IsEmailTaken(email string) (bool, error) {
-	user, err := sc.GetUserByEmail(email)
+	_, exists, err := sc.GetUserByEmail(email)
 	if err != nil {
-		if err.Error() == "Could not find user in simian" {
-			return false, nil
-		}
-		//bad hack, but if simian isn't communicating
 		return true, err
 	}
-	if user.Email == email {
+	if exists {
 		return true, nil
 	}
 	return false, nil

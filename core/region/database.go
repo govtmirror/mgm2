@@ -62,48 +62,6 @@ func (db regionDatabase) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error)
 	return regions, nil
 }
 
-// GetRegionsOnHost retrieves all region records for a specified host
-func (db regionDatabase) GetRegionsOnHost(host mgm.Host) ([]mgm.Region, error) {
-	con, err := db.mysql.GetConnection()
-	if err != nil {
-		return nil, err
-	}
-	defer con.Close()
-
-	rows, err := con.Query(
-		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, externalAddress, slaveAddress, isRunning from regions "+
-			"where slaveAddress=?", host.Address)
-	defer rows.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	var regions []mgm.Region
-	for rows.Next() {
-		r := mgm.Region{}
-		err = rows.Scan(
-			&r.UUID,
-			&r.Name,
-			&r.Size,
-			&r.HTTPPort,
-			&r.ConsolePort,
-			&r.ConsoleUname,
-			&r.ConsolePass,
-			&r.LocX,
-			&r.LocY,
-			&r.ExternalAddress,
-			&r.SlaveAddress,
-			&r.IsRunning,
-		)
-		if err != nil {
-			rows.Close()
-			return nil, err
-		}
-		regions = append(regions, r)
-	}
-	return regions, nil
-}
-
 // GetRegionByID retrieves a single region that matches the id given
 func (db regionDatabase) GetRegionByID(id uuid.UUID) (mgm.Region, error) {
 	r := mgm.Region{}

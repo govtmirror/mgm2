@@ -23,49 +23,14 @@ type UserObject interface {
 
 // UserConnector is the connection to the user services
 type UserConnector interface {
-	GetUserByID(uuid.UUID) (mgm.User, error)
+	GetUserByID(uuid.UUID) (mgm.User, bool, error)
+	GetUserByEmail(email string) (mgm.User, bool, error)
+	GetUserByName(name string) (mgm.User, bool, error)
 	GetUsers() ([]mgm.User, error)
 	GetGroups() ([]mgm.Group, error)
 
 	SetPassword(uuid.UUID, string) error
 	ValidatePassword(uuid.UUID, string) (bool, error)
-}
-
-// Database is the connection to the persistant storage
-type Database interface {
-	TestConnection() error
-
-	GetRegionsForUser(uuid.UUID) ([]mgm.Region, error)
-	GetRegionByID(id uuid.UUID) (mgm.Region, error)
-	GetRegionsOnHost(mgm.Host) ([]mgm.Region, error)
-	GetRegions() ([]mgm.Region, error)
-
-	GetEstates() ([]mgm.Estate, error)
-
-	PlaceHostOnline(uint) (mgm.Host, error)
-	PlaceHostOffline(uint) (mgm.Host, error)
-
-	GetHosts() ([]mgm.Host, error)
-	GetHostByAddress(string) (mgm.Host, error)
-
-	GetPendingUsers() ([]mgm.PendingUser, error)
-
-	GetDefaultConfigs() ([]mgm.ConfigOption, error)
-	GetConfigs(uuid.UUID) ([]mgm.ConfigOption, error)
-
-	GetJobByID(int) (mgm.Job, error)
-	GetJobsForUser(uuid.UUID) ([]mgm.Job, error)
-	CreateJob(string, uuid.UUID, string) (mgm.Job, error)
-	CreateLoadIarJob(uuid.UUID, string) (mgm.Job, error)
-	UpdateJob(mgm.Job) error
-	DeleteJob(mgm.Job) error
-
-	CreatePasswordResetToken(uuid.UUID) (uuid.UUID, error)
-	ValidatePasswordToken(uuid.UUID, uuid.UUID) (bool, error)
-	ScrubPasswordToken(uuid.UUID) error
-	IsEmailUnique(string) (bool, error)
-	IsNameUnique(string) (bool, error)
-	AddPendingUser(name string, email string, template string, password string, summary string) error
 }
 
 // Logger is the system logging interface

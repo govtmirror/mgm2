@@ -4,20 +4,22 @@ import (
 	"fmt"
 
 	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/database"
+	"github.com/m-o-s-e-s/mgm/core/host"
 	"github.com/m-o-s-e-s/mgm/core/job"
-	"github.com/m-o-s-e-s/mgm/core/node"
 	"github.com/m-o-s-e-s/mgm/core/region"
+	"github.com/m-o-s-e-s/mgm/core/user"
 
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
 
-// SessionManager is the process that listens for new session connections and spins of the session go-routine
-type SessionManager interface {
+// Manager is the process that listens for new session connections and spins of the session go-routine
+type Manager interface {
 }
 
-// NewSessionManager constructs a session manager for use
-func NewSessionManager(sessionListener <-chan core.UserSession, jobMgr job.Manager, nodeMgr node.Manager, regionMgr region.Manager, db core.Database, uConn core.UserConnector, logger core.Logger) SessionManager {
+// NewManager constructs a session manager for use
+func NewManager(sessionListener <-chan core.UserSession, userMgr user.Manager, jobMgr job.Manager, nodeMgr host.Manager, regionMgr region.Manager, db database.Database, uConn core.UserConnector, logger core.Logger) Manager {
 	sMgr := sessionMgr{}
 	sMgr.jobMgr = jobMgr
 	sMgr.nodeMgr = nodeMgr
@@ -25,6 +27,7 @@ func NewSessionManager(sessionListener <-chan core.UserSession, jobMgr job.Manag
 	sMgr.log = logger
 	sMgr.datastore = db
 	sMgr.userConn = uConn
+	sMgr.userMgr = userMgr
 	sMgr.sessionListener = sessionListener
 
 	go sMgr.process()
@@ -34,10 +37,11 @@ func NewSessionManager(sessionListener <-chan core.UserSession, jobMgr job.Manag
 
 type sessionMgr struct {
 	sessionListener <-chan core.UserSession
-	datastore       core.Database
+	datastore       database.Database
 	jobMgr          job.Manager
-	nodeMgr         node.Manager
+	nodeMgr         host.Manager
 	regionMgr       region.Manager
+	userMgr         user.Manager
 	userConn        core.UserConnector
 	log             core.Logger
 }
@@ -105,20 +109,25 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 					continue
 				}
 				sm.log.Info("User %v requesting start region %v", us.GetGUID(), regionID)
-				user, err := sm.userConn.GetUserByID(us.GetGUID())
+				user, exists, err := sm.userConn.GetUserByID(us.GetGUID())
 				if err != nil {
 					us.SignalError(m.MessageID, "Error looking up user")
-					sm.log.Error("start region %v failed, requesting user not found", regionID)
+					sm.log.Error("start region %v failed, error finding requesting user", regionID)
 					continue
 				}
-				r, err := sm.datastore.GetRegionByID(regionID)
+				if !exists {
+					us.SignalError(m.MessageID, "Invalid requesting user")
+					sm.log.Error("start region %v failed, requesting user does not exist", regionID)
+					continue
+				}
+				r, err := sm.regionMgr.GetRegionByID(regionID)
 				if err != nil {
 					us.SignalError(m.MessageID, fmt.Sprintf("Error locating region: %v", err.Error()))
 					sm.log.Error("start region %v failed, region not found", regionID)
 					continue
 				}
 
-				h, err := sm.regionMgr.RequestControlPermission(r, user)
+				h, err := sm.userMgr.RequestControlPermission(r, user)
 				if err != nil {
 					us.SignalError(m.MessageID, fmt.Sprintf("Error requesting permission: %v", err.Error()))
 					sm.log.Error("start region %v failed, RequestStartPermission error: %v", regionID, err.Error())
@@ -139,7 +148,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 					us.SignalError(m.MessageID, "Invalid format")
 					continue
 				}
-				j, err := sm.datastore.GetJobByID(id)
+				j, err := sm.jobMgr.GetJobByID(id)
 				if err != nil {
 					us.SignalError(m.MessageID, "Error retrieving job")
 					continue
@@ -148,7 +157,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 					us.SignalError(m.MessageID, "Job not found")
 					continue
 				}
-				err = sm.datastore.DeleteJob(j)
+				err = sm.jobMgr.DeleteJob(j)
 				if err != nil {
 					sm.log.Error("Error deleting job: ", err)
 					us.SignalError(m.MessageID, "Error deleting job")
@@ -170,7 +179,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 				} else {
 					if isValid {
 						//password is valid, create the upload job
-						j, err := sm.datastore.CreateLoadIarJob(userID, "/")
+						j, err := sm.jobMgr.CreateLoadIarJob(userID, "/")
 						if err != nil {
 							sm.log.Error("Cannot creat job for load_iar: ", err)
 							us.SignalError(m.MessageID, err.Error())
@@ -207,7 +216,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 			case "GetDefaultConfig":
 				sm.log.Info("User %v requesting default configuration", us.GetGUID())
 				if us.GetAccessLevel() > 249 {
-					cfgs, err := sm.datastore.GetDefaultConfigs()
+					cfgs, err := sm.regionMgr.GetDefaultConfigs()
 					if err != nil {
 						sm.log.Error("Error getting default configs: ", err)
 					} else {
@@ -230,7 +239,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 						us.SignalError(m.MessageID, "Error loading region")
 					} else {
 						sm.log.Info("Serving Region Configs for %v.", rid)
-						cfgs, err := sm.datastore.GetConfigs(rid)
+						cfgs, err := sm.regionMgr.GetConfigs(rid)
 						if err != nil {
 							sm.log.Error("Error getting configs: ", err)
 						} else {
@@ -261,7 +270,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 				}
 				users = nil
 
-				jobs, err := sm.datastore.GetJobsForUser(us.GetGUID())
+				jobs, err := sm.jobMgr.GetJobsForUser(us.GetGUID())
 				if err != nil {
 					sm.log.Error("Error lookin up tasks: ", err)
 					us.SignalError(m.MessageID, "Error loading tasks")
@@ -272,7 +281,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 				}
 				jobs = nil
 
-				pendingUsers, err := sm.datastore.GetPendingUsers()
+				pendingUsers, err := sm.userMgr.GetPendingUsers()
 				if err != nil {
 					sm.log.Error("Error lookin up pending user account: ", err)
 					us.SignalError(m.MessageID, "Error looking up pending users")
@@ -284,7 +293,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 				pendingUsers = nil
 
 				//send regions this user may control
-				regions, err := sm.datastore.GetRegions()
+				regions, err := sm.regionMgr.GetRegions()
 				if err != nil {
 					sm.log.Error("Error lookin up user regions: ", err)
 					us.SignalError(m.MessageID, "Error looking up regions")
@@ -296,7 +305,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 				regions = nil
 
 				//send Estate, Group, and Host dataManager
-				estates, err := sm.datastore.GetEstates()
+				estates, err := sm.userMgr.GetEstates()
 				if err != nil {
 					sm.log.Error("Error lookin up estates: ", err)
 					us.SignalError(m.MessageID, "Error looking up estates")
@@ -319,7 +328,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 				groups = nil
 				//only administrative users need host access
 				if us.GetAccessLevel() > 249 {
-					hosts, err := sm.datastore.GetHosts()
+					hosts, err := sm.nodeMgr.GetHosts()
 					if err != nil {
 						sm.log.Error("Error lookin up hosts: ", err)
 						us.SignalError(m.MessageID, "Error enumerating hosts")

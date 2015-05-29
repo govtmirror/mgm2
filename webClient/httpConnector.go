@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/sessions"
 	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/job"
+	"github.com/m-o-s-e-s/mgm/core/user"
 	"github.com/m-o-s-e-s/mgm/email"
 	"github.com/m-o-s-e-s/mgm/simian"
 	"github.com/satori/go.uuid"
@@ -37,13 +38,13 @@ type httpConn struct {
 	store         *sessions.CookieStore
 	authenticator simian.Connector
 	logger        core.Logger
-	db            core.Database
+	userMgr       user.Manager
 	mailer        email.ClientEmailer
 	jMgr          job.Manager
 }
 
 // NewHTTPConnector constructs an http connector for use
-func NewHTTPConnector(sessionKey string, jobMgr job.Manager, authenticator simian.Connector, db core.Database, mailer email.ClientEmailer, logger core.Logger) HTTPConnector {
+func NewHTTPConnector(sessionKey string, jobMgr job.Manager, authenticator simian.Connector, userMgr user.Manager, mailer email.ClientEmailer, logger core.Logger) HTTPConnector {
 	gob.Register(uuid.UUID{})
 
 	store := sessions.NewCookieStore([]byte(sessionKey))
@@ -51,7 +52,7 @@ func NewHTTPConnector(sessionKey string, jobMgr job.Manager, authenticator simia
 		Path:   "/",
 		MaxAge: 3600 * 8,
 	}
-	return httpConn{store, authenticator, logger, db, mailer, jobMgr}
+	return httpConn{store, authenticator, logger, userMgr, mailer, jobMgr}
 }
 
 func (hc httpConn) GetStore() *sessions.CookieStore {
@@ -90,9 +91,13 @@ func (hc httpConn) LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := hc.authenticator.GetUserByID(guid)
+	user, exists, err := hc.authenticator.GetUserByID(guid)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !exists {
+		http.Error(w, "Invalid Credentials", http.StatusInternalServerError)
 		return
 	}
 
@@ -177,7 +182,7 @@ func (hc httpConn) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	/* Test if names are unique in pending users*/
-	unique, err := hc.db.IsEmailUnique(reg.Email)
+	unique, err := hc.userMgr.IsEmailUnique(reg.Email)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -187,7 +192,7 @@ func (hc httpConn) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	unique, err = hc.db.IsNameUnique(reg.Name)
+	unique, err = hc.userMgr.IsNameUnique(reg.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -217,7 +222,7 @@ func (hc httpConn) RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = hc.db.AddPendingUser(reg.Name, reg.Email, reg.Template, reg.Password, reg.Summary)
+	err = hc.userMgr.AddPendingUser(reg.Name, reg.Email, reg.Template, reg.Password, reg.Summary)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -255,9 +260,13 @@ func (hc httpConn) PasswordResetHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user, err := hc.authenticator.GetUserByName(req.Name)
+	user, exists, err := hc.authenticator.GetUserByName(req.Name)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !exists {
+		http.Error(w, "User does not exist", http.StatusInternalServerError)
 		return
 	}
 
@@ -275,7 +284,7 @@ func (hc httpConn) PasswordResetHandler(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	isValid, err := hc.db.ValidatePasswordToken(user.UserID, req.Token)
+	isValid, err := hc.userMgr.ValidatePasswordToken(user.UserID, req.Token)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -291,7 +300,7 @@ func (hc httpConn) PasswordResetHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = hc.db.ScrubPasswordToken(req.Token)
+	err = hc.userMgr.ScrubPasswordToken(req.Token)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -334,9 +343,13 @@ func (hc httpConn) PasswordTokenHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	user, err := hc.authenticator.GetUserByEmail(addr.Address)
+	user, exists, err := hc.authenticator.GetUserByEmail(addr.Address)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if !exists {
+		http.Error(w, "Invalid Request", http.StatusInternalServerError)
 		return
 	}
 
@@ -353,7 +366,7 @@ func (hc httpConn) PasswordTokenHandler(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	token, err := hc.db.CreatePasswordResetToken(user.UserID)
+	token, err := hc.userMgr.CreatePasswordResetToken(user.UserID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

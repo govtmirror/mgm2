@@ -2,19 +2,19 @@ package main
 
 import (
 	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/database"
+	"github.com/m-o-s-e-s/mgm/core/host"
 	"github.com/m-o-s-e-s/mgm/core/job"
-	"github.com/m-o-s-e-s/mgm/core/node"
 	"github.com/m-o-s-e-s/mgm/core/region"
 	"github.com/m-o-s-e-s/mgm/core/session"
+	"github.com/m-o-s-e-s/mgm/core/user"
 
 	"github.com/m-o-s-e-s/mgm/email"
-	"github.com/m-o-s-e-s/mgm/mysql"
 	"github.com/m-o-s-e-s/mgm/simian"
 	"github.com/m-o-s-e-s/mgm/webClient"
 	//"github.com/m-o-s-e-s/mgm/opensim"
 	"flag"
 	"net/http"
-	"time"
 
 	"code.google.com/p/gcfg"
 	"github.com/gorilla/mux"
@@ -62,7 +62,7 @@ func main() {
 	mailer := email.NewClientMailer(config.Email, config.MGM.PublicHostname)
 
 	//create our database connector
-	db := mysql.NewDatabase(
+	db := database.NewDatabase(
 		config.MySQL.Username,
 		config.MySQL.Password,
 		config.MySQL.Database,
@@ -76,21 +76,19 @@ func main() {
 		return
 	}
 
-	//start new goroutine exiring old password tokens
-	go expirePasswordTokens(db)
-
 	//leave this out for now
 	//os,_ := opensim.NewOpensimListener(config.OpensimPort, nil)
 
 	//Hook up core processing...
 	jMgr := job.NewManager(config.MGM.LocalFileStorage, db, logger)
-	nMgr := node.NewManager(config.MGM.NodePort, db, logger)
+	nMgr := host.NewManager(config.MGM.NodePort, db, logger)
 	rMgr := region.NewManager(nMgr, db, logger)
+	uMgr := user.NewManager(rMgr, nMgr, sim, db, logger)
 	sessionListenerChan := make(chan core.UserSession, 64)
 
-	_ = session.NewSessionManager(sessionListenerChan, jMgr, nMgr, rMgr, db, sim, logger)
+	_ = session.NewManager(sessionListenerChan, uMgr, jMgr, nMgr, rMgr, db, sim, logger)
 
-	httpCon := webClient.NewHTTPConnector(config.MGM.SessionSecret, jMgr, sim, db, mailer, logger)
+	httpCon := webClient.NewHTTPConnector(config.MGM.SessionSecret, jMgr, sim, uMgr, mailer, logger)
 	sockCon := webClient.NewWebsocketConnector(httpCon, sessionListenerChan, logger)
 
 	r := mux.NewRouter()
@@ -107,12 +105,5 @@ func main() {
 	logger.Info("Listening for clients on :%v", config.MGM.WebPort)
 	if err := http.ListenAndServe(":"+config.MGM.WebPort, nil); err != nil {
 		logger.Fatal("ListenAndServe:", err)
-	}
-}
-
-func expirePasswordTokens(db mysql.Database) {
-	for {
-		db.ExpirePasswordTokens()
-		time.Sleep(60 * time.Minute)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"net"
 
 	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
@@ -12,13 +13,15 @@ type Manager interface {
 	SubscribeHost() core.Subscription
 	SubscribeHostStats() core.Subscription
 	StartRegionOnHost(mgm.Region, mgm.Host, core.ServiceRequest)
+	GetHostByAddress(address string) (mgm.Host, error)
+	GetHosts() ([]mgm.Host, error)
 }
 
 // NewManager constructs NodeManager instances
-func NewManager(port string, db core.Database, log core.Logger) Manager {
+func NewManager(port string, db database.Database, log core.Logger) Manager {
 	mgr := nm{}
 	mgr.listenPort = port
-	mgr.db = db
+	mgr.db = hostDatabase{db}
 	mgr.logger = log
 	mgr.hostSubs = core.NewSubscriptionManager()
 	mgr.hostStatSubs = core.NewSubscriptionManager()
@@ -33,7 +36,7 @@ type nm struct {
 	listenPort   string
 	logger       core.Logger
 	listener     net.Listener
-	db           core.Database
+	db           hostDatabase
 	hostSubs     core.SubscriptionManager
 	hostStatSubs core.SubscriptionManager
 
@@ -46,6 +49,14 @@ type nodeControl struct {
 	Region      mgm.Region
 	Host        mgm.Host
 	SR          core.ServiceRequest
+}
+
+func (nm nm) GetHosts() ([]mgm.Host, error) {
+	return nm.db.GetHosts()
+}
+
+func (nm nm) GetHostByAddress(address string) (mgm.Host, error) {
+	return nm.db.GetHostByAddress(address)
 }
 
 func (nm nm) StartRegionOnHost(region mgm.Region, host mgm.Host, sr core.ServiceRequest) {

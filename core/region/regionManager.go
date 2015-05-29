@@ -1,52 +1,53 @@
 package region
 
 import (
-	"errors"
-
 	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/core/host"
 	"github.com/m-o-s-e-s/mgm/mgm"
+	"github.com/satori/go.uuid"
 )
 
 // Manager controls and notifies on region / estate changes and permissions
 type Manager interface {
-	RequestControlPermission(mgm.Region, mgm.User) (mgm.Host, error)
+	GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error)
+	GetRegionByID(id uuid.UUID) (mgm.Region, error)
+	GetDefaultConfigs() ([]mgm.ConfigOption, error)
+	GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error)
+	GetRegions() ([]mgm.Region, error)
 }
 
 // NewManager constructs a RegionManager for use
-func NewManager(nMgr host.Manager, db core.Database, log core.Logger) Manager {
+func NewManager(nMgr host.Manager, db database.Database, log core.Logger) Manager {
 	rMgr := regionMgr{}
 	rMgr.nodeMgr = nMgr
-	rMgr.db = db
+	rMgr.db = regionDatabase{db}
 	rMgr.log = log
 	return rMgr
 }
 
 type regionMgr struct {
 	nodeMgr host.Manager
-	db      core.Database
+	db      regionDatabase
 	log     core.Logger
 }
 
-func (rm regionMgr) RequestControlPermission(region mgm.Region, user mgm.User) (mgm.Host, error) {
-	h := mgm.Host{}
+func (rm regionMgr) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error) {
+	return rm.db.GetRegionsForUser(guid)
+}
 
-	//make sure user may control this region
-	regions, err := rm.db.GetRegionsForUser(user.UserID)
-	if err != nil {
-		rm.log.Error("Error retrieving regions for user: %v", err.Error())
-		return h, err
-	}
+func (rm regionMgr) GetRegionByID(id uuid.UUID) (mgm.Region, error) {
+	return rm.db.GetRegionByID(id)
+}
 
-	for _, r := range regions {
-		if r.UUID == region.UUID {
-			h, err = rm.db.GetHostByAddress(r.SlaveAddress)
-			if err != nil {
-				rm.log.Error("Error host by address: %v", err.Error())
-				return h, err
-			}
-			return h, nil
-		}
-	}
-	return h, errors.New("Permission Denied")
+func (rm regionMgr) GetDefaultConfigs() ([]mgm.ConfigOption, error) {
+	return rm.db.GetDefaultConfigs()
+}
+
+func (rm regionMgr) GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error) {
+	return rm.db.GetConfigs(regionID)
+}
+
+func (rm regionMgr) GetRegions() ([]mgm.Region, error) {
+	return rm.db.GetRegions()
 }

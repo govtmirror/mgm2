@@ -6,6 +6,7 @@ import (
 	"path"
 
 	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
@@ -14,6 +15,10 @@ import (
 type Manager interface {
 	Subscribe() core.Subscription
 	FileUploaded(int, uuid.UUID, []byte)
+	GetJobByID(id int) (mgm.Job, error)
+	DeleteJob(job mgm.Job) error
+	CreateLoadIarJob(owner uuid.UUID, inventoryPath string) (mgm.Job, error)
+	GetJobsForUser(userID uuid.UUID) ([]mgm.Job, error)
 }
 
 type fileUpload struct {
@@ -23,7 +28,7 @@ type fileUpload struct {
 }
 
 // NewManager constructs a jobManager for use
-func NewManager(filePath string, db core.Database, logger core.Logger) Manager {
+func NewManager(filePath string, db database.Database, logger core.Logger) Manager {
 
 	subscribeChan := make(chan chan<- mgm.Job, 32)
 	unsubscribeChan := make(chan chan<- mgm.Job, 32)
@@ -36,7 +41,7 @@ func NewManager(filePath string, db core.Database, logger core.Logger) Manager {
 	j.subscribe = subscribeChan
 	j.unsubscribe = unsubscribeChan
 	j.broadcast = notifyChan
-	j.datastore = db
+	j.db = jobDatabase{db}
 
 	j.subs = core.NewSubscriptionManager()
 
@@ -50,7 +55,7 @@ type jobMgr struct {
 	subscribe   chan chan<- mgm.Job
 	unsubscribe chan chan<- mgm.Job
 	broadcast   chan mgm.Job
-	datastore   core.Database
+	db          jobDatabase
 
 	subs core.SubscriptionManager
 
@@ -63,8 +68,24 @@ func (jm jobMgr) FileUploaded(id int, user uuid.UUID, data []byte) {
 	jm.fileUp <- fileUpload{id, user, data}
 }
 
+func (jm jobMgr) GetJobByID(id int) (mgm.Job, error) {
+	return jm.db.GetJobByID(id)
+}
+
+func (jm jobMgr) DeleteJob(j mgm.Job) error {
+	return jm.db.DeleteJob(j)
+}
+
 func (jm jobMgr) Subscribe() core.Subscription {
 	return jm.subs.Subscribe()
+}
+
+func (jm jobMgr) GetJobsForUser(userID uuid.UUID) ([]mgm.Job, error) {
+	return jm.db.GetJobsForUser(userID)
+}
+
+func (jm jobMgr) CreateLoadIarJob(owner uuid.UUID, inventoryPath string) (mgm.Job, error) {
+	return jm.db.CreateLoadIarJob(owner, inventoryPath)
 }
 
 func (jm jobMgr) process() {
@@ -76,7 +97,7 @@ func (jm jobMgr) process() {
 			case s := <-jm.fileUp:
 				jm.log.Info("File Upload Received for task %v", s.JobID)
 				// look up job
-				j, err := jm.datastore.GetJobByID(s.JobID)
+				j, err := jm.db.GetJobByID(s.JobID)
 				if err != nil {
 					//anything could have happened, but the job doesn't seem to exist, drop file
 					continue
@@ -110,7 +131,7 @@ func (jm jobMgr) process() {
 					data, _ := json.Marshal(iarJob)
 					j.Data = string(data)
 
-					jm.datastore.UpdateJob(j)
+					jm.db.UpdateJob(j)
 
 					jm.broadcast <- j
 				}
