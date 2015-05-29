@@ -1,20 +1,20 @@
-package mysql
+package job
 
 import (
-	"database/sql"
 	"encoding/json"
-	"fmt"
 
-	"github.com/m-o-s-e-s/mgm/core/job"
+	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/mgm"
-	//import mysql driver
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/satori/go.uuid"
 )
 
+type jobDatabase struct {
+	mysql database.Database
+}
+
 // GetJobByID retrieve a job record using the id of the job
-func (db db) GetJobByID(id int) (mgm.Job, error) {
-	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v?parseTime=true", db.user, db.password, db.host, db.database))
+func (db jobDatabase) GetJobByID(id int) (mgm.Job, error) {
+	con, err := db.mysql.GetConnection()
 	if err != nil {
 		return mgm.Job{}, err
 	}
@@ -30,8 +30,8 @@ func (db db) GetJobByID(id int) (mgm.Job, error) {
 }
 
 // UpdateJob record an updated job record
-func (db db) UpdateJob(job mgm.Job) error {
-	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v?parseTime=true", db.user, db.password, db.host, db.database))
+func (db jobDatabase) UpdateJob(job mgm.Job) error {
+	con, err := db.mysql.GetConnection()
 	if err != nil {
 		return err
 	}
@@ -46,8 +46,8 @@ func (db db) UpdateJob(job mgm.Job) error {
 }
 
 // DeleteJob purges a job record from the database
-func (db db) DeleteJob(job mgm.Job) error {
-	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v?parseTime=true", db.user, db.password, db.host, db.database))
+func (db jobDatabase) DeleteJob(job mgm.Job) error {
+	con, err := db.mysql.GetConnection()
 	if err != nil {
 		return err
 	}
@@ -61,8 +61,8 @@ func (db db) DeleteJob(job mgm.Job) error {
 }
 
 // GetJobsForUser get all job records for a particular user
-func (db db) GetJobsForUser(userID uuid.UUID) ([]mgm.Job, error) {
-	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v?parseTime=true", db.user, db.password, db.host, db.database))
+func (db jobDatabase) GetJobsForUser(userID uuid.UUID) ([]mgm.Job, error) {
+	con, err := db.mysql.GetConnection()
 	if err != nil {
 		return nil, err
 	}
@@ -71,7 +71,6 @@ func (db db) GetJobsForUser(userID uuid.UUID) ([]mgm.Job, error) {
 	rows, err := con.Query("SELECT * FROM jobs WHERE user=?", userID.String())
 	defer rows.Close()
 	if err != nil {
-		db.log.Error("Error in database query: ", err.Error())
 		return nil, err
 	}
 
@@ -87,7 +86,6 @@ func (db db) GetJobsForUser(userID uuid.UUID) ([]mgm.Job, error) {
 		)
 		if err != nil {
 			rows.Close()
-			db.log.Error("Error in database query: ", err.Error())
 			return nil, err
 		}
 		jobs = append(jobs, j)
@@ -96,8 +94,8 @@ func (db db) GetJobsForUser(userID uuid.UUID) ([]mgm.Job, error) {
 }
 
 // CreateLoadIarJob utility function to create job of type load_iar
-func (db db) CreateLoadIarJob(owner uuid.UUID, inventoryPath string) (mgm.Job, error) {
-	loadIar := job.LoadIarJob{InventoryPath: "/"}
+func (db jobDatabase) CreateLoadIarJob(owner uuid.UUID, inventoryPath string) (mgm.Job, error) {
+	loadIar := LoadIarJob{InventoryPath: "/"}
 	data, err := json.Marshal(loadIar)
 	if err != nil {
 		return mgm.Job{}, err
@@ -106,8 +104,8 @@ func (db db) CreateLoadIarJob(owner uuid.UUID, inventoryPath string) (mgm.Job, e
 }
 
 // CreateJob create a new job record, returning the created job
-func (db db) CreateJob(taskType string, userID uuid.UUID, data string) (mgm.Job, error) {
-	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v?parseTime=true", db.user, db.password, db.host, db.database))
+func (db jobDatabase) CreateJob(taskType string, userID uuid.UUID, data string) (mgm.Job, error) {
+	con, err := db.mysql.GetConnection()
 	if err != nil {
 		return mgm.Job{}, err
 	}
