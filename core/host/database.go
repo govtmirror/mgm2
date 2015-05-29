@@ -1,17 +1,19 @@
-package mysql
+package host
 
 import (
-	"database/sql"
 	"errors"
-	"fmt"
 
+	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/mgm"
-	"github.com/satori/go.uuid"
 )
 
+type hostDatabase struct {
+	mysql database.Database
+}
+
 // GetHosts retrieves all host records from the database
-func (db db) GetHosts() ([]mgm.Host, error) {
-	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
+func (db hostDatabase) GetHosts() ([]mgm.Host, error) {
+	con, err := db.mysql.GetConnection()
 	if err != nil {
 		return nil, err
 	}
@@ -32,24 +34,17 @@ func (db db) GetHosts() ([]mgm.Host, error) {
 			&h.Running,
 		)
 		if err != nil {
-			db.log.Error("Error in database query: ", err.Error())
 			return nil, err
 		}
-		regions, _ := db.GetRegionsOnHost(h)
-		var regids []uuid.UUID
-		for _, r := range regions {
-			regids = append(regids, r.UUID)
-		}
-		h.Regions = regids
 		hosts = append(hosts, h)
 	}
 	return hosts, nil
 }
 
 // GetHostByAddress retrieves a host record by address
-func (db db) GetHostByAddress(address string) (mgm.Host, error) {
+func (db hostDatabase) GetHostByAddress(address string) (mgm.Host, error) {
 	h := mgm.Host{}
-	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
+	con, err := db.mysql.GetConnection()
 	if err != nil {
 		return h, err
 	}
@@ -67,16 +62,15 @@ func (db db) GetHostByAddress(address string) (mgm.Host, error) {
 		if err.Error() == "sql: no rows in result set" {
 			return h, errors.New("Host not found")
 		}
-		db.log.Error("Error in database query: ", err.Error())
 		return h, err
 	}
 	return h, nil
 }
 
 // PlaceHostOffline sets the specified host to offline, and returns the updated struct
-func (db db) PlaceHostOffline(id uint) (mgm.Host, error) {
+func (db hostDatabase) PlaceHostOffline(id uint) (mgm.Host, error) {
 	h := mgm.Host{}
-	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
+	con, err := db.mysql.GetConnection()
 	if err != nil {
 		return h, err
 	}
@@ -84,7 +78,6 @@ func (db db) PlaceHostOffline(id uint) (mgm.Host, error) {
 
 	_, err = con.Exec("UPDATE hosts SET running=? WHERE id=?", false, id)
 	if err != nil {
-		db.log.Error("Error in database query: ", err.Error())
 		return h, err
 	}
 
@@ -97,16 +90,15 @@ func (db db) PlaceHostOffline(id uint) (mgm.Host, error) {
 		&h.Running,
 	)
 	if err != nil {
-		db.log.Error("Error in database query: ", err.Error())
 		return h, err
 	}
 	return h, nil
 }
 
 // PlaceHostOnline sets the specified host to online, and returns the updated struct
-func (db db) PlaceHostOnline(id uint) (mgm.Host, error) {
+func (db hostDatabase) PlaceHostOnline(id uint) (mgm.Host, error) {
 	h := mgm.Host{}
-	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
+	con, err := db.mysql.GetConnection()
 	if err != nil {
 		return h, err
 	}
@@ -114,7 +106,6 @@ func (db db) PlaceHostOnline(id uint) (mgm.Host, error) {
 
 	_, err = con.Exec("UPDATE hosts SET running=? WHERE id=?", true, id)
 	if err != nil {
-		db.log.Error("Error in database query: ", err.Error())
 		return h, err
 	}
 
@@ -127,7 +118,6 @@ func (db db) PlaceHostOnline(id uint) (mgm.Host, error) {
 		&h.Running,
 	)
 	if err != nil {
-		db.log.Error("Error in database query: ", err.Error())
 		return h, err
 	}
 	return h, nil
