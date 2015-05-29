@@ -26,7 +26,7 @@ func NewManager(port string, db database.Database, log core.Logger) Manager {
 	mgr.hostSubs = core.NewSubscriptionManager()
 	mgr.hostStatSubs = core.NewSubscriptionManager()
 	mgr.hostChan = make(chan mgm.Host, 16)
-	mgr.requestChan = make(chan HostMessage, 32)
+	mgr.requestChan = make(chan Message, 32)
 	go mgr.listen()
 	go mgr.process()
 	return mgr
@@ -41,7 +41,7 @@ type nm struct {
 	hostStatSubs core.SubscriptionManager
 
 	hostChan    chan mgm.Host
-	requestChan chan HostMessage
+	requestChan chan Message
 }
 
 func (nm nm) GetHosts() ([]mgm.Host, error) {
@@ -53,7 +53,7 @@ func (nm nm) GetHostByID(id uint) (mgm.Host, error) {
 }
 
 func (nm nm) StartRegionOnHost(region mgm.Region, host mgm.Host, sr core.ServiceRequest) {
-	nm.requestChan <- HostMessage{
+	nm.requestChan <- Message{
 		MessageType: "StartRegion",
 		Region:      region,
 		Host:        host,
@@ -127,7 +127,7 @@ func (nm nm) connectionHandler(h mgm.Host, conn net.Conn) {
 
 	readMsgs := make(chan core.NetworkMessage, 32)
 	writeMsgs := make(chan core.NetworkMessage, 32)
-	nc := HostComms{
+	nc := Comms{
 		Connection: conn,
 		Closing:    make(chan bool),
 		Log:        nm.logger,

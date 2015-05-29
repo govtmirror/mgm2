@@ -76,10 +76,12 @@ func main() {
 		}
 		n.logger.Info("MGM Node connected to MGM")
 
+		//update mgm registry
+
 		socketClosed := make(chan bool)
 		receiveChan := make(chan core.NetworkMessage, 32)
 		sendChan := make(chan core.NetworkMessage, 32)
-		nc := host.HostComms{
+		nc := host.Comms{
 			Connection: conn,
 			Closing:    make(chan bool),
 			Log:        n.logger,

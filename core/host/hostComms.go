@@ -8,14 +8,15 @@ import (
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
-// HostComms is a structure of shared read/write functions between MGM and MGMNode
-type HostComms struct {
+// Comms is a structure of shared read/write functions between MGM and MGMNode
+type Comms struct {
 	Connection net.Conn
 	Closing    chan bool
 	Log        core.Logger
 }
 
-type HostMessage struct {
+// Message is a messagestructure for MGM<->node messages
+type Message struct {
 	Region      mgm.Region
 	MessageType string
 	Message     string              `json:",omitempty"`
@@ -24,7 +25,7 @@ type HostMessage struct {
 }
 
 // ReadConnection is a processing loop for reading a socket and parsing messages
-func (node HostComms) ReadConnection(readMsgs chan<- core.NetworkMessage) {
+func (node Comms) ReadConnection(readMsgs chan<- core.NetworkMessage) {
 	d := json.NewDecoder(node.Connection)
 
 	for {
@@ -44,7 +45,7 @@ func (node HostComms) ReadConnection(readMsgs chan<- core.NetworkMessage) {
 }
 
 // WriteConnection is a processing loop for json encoding messages to a socket
-func (node HostComms) WriteConnection(writeMsgs <-chan core.NetworkMessage) {
+func (node Comms) WriteConnection(writeMsgs <-chan core.NetworkMessage) {
 
 	for {
 		select {
