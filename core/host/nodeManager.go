@@ -1,4 +1,4 @@
-package node
+package host
 
 import (
 	"net"
@@ -122,7 +122,7 @@ func (nm nm) connectionHandler(h mgm.Host, conn net.Conn) {
 
 	readMsgs := make(chan core.NetworkMessage, 32)
 	writeMsgs := make(chan core.NetworkMessage, 32)
-	nc := NodeConns{
+	nc := HostComms{
 		Connection: conn,
 		Closing:    make(chan bool),
 		Log:        nm.logger,

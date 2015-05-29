@@ -1,4 +1,4 @@
-package node
+package host
 
 import (
 	"encoding/json"
@@ -8,14 +8,14 @@ import (
 )
 
 // NodeConns is a structure of shared read/write functions between MGM and MGMNode
-type NodeConns struct {
+type HostComms struct {
 	Connection net.Conn
 	Closing    chan bool
 	Log        core.Logger
 }
 
 // ReadConnection is a processing loop for reading a socket and parsing messages
-func (node NodeConns) ReadConnection(readMsgs chan<- core.NetworkMessage) {
+func (node HostComms) ReadConnection(readMsgs chan<- core.NetworkMessage) {
 	d := json.NewDecoder(node.Connection)
 
 	for {
@@ -35,7 +35,7 @@ func (node NodeConns) ReadConnection(readMsgs chan<- core.NetworkMessage) {
 }
 
 // WriteConnection is a processing loop for json encoding messages to a socket
-func (node NodeConns) WriteConnection(writeMsgs <-chan core.NetworkMessage) {
+func (node HostComms) WriteConnection(writeMsgs <-chan core.NetworkMessage) {
 
 	for {
 		select {

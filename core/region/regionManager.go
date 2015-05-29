@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/m-o-s-e-s/mgm/core"
-	"github.com/m-o-s-e-s/mgm/core/node"
+	"github.com/m-o-s-e-s/mgm/core/host"
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
@@ -14,7 +14,7 @@ type Manager interface {
 }
 
 // NewManager constructs a RegionManager for use
-func NewManager(nMgr node.Manager, db core.Database, log core.Logger) Manager {
+func NewManager(nMgr host.Manager, db core.Database, log core.Logger) Manager {
 	rMgr := regionMgr{}
 	rMgr.nodeMgr = nMgr
 	rMgr.db = db
@@ -23,7 +23,7 @@ func NewManager(nMgr node.Manager, db core.Database, log core.Logger) Manager {
 }
 
 type regionMgr struct {
-	nodeMgr node.Manager
+	nodeMgr host.Manager
 	db      core.Database
 	log     core.Logger
 }
