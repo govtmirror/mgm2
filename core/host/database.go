@@ -21,7 +21,10 @@ func (db hostDatabase) GetHosts() ([]mgm.Host, error) {
 
 	var hosts []mgm.Host
 
-	rows, err := con.Query("Select id, address, externalAddress, port, name, slots from hosts")
+	rows, err := con.Query("Select id, address, externalAddress, name, slots from hosts")
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 	for rows.Next() {
 		h := mgm.Host{}
@@ -29,7 +32,6 @@ func (db hostDatabase) GetHosts() ([]mgm.Host, error) {
 			&h.ID,
 			&h.Address,
 			&h.ExternalAddress,
-			&h.Port,
 			&h.Hostname,
 			&h.Slots,
 		)
@@ -50,11 +52,10 @@ func (db hostDatabase) GetHostByID(id uint) (mgm.Host, error) {
 	}
 	defer con.Close()
 
-	err = con.QueryRow("SELECT id, address, externalAddress, port, name, slots FROM hosts WHERE id=?", id).Scan(
+	err = con.QueryRow("SELECT id, address, externalAddress, name, slots FROM hosts WHERE id=?", id).Scan(
 		&h.ID,
 		&h.Address,
 		&h.ExternalAddress,
-		&h.Port,
 		&h.Hostname,
 		&h.Slots,
 	)
@@ -76,11 +77,10 @@ func (db hostDatabase) GetHostByAddress(address string) (mgm.Host, error) {
 	}
 	defer con.Close()
 
-	err = con.QueryRow("SELECT id, address, externalAddress, port, name, slots FROM hosts WHERE address=?", address).Scan(
+	err = con.QueryRow("SELECT id, address, externalAddress, name, slots FROM hosts WHERE address=?", address).Scan(
 		&h.ID,
 		&h.Address,
 		&h.ExternalAddress,
-		&h.Port,
 		&h.Hostname,
 		&h.Slots,
 	)
@@ -88,62 +88,6 @@ func (db hostDatabase) GetHostByAddress(address string) (mgm.Host, error) {
 		if err.Error() == "sql: no rows in result set" {
 			return h, errors.New("Host not found")
 		}
-		return h, err
-	}
-	return h, nil
-}
-
-// PlaceHostOffline sets the specified host to offline, and returns the updated struct
-func (db hostDatabase) PlaceHostOffline(id uint) (mgm.Host, error) {
-	h := mgm.Host{}
-	con, err := db.mysql.GetConnection()
-	if err != nil {
-		return h, err
-	}
-	defer con.Close()
-
-	_, err = con.Exec("UPDATE hosts SET running=? WHERE id=?", false, id)
-	if err != nil {
-		return h, err
-	}
-
-	err = con.QueryRow("SELECT id, address, externalAddress, port, name, slots FROM hosts WHERE id=?", id).Scan(
-		&h.ID,
-		&h.Address,
-		&h.ExternalAddress,
-		&h.Port,
-		&h.Hostname,
-		&h.Slots,
-	)
-	if err != nil {
-		return h, err
-	}
-	return h, nil
-}
-
-// PlaceHostOnline sets the specified host to online, and returns the updated struct
-func (db hostDatabase) PlaceHostOnline(id uint) (mgm.Host, error) {
-	h := mgm.Host{}
-	con, err := db.mysql.GetConnection()
-	if err != nil {
-		return h, err
-	}
-	defer con.Close()
-
-	_, err = con.Exec("UPDATE hosts SET running=? WHERE id=?", true, id)
-	if err != nil {
-		return h, err
-	}
-
-	err = con.QueryRow("SELECT id, address, externalAddress, port, name, slots FROM hosts WHERE id=?", id).Scan(
-		&h.ID,
-		&h.Address,
-		&h.ExternalAddress,
-		&h.Port,
-		&h.Hostname,
-		&h.Slots,
-	)
-	if err != nil {
 		return h, err
 	}
 	return h, nil
@@ -159,11 +103,11 @@ func (db hostDatabase) GetRegionsOnHost(host mgm.Host) ([]mgm.Region, error) {
 
 	rows, err := con.Query(
 		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host from regions "+
-			"where slaveAddress=?", host.Address)
-	defer rows.Close()
+			"where host=?", host.ID)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var regions []mgm.Region
 	for rows.Next() {
@@ -187,4 +131,18 @@ func (db hostDatabase) GetRegionsOnHost(host mgm.Host) ([]mgm.Region, error) {
 		regions = append(regions, r)
 	}
 	return regions, nil
+}
+
+func (db hostDatabase) UpdateHost(h mgm.Host, reg Registration) (mgm.Host, error) {
+	con, err := db.mysql.GetConnection()
+
+	_, err = con.Exec("UPDATE hosts SET externalAddress=?, name=?, slots=? WHERE id=?",
+		reg.ExternalAddress, reg.Name, reg.Slots, h.ID)
+	if err != nil {
+		return h, err
+	}
+	h.ExternalAddress = reg.ExternalAddress
+	h.Hostname = reg.Name
+	h.Slots = reg.Slots
+	return h, nil
 }

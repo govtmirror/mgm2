@@ -118,15 +118,11 @@ func (nm nm) listen() {
 
 func (nm nm) connectionHandler(h mgm.Host, conn net.Conn) {
 	//place host online
-	h, err := nm.db.PlaceHostOnline(h.ID)
-	if err != nil {
-		nm.logger.Error("Error looking up host: ", err)
-		return
-	}
+	h.Running = true
 	nm.hostSubs.Broadcast(h)
 
-	readMsgs := make(chan core.NetworkMessage, 32)
-	writeMsgs := make(chan core.NetworkMessage, 32)
+	readMsgs := make(chan Message, 32)
+	writeMsgs := make(chan Message, 32)
 	nc := Comms{
 		Connection: conn,
 		Closing:    make(chan bool),
@@ -140,28 +136,34 @@ func (nm nm) connectionHandler(h mgm.Host, conn net.Conn) {
 		select {
 		case <-nc.Closing:
 			nm.logger.Info("mgm node disconnected")
-			h, err := nm.db.PlaceHostOffline(h.ID)
-			if err != nil {
-				nm.logger.Error("Error looking up host: ", err)
-				return
-			}
+			h.Running = false
 			nm.hostSubs.Broadcast(h)
 			return
 		case nmsg := <-readMsgs:
 			switch nmsg.MessageType {
+			case "Register":
+				reg := nmsg.Register
+				h, err := nm.db.UpdateHost(h, reg)
+				if err != nil {
+					nm.logger.Error("Error registering new host: ", err.Error())
+				}
+				nm.hostSubs.Broadcast(h)
 			case "HostStats":
 				hStats := nmsg.HStats
 				hStats.ID = h.ID
 				nm.hostStatSubs.Broadcast(hStats)
 			case "GetRegions":
+				nm.logger.Info("Host %v requesting regions list: ", h.ID)
 				regions, err := nm.db.GetRegionsOnHost(h)
 				if err != nil {
 					nm.logger.Error("Error getting regions for host: ", err.Error())
 				} else {
+					nm.logger.Info("Serving %v regions to Host %v", len(regions), h.ID)
 					for _, r := range regions {
-						writeMsgs <- core.NetworkMessage{MessageType: "AddRegion", Region: r}
+						writeMsgs <- Message{MessageType: "AddRegion", Region: r}
 					}
 				}
+				nm.logger.Info("Region list served to Host %v", h.ID)
 			default:
 				nm.logger.Info("Received invalid message from an MGM node: ", nmsg.MessageType)
 			}

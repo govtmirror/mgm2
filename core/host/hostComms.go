@@ -17,10 +17,11 @@ type Comms struct {
 
 // Message is a messagestructure for MGM<->node messages
 type Message struct {
-	Region      mgm.Region
 	MessageType string
+	Region      mgm.Region          `json:",omitempty"`
 	Message     string              `json:",omitempty"`
 	Register    Registration        `json:",omitempty"`
+	HStats      mgm.HostStat        `json:",omitempty"`
 	Host        mgm.Host            `json:"-"`
 	SR          core.ServiceRequest `json:"-"`
 }
@@ -28,17 +29,16 @@ type Message struct {
 // Registration holds mgmNode information for MGM
 type Registration struct {
 	ExternalAddress string
-	Port            int
 	Name            string
 	Slots           uint
 }
 
 // ReadConnection is a processing loop for reading a socket and parsing messages
-func (node Comms) ReadConnection(readMsgs chan<- core.NetworkMessage) {
+func (node Comms) ReadConnection(readMsgs chan<- Message) {
 	d := json.NewDecoder(node.Connection)
 
 	for {
-		nmsg := core.NetworkMessage{}
+		nmsg := Message{}
 		err := d.Decode(&nmsg)
 		if err != nil {
 			if err.Error() == "EOF" {
@@ -54,7 +54,7 @@ func (node Comms) ReadConnection(readMsgs chan<- core.NetworkMessage) {
 }
 
 // WriteConnection is a processing loop for json encoding messages to a socket
-func (node Comms) WriteConnection(writeMsgs <-chan core.NetworkMessage) {
+func (node Comms) WriteConnection(writeMsgs <-chan Message) {
 
 	for {
 		select {
