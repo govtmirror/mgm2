@@ -81,8 +81,8 @@ func main() {
 
 	//Hook up core processing...
 	jMgr := job.NewManager(config.MGM.LocalFileStorage, db, logger)
-	nMgr := host.NewManager(config.MGM.NodePort, db, logger)
-	rMgr := region.NewManager(nMgr, db, logger)
+	rMgr := region.NewManager(db, logger)
+	nMgr := host.NewManager(config.MGM.NodePort, rMgr, db, logger)
 	uMgr := user.NewManager(rMgr, nMgr, sim, db, logger)
 	sessionListenerChan := make(chan core.UserSession, 64)
 

@@ -5,6 +5,7 @@ import (
 
 	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/mgm"
+	"github.com/satori/go.uuid"
 )
 
 type hostDatabase struct {
@@ -40,6 +41,24 @@ func (db hostDatabase) GetHosts() ([]mgm.Host, error) {
 		}
 		hosts = append(hosts, h)
 	}
+
+	for i, h := range hosts {
+		rows, err := con.Query("SELECT uuid FROM regions WHERE host=?", h.ID)
+		if err != nil {
+			return nil, err
+		}
+		defer rows.Close()
+		for rows.Next() {
+			u := uuid.UUID{}
+			err = rows.Scan(
+				&u,
+			)
+			if err != nil {
+				return nil, err
+			}
+			hosts[i].Regions = append(hosts[i].Regions, u)
+		}
+	}
 	return hosts, nil
 }
 
@@ -65,6 +84,23 @@ func (db hostDatabase) GetHostByID(id uint) (mgm.Host, error) {
 		}
 		return h, err
 	}
+
+	rows, err := con.Query("SELECT uuid FROM regions WHERE host=?", h.ID)
+	if err != nil {
+		return h, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		u := uuid.UUID{}
+		err = rows.Scan(
+			&u,
+		)
+		if err != nil {
+			return h, err
+		}
+		h.Regions = append(h.Regions, u)
+	}
+
 	return h, nil
 }
 
@@ -90,47 +126,24 @@ func (db hostDatabase) GetHostByAddress(address string) (mgm.Host, error) {
 		}
 		return h, err
 	}
-	return h, nil
-}
 
-// GetRegionsOnHost retrieves all region records for a specified host
-func (db hostDatabase) GetRegionsOnHost(host mgm.Host) ([]mgm.Region, error) {
-	con, err := db.mysql.GetConnection()
+	rows, err := con.Query("SELECT uuid FROM regions WHERE host=?", h.ID)
 	if err != nil {
-		return nil, err
-	}
-	defer con.Close()
-
-	rows, err := con.Query(
-		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host from regions "+
-			"where host=?", host.ID)
-	if err != nil {
-		return nil, err
+		return h, err
 	}
 	defer rows.Close()
-
-	var regions []mgm.Region
 	for rows.Next() {
-		r := mgm.Region{}
+		u := uuid.UUID{}
 		err = rows.Scan(
-			&r.UUID,
-			&r.Name,
-			&r.Size,
-			&r.HTTPPort,
-			&r.ConsolePort,
-			&r.ConsoleUname,
-			&r.ConsolePass,
-			&r.LocX,
-			&r.LocY,
-			&r.Host,
+			&u,
 		)
 		if err != nil {
-			rows.Close()
-			return nil, err
+			return h, err
 		}
-		regions = append(regions, r)
+		h.Regions = append(h.Regions, u)
 	}
-	return regions, nil
+
+	return h, nil
 }
 
 func (db hostDatabase) UpdateHost(h mgm.Host, reg Registration) (mgm.Host, error) {

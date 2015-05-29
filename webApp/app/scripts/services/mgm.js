@@ -103,6 +103,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
         $rootScope.$broadcast("ConfigUpdate", message.Message);
         break;
       case "Host":
+      console.log(message.Message);
         self.hosts[message.Message.ID] = message.Message;
         $rootScope.$broadcast("HostUpdate", message.Message);
         break;

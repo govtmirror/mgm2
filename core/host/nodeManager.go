@@ -17,8 +17,12 @@ type Manager interface {
 	GetHosts() ([]mgm.Host, error)
 }
 
+type regionManager interface {
+	GetRegionsOnHost(mgm.Host) ([]mgm.Region, error)
+}
+
 // NewManager constructs NodeManager instances
-func NewManager(port string, db database.Database, log core.Logger) Manager {
+func NewManager(port string, rMgr regionManager, db database.Database, log core.Logger) Manager {
 	mgr := nm{}
 	mgr.listenPort = port
 	mgr.db = hostDatabase{db}
@@ -27,6 +31,7 @@ func NewManager(port string, db database.Database, log core.Logger) Manager {
 	mgr.hostStatSubs = core.NewSubscriptionManager()
 	mgr.hostChan = make(chan mgm.Host, 16)
 	mgr.requestChan = make(chan Message, 32)
+	mgr.regionMgr = rMgr
 	go mgr.listen()
 	go mgr.process()
 	return mgr
@@ -39,6 +44,7 @@ type nm struct {
 	db           hostDatabase
 	hostSubs     core.SubscriptionManager
 	hostStatSubs core.SubscriptionManager
+	regionMgr    regionManager
 
 	hostChan    chan mgm.Host
 	requestChan chan Message
@@ -112,63 +118,12 @@ func (nm nm) listen() {
 			continue
 		}
 		nm.logger.Info("MGM Node connection from: %v (%v)", host.ID, address)
-		go nm.connectionHandler(host, conn)
+
+		s := nodeSession{host, conn, nm.hostSubs, nm.hostStatSubs, nm.regionMgr, nm, nm.logger}
+		go s.process()
 	}
 }
 
 func (nm nm) connectionHandler(h mgm.Host, conn net.Conn) {
-	//place host online
-	h.Running = true
-	nm.hostSubs.Broadcast(h)
-
-	readMsgs := make(chan Message, 32)
-	writeMsgs := make(chan Message, 32)
-	nc := Comms{
-		Connection: conn,
-		Closing:    make(chan bool),
-		Log:        nm.logger,
-	}
-	go nc.ReadConnection(readMsgs)
-	go nc.WriteConnection(writeMsgs)
-
-	for {
-
-		select {
-		case <-nc.Closing:
-			nm.logger.Info("mgm node disconnected")
-			h.Running = false
-			nm.hostSubs.Broadcast(h)
-			return
-		case nmsg := <-readMsgs:
-			switch nmsg.MessageType {
-			case "Register":
-				reg := nmsg.Register
-				h, err := nm.db.UpdateHost(h, reg)
-				if err != nil {
-					nm.logger.Error("Error registering new host: ", err.Error())
-				}
-				nm.hostSubs.Broadcast(h)
-			case "HostStats":
-				hStats := nmsg.HStats
-				hStats.ID = h.ID
-				nm.hostStatSubs.Broadcast(hStats)
-			case "GetRegions":
-				nm.logger.Info("Host %v requesting regions list: ", h.ID)
-				regions, err := nm.db.GetRegionsOnHost(h)
-				if err != nil {
-					nm.logger.Error("Error getting regions for host: ", err.Error())
-				} else {
-					nm.logger.Info("Serving %v regions to Host %v", len(regions), h.ID)
-					for _, r := range regions {
-						writeMsgs <- Message{MessageType: "AddRegion", Region: r}
-					}
-				}
-				nm.logger.Info("Region list served to Host %v", h.ID)
-			default:
-				nm.logger.Info("Received invalid message from an MGM node: ", nmsg.MessageType)
-			}
-		}
-
-	}
 
 }

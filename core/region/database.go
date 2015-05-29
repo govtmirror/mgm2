@@ -191,3 +191,43 @@ func (db regionDatabase) GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, err
 	}
 	return cfgs, nil
 }
+
+// GetRegionsOnHost retrieves all region records for a specified host
+func (db regionDatabase) GetRegionsOnHost(host mgm.Host) ([]mgm.Region, error) {
+	con, err := db.mysql.GetConnection()
+	if err != nil {
+		return nil, err
+	}
+	defer con.Close()
+
+	rows, err := con.Query(
+		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host from regions "+
+			"where host=?", host.ID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var regions []mgm.Region
+	for rows.Next() {
+		r := mgm.Region{}
+		err = rows.Scan(
+			&r.UUID,
+			&r.Name,
+			&r.Size,
+			&r.HTTPPort,
+			&r.ConsolePort,
+			&r.ConsoleUname,
+			&r.ConsolePass,
+			&r.LocX,
+			&r.LocY,
+			&r.Host,
+		)
+		if err != nil {
+			rows.Close()
+			return nil, err
+		}
+		regions = append(regions, r)
+	}
+	return regions, nil
+}

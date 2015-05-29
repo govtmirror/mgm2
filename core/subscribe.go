@@ -65,6 +65,7 @@ func (sm subMgr) process() {
 					subscribers = subscribers[:len(subscribers)-1]
 				}
 			}
+			close(s.pipe)
 		case ob := <-sm.broadcast:
 			for _, s := range subscribers {
 				go func(s sub, ob UserObject) {

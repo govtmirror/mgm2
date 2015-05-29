@@ -3,7 +3,6 @@ package region
 import (
 	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/database"
-	"github.com/m-o-s-e-s/mgm/core/host"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
@@ -15,21 +14,20 @@ type Manager interface {
 	GetDefaultConfigs() ([]mgm.ConfigOption, error)
 	GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error)
 	GetRegions() ([]mgm.Region, error)
+	GetRegionsOnHost(host mgm.Host) ([]mgm.Region, error)
 }
 
 // NewManager constructs a RegionManager for use
-func NewManager(nMgr host.Manager, db database.Database, log core.Logger) Manager {
+func NewManager(db database.Database, log core.Logger) Manager {
 	rMgr := regionMgr{}
-	rMgr.nodeMgr = nMgr
 	rMgr.db = regionDatabase{db}
 	rMgr.log = log
 	return rMgr
 }
 
 type regionMgr struct {
-	nodeMgr host.Manager
-	db      regionDatabase
-	log     core.Logger
+	db  regionDatabase
+	log core.Logger
 }
 
 func (rm regionMgr) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error) {
@@ -50,4 +48,8 @@ func (rm regionMgr) GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error) {
 
 func (rm regionMgr) GetRegions() ([]mgm.Region, error) {
 	return rm.db.GetRegions()
+}
+
+func (rm regionMgr) GetRegionsOnHost(host mgm.Host) ([]mgm.Region, error) {
+	return rm.db.GetRegionsOnHost(host)
 }
