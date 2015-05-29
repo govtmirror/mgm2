@@ -1,15 +1,17 @@
-package mysql
+package region
 
 import (
-	"database/sql"
-	"fmt"
-
+	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
 
-func (db db) GetDefaultConfigs() ([]mgm.ConfigOption, error) {
-	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
+type regionDatabase struct {
+	mysql database.Database
+}
+
+func (db regionDatabase) GetDefaultConfigs() ([]mgm.ConfigOption, error) {
+	con, err := db.mysql.GetConnection()
 	if err != nil {
 		return nil, err
 	}
@@ -30,7 +32,6 @@ func (db db) GetDefaultConfigs() ([]mgm.ConfigOption, error) {
 			&c.Content,
 		)
 		if err != nil {
-			db.log.Error("Error in database query: ", err.Error())
 			return nil, err
 		}
 		cfgs = append(cfgs, c)
@@ -38,8 +39,8 @@ func (db db) GetDefaultConfigs() ([]mgm.ConfigOption, error) {
 	return cfgs, nil
 }
 
-func (db db) GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error) {
-	con, err := sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/%v", db.user, db.password, db.host, db.database))
+func (db regionDatabase) GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error) {
+	con, err := db.mysql.GetConnection()
 	if err != nil {
 		return nil, err
 	}
@@ -61,7 +62,6 @@ func (db db) GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error) {
 		)
 		c.Region = regionID
 		if err != nil {
-			db.log.Error("Error in database query: ", err.Error())
 			return nil, err
 		}
 		cfgs = append(cfgs, c)
