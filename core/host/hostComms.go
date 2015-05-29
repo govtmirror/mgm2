@@ -20,8 +20,17 @@ type Message struct {
 	Region      mgm.Region
 	MessageType string
 	Message     string              `json:",omitempty"`
+	Register    Registration        `json:",omitempty"`
 	Host        mgm.Host            `json:"-"`
 	SR          core.ServiceRequest `json:"-"`
+}
+
+// Registration holds mgmNode information for MGM
+type Registration struct {
+	ExternalAddress string
+	Port            int
+	Name            string
+	Slots           uint
 }
 
 // ReadConnection is a processing loop for reading a socket and parsing messages

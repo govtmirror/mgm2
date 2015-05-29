@@ -23,7 +23,7 @@ func (db regionDatabase) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error)
 	var regions []mgm.Region
 
 	rows, err := con.Query(
-		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host, isRunning, EstateName from regions, estate_map, estate_settings " +
+		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host, EstateName from regions, estate_map, estate_settings " +
 			"where estate_map.RegionID = regions.uuid AND estate_map.EstateID = estate_settings.EstateID AND uuid in " +
 			"(SELECT RegionID FROM estate_map WHERE " +
 			"EstateID in (SELECT EstateID FROM estate_settings WHERE EstateOwner=\"" + guid.String() + "\") OR " +
@@ -49,7 +49,6 @@ func (db regionDatabase) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error)
 			&r.LocX,
 			&r.LocY,
 			&r.Host,
-			&r.IsRunning,
 			&r.EstateName,
 		)
 		if err != nil {
@@ -71,7 +70,7 @@ func (db regionDatabase) GetRegionByID(id uuid.UUID) (mgm.Region, error) {
 	defer con.Close()
 
 	err = con.QueryRow(
-		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host, isRunning from regions "+
+		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host from regions "+
 			"where uuid=?", id.String()).Scan(
 		&r.UUID,
 		&r.Name,
@@ -83,7 +82,6 @@ func (db regionDatabase) GetRegionByID(id uuid.UUID) (mgm.Region, error) {
 		&r.LocX,
 		&r.LocY,
 		&r.Host,
-		&r.IsRunning,
 	)
 	if err != nil {
 		return r, err
@@ -103,7 +101,7 @@ func (db regionDatabase) GetRegions() ([]mgm.Region, error) {
 	defer con.Close()
 
 	rows, err := con.Query(
-		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host, isRunning, EstateName from regions, estate_map, estate_settings " +
+		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host, EstateName from regions, estate_map, estate_settings " +
 			"where estate_map.RegionID = regions.uuid AND estate_map.EstateID = estate_settings.EstateID")
 	defer rows.Close()
 	if err != nil {
@@ -124,7 +122,6 @@ func (db regionDatabase) GetRegions() ([]mgm.Region, error) {
 			&r.LocX,
 			&r.LocY,
 			&r.Host,
-			&r.IsRunning,
 			&r.EstateName,
 		)
 		if err != nil {

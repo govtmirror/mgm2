@@ -21,7 +21,7 @@ func (db hostDatabase) GetHosts() ([]mgm.Host, error) {
 
 	var hosts []mgm.Host
 
-	rows, err := con.Query("Select id, address, externalAddress, port, name, slots, running from hosts")
+	rows, err := con.Query("Select id, address, externalAddress, port, name, slots from hosts")
 	defer rows.Close()
 	for rows.Next() {
 		h := mgm.Host{}
@@ -32,7 +32,6 @@ func (db hostDatabase) GetHosts() ([]mgm.Host, error) {
 			&h.Port,
 			&h.Hostname,
 			&h.Slots,
-			&h.Running,
 		)
 		if err != nil {
 			return nil, err
@@ -51,14 +50,13 @@ func (db hostDatabase) GetHostByID(id uint) (mgm.Host, error) {
 	}
 	defer con.Close()
 
-	err = con.QueryRow("SELECT id, address, externalAddress, port, name, slots, running FROM hosts WHERE id=?", id).Scan(
+	err = con.QueryRow("SELECT id, address, externalAddress, port, name, slots FROM hosts WHERE id=?", id).Scan(
 		&h.ID,
 		&h.Address,
 		&h.ExternalAddress,
 		&h.Port,
 		&h.Hostname,
 		&h.Slots,
-		&h.Running,
 	)
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
@@ -78,14 +76,13 @@ func (db hostDatabase) GetHostByAddress(address string) (mgm.Host, error) {
 	}
 	defer con.Close()
 
-	err = con.QueryRow("SELECT id, address, externalAddress, port, name, slots, running FROM hosts WHERE address=?", address).Scan(
+	err = con.QueryRow("SELECT id, address, externalAddress, port, name, slots FROM hosts WHERE address=?", address).Scan(
 		&h.ID,
 		&h.Address,
 		&h.ExternalAddress,
 		&h.Port,
 		&h.Hostname,
 		&h.Slots,
-		&h.Running,
 	)
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
@@ -110,14 +107,13 @@ func (db hostDatabase) PlaceHostOffline(id uint) (mgm.Host, error) {
 		return h, err
 	}
 
-	err = con.QueryRow("SELECT id, address, externalAddress, port, name, slots, running FROM hosts WHERE id=?", id).Scan(
+	err = con.QueryRow("SELECT id, address, externalAddress, port, name, slots FROM hosts WHERE id=?", id).Scan(
 		&h.ID,
 		&h.Address,
 		&h.ExternalAddress,
 		&h.Port,
 		&h.Hostname,
 		&h.Slots,
-		&h.Running,
 	)
 	if err != nil {
 		return h, err
@@ -139,14 +135,13 @@ func (db hostDatabase) PlaceHostOnline(id uint) (mgm.Host, error) {
 		return h, err
 	}
 
-	err = con.QueryRow("SELECT id, address, externalAddress, port, name, slots, running FROM hosts WHERE id=?", id).Scan(
+	err = con.QueryRow("SELECT id, address, externalAddress, port, name, slots FROM hosts WHERE id=?", id).Scan(
 		&h.ID,
 		&h.Address,
 		&h.ExternalAddress,
 		&h.Port,
 		&h.Hostname,
 		&h.Slots,
-		&h.Running,
 	)
 	if err != nil {
 		return h, err
@@ -163,7 +158,7 @@ func (db hostDatabase) GetRegionsOnHost(host mgm.Host) ([]mgm.Region, error) {
 	defer con.Close()
 
 	rows, err := con.Query(
-		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host, isRunning from regions "+
+		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host from regions "+
 			"where slaveAddress=?", host.Address)
 	defer rows.Close()
 	if err != nil {
@@ -184,7 +179,6 @@ func (db hostDatabase) GetRegionsOnHost(host mgm.Host) ([]mgm.Region, error) {
 			&r.LocX,
 			&r.LocY,
 			&r.Host,
-			&r.IsRunning,
 		)
 		if err != nil {
 			rows.Close()
