@@ -90,7 +90,6 @@ func main() {
 		}
 		n.logger.Info("MGM Node connected to MGM")
 
-		socketClosed := make(chan bool)
 		receiveChan := make(chan host.Message, 32)
 		sendChan := make(chan host.Message, 32)
 		nc := host.Comms{
@@ -118,7 +117,7 @@ func main() {
 	ProcessingPackets:
 		for {
 			select {
-			case <-socketClosed:
+			case <-nc.Closing:
 				n.logger.Error("Disconnected from MGM")
 				time.Sleep(10 * time.Second)
 				break ProcessingPackets
