@@ -114,6 +114,12 @@ func (um userManager) GetEstates() ([]mgm.Estate, error) {
 func (um userManager) RequestControlPermission(region mgm.Region, user mgm.User) (mgm.Host, error) {
 	h := mgm.Host{}
 
+	if user.AccessLevel > 249 {
+		//admin level user, grant permission implicitly
+		h, err := um.hMgr.GetHostByID(region.Host)
+		return h, err
+	}
+
 	//make sure user may control this region
 	regions, err := um.rMgr.GetRegionsForUser(user.UserID)
 	if err != nil {

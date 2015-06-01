@@ -46,6 +46,7 @@ func NewManager(port string, rMgr regionManager, db database.Database, log core.
 			hostSubs:     mgr.hostSubs,
 			hostStatSubs: mgr.hostStatSubs,
 			nodeMgr:      mgr,
+			regionMgr:    rMgr,
 			log:          log,
 		}
 		ch <- s
@@ -140,6 +141,7 @@ func (nm nm) process(newConns <-chan nodeSession) {
 				if c, ok := conns[nc.Host.ID]; ok {
 					c.cmdMsgs <- nc
 				} else {
+					nm.logger.Info("Host %v not found", nc.Host.ID)
 					nc.SR(false, "Host not found")
 				}
 			default:
