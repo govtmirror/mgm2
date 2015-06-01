@@ -32,17 +32,26 @@ func NewManager(port string, rMgr regionManager, db database.Database, log core.
 	mgr.internalMsgs = make(chan internalMsg, 32)
 	mgr.requestChan = make(chan Message, 32)
 	mgr.regionMgr = rMgr
-	go mgr.listen()
-	go mgr.process()
+	ch := make(chan nodeSession, 32)
+	go mgr.process(ch)
 
-	//initialize internal cache
+	//initialize internal structures
 	hosts, err := mgr.db.GetHosts()
 	if err != nil {
 		return nm{}, err
 	}
 	for _, h := range hosts {
-		mgr.hostSubs.Broadcast(h)
+		s := nodeSession{
+			host:         h,
+			hostSubs:     mgr.hostSubs,
+			hostStatSubs: mgr.hostStatSubs,
+			nodeMgr:      mgr,
+			log:          log,
+		}
+		ch <- s
 	}
+
+	go mgr.listen(ch)
 
 	return mgr, nil
 }
@@ -98,8 +107,8 @@ func (nm nm) SubscribeHostStats() core.Subscription {
 	return nm.hostStatSubs.Subscribe()
 }
 
-func (nm nm) process() {
-	hosts := make(map[uint]mgm.Host)
+func (nm nm) process(newConns <-chan nodeSession) {
+	conns := make(map[uint]nodeSession)
 
 	//subscribe to own hosts to gather updates
 	hostSub := nm.hostSubs.Subscribe()
@@ -107,17 +116,38 @@ func (nm nm) process() {
 
 	for {
 		select {
+		case c := <-newConns:
+			if con, ok := conns[c.host.ID]; ok {
+				//record already exists, this is probably a new connection
+				con.conn = c.conn
+				con.cmdMsgs = make(chan Message, 32)
+				go con.process()
+			}
 		case u := <-hostSub.GetReceive():
+			//host update from node, typically Running
 			h := u.(mgm.Host)
-			hosts[h.ID] = h
+			con, ok := conns[h.ID]
+			if ok {
+				con.host = h
+				conns[h.ID] = con
+			}
 		case nc := <-nm.requestChan:
-			nc.SR(false, "This part isnt here yet")
+			switch nc.MessageType {
+			case "StartRegion":
+				if c, ok := conns[nc.Host.ID]; ok {
+					c.cmdMsgs <- nc
+				} else {
+					nc.SR(false, "Host not found")
+				}
+			default:
+				nc.SR(false, "Not Implemented")
+			}
 
 		case msg := <-nm.internalMsgs:
 			switch msg.request {
 			case "GetHosts":
-				for _, h := range hosts {
-					msg.hosts <- h
+				for _, c := range conns {
+					msg.hosts <- c.host
 				}
 				close(msg.hosts)
 			}
@@ -126,7 +156,7 @@ func (nm nm) process() {
 }
 
 // NodeManager receives and communicates with mgm Node processes
-func (nm nm) listen() {
+func (nm nm) listen(newConns chan<- nodeSession) {
 
 	ln, err := net.Listen("tcp", ":"+nm.listenPort)
 	if err != nil {
@@ -156,11 +186,7 @@ func (nm nm) listen() {
 		}
 		nm.logger.Info("MGM Node connection from: %v (%v)", host.ID, address)
 
-		s := nodeSession{host, conn, nm.hostSubs, nm.hostStatSubs, nm.regionMgr, nm, nm.logger}
-		go s.process()
+		s := nodeSession{host: host, conn: conn}
+		newConns <- s
 	}
-}
-
-func (nm nm) connectionHandler(h mgm.Host, conn net.Conn) {
-
 }

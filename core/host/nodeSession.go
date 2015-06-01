@@ -14,14 +14,11 @@ type nodeSession struct {
 	hostStatSubs core.SubscriptionManager
 	regionMgr    regionManager
 	nodeMgr      nm
+	cmdMsgs      chan Message
 	log          core.Logger
 }
 
 func (ns nodeSession) process() {
-	//place host online
-	ns.host.Running = true
-	ns.hostSubs.Broadcast(ns.host)
-
 	readMsgs := make(chan Message, 32)
 	writeMsgs := make(chan Message, 32)
 	nc := Comms{
@@ -32,6 +29,12 @@ func (ns nodeSession) process() {
 	go nc.ReadConnection(readMsgs)
 	go nc.WriteConnection(writeMsgs)
 
+	defer ns.conn.Close()
+
+	//place host online
+	ns.host.Running = true
+	ns.hostSubs.Broadcast(ns.host)
+
 	for {
 
 		select {
@@ -40,7 +43,13 @@ func (ns nodeSession) process() {
 			ns.host.Running = false
 			ns.hostSubs.Broadcast(ns.host)
 			return
+
+		case msg := <-ns.cmdMsgs:
+			// Messages coming from MGM
+			writeMsgs <- msg
+
 		case nmsg := <-readMsgs:
+			// Messages coming from the host
 			switch nmsg.MessageType {
 			case "Register":
 				reg := nmsg.Register
