@@ -14,7 +14,7 @@ type Manager interface {
 	SubscribeHostStats() core.Subscription
 	StartRegionOnHost(mgm.Region, mgm.Host, core.ServiceRequest)
 	GetHostByID(id uint) (mgm.Host, error)
-	GetHosts() ([]mgm.Host, error)
+	GetHosts() []mgm.Host
 }
 
 type regionManager interface {
@@ -22,19 +22,29 @@ type regionManager interface {
 }
 
 // NewManager constructs NodeManager instances
-func NewManager(port string, rMgr regionManager, db database.Database, log core.Logger) Manager {
+func NewManager(port string, rMgr regionManager, db database.Database, log core.Logger) (Manager, error) {
 	mgr := nm{}
 	mgr.listenPort = port
 	mgr.db = hostDatabase{db}
 	mgr.logger = log
 	mgr.hostSubs = core.NewSubscriptionManager()
 	mgr.hostStatSubs = core.NewSubscriptionManager()
-	mgr.hostChan = make(chan mgm.Host, 16)
+	mgr.internalMsgs = make(chan internalMsg, 32)
 	mgr.requestChan = make(chan Message, 32)
 	mgr.regionMgr = rMgr
 	go mgr.listen()
 	go mgr.process()
-	return mgr
+
+	//initialize internal cache
+	hosts, err := mgr.db.GetHosts()
+	if err != nil {
+		return nm{}, err
+	}
+	for _, h := range hosts {
+		mgr.hostSubs.Broadcast(h)
+	}
+
+	return mgr, nil
 }
 
 type nm struct {
@@ -46,12 +56,24 @@ type nm struct {
 	hostStatSubs core.SubscriptionManager
 	regionMgr    regionManager
 
-	hostChan    chan mgm.Host
-	requestChan chan Message
+	requestChan  chan Message
+	internalMsgs chan internalMsg
 }
 
-func (nm nm) GetHosts() ([]mgm.Host, error) {
-	return nm.db.GetHosts()
+type internalMsg struct {
+	request string
+	hosts   chan mgm.Host
+}
+
+func (nm nm) GetHosts() []mgm.Host {
+	var hosts []mgm.Host
+	req := internalMsg{"GetHosts", make(chan mgm.Host, 32)}
+	nm.internalMsgs <- req
+	nm.logger.Info("Reading from host channel")
+	for h := range req.hosts {
+		hosts = append(hosts, h)
+	}
+	return hosts
 }
 
 func (nm nm) GetHostByID(id uint) (mgm.Host, error) {
@@ -78,12 +100,27 @@ func (nm nm) SubscribeHostStats() core.Subscription {
 
 func (nm nm) process() {
 	hosts := make(map[uint]mgm.Host)
+
+	//subscribe to own hosts to gather updates
+	hostSub := nm.hostSubs.Subscribe()
+	defer hostSub.Unsubscribe()
+
 	for {
 		select {
-		case host := <-nm.hostChan:
-			hosts[host.ID] = host
+		case u := <-hostSub.GetReceive():
+			h := u.(mgm.Host)
+			hosts[h.ID] = h
 		case nc := <-nm.requestChan:
 			nc.SR(false, "This part isnt here yet")
+
+		case msg := <-nm.internalMsgs:
+			switch msg.request {
+			case "GetHosts":
+				for _, h := range hosts {
+					msg.hosts <- h
+				}
+				close(msg.hosts)
+			}
 		}
 	}
 }

@@ -82,11 +82,15 @@ func main() {
 	//Hook up core processing...
 	jMgr := job.NewManager(config.MGM.LocalFileStorage, db, logger)
 	rMgr := region.NewManager(db, logger)
-	nMgr := host.NewManager(config.MGM.NodePort, rMgr, db, logger)
+	nMgr, err := host.NewManager(config.MGM.NodePort, rMgr, db, logger)
+	if err != nil {
+		logger.Error("Error instantiating host manager: ", err)
+		return
+	}
 	uMgr := user.NewManager(rMgr, nMgr, sim, db, logger)
 	sessionListenerChan := make(chan core.UserSession, 64)
 
-	_ = session.NewManager(sessionListenerChan, uMgr, jMgr, nMgr, rMgr, db, sim, logger)
+	_ = session.NewManager(sessionListenerChan, uMgr, jMgr, nMgr, rMgr, sim, logger)
 
 	httpCon := webClient.NewHTTPConnector(config.MGM.SessionSecret, jMgr, sim, uMgr, mailer, logger)
 	sockCon := webClient.NewWebsocketConnector(httpCon, sessionListenerChan, logger)

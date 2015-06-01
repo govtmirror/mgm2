@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/m-o-s-e-s/mgm/core"
-	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/core/host"
 	"github.com/m-o-s-e-s/mgm/core/job"
 	"github.com/m-o-s-e-s/mgm/core/region"
@@ -19,13 +18,12 @@ type Manager interface {
 }
 
 // NewManager constructs a session manager for use
-func NewManager(sessionListener <-chan core.UserSession, userMgr user.Manager, jobMgr job.Manager, nodeMgr host.Manager, regionMgr region.Manager, db database.Database, uConn core.UserConnector, logger core.Logger) Manager {
+func NewManager(sessionListener <-chan core.UserSession, userMgr user.Manager, jobMgr job.Manager, nodeMgr host.Manager, regionMgr region.Manager, uConn core.UserConnector, logger core.Logger) Manager {
 	sMgr := sessionMgr{}
 	sMgr.jobMgr = jobMgr
 	sMgr.nodeMgr = nodeMgr
 	sMgr.regionMgr = regionMgr
 	sMgr.log = logger
-	sMgr.datastore = db
 	sMgr.userConn = uConn
 	sMgr.userMgr = userMgr
 	sMgr.sessionListener = sessionListener
@@ -37,7 +35,6 @@ func NewManager(sessionListener <-chan core.UserSession, userMgr user.Manager, j
 
 type sessionMgr struct {
 	sessionListener <-chan core.UserSession
-	datastore       database.Database
 	jobMgr          job.Manager
 	nodeMgr         host.Manager
 	regionMgr       region.Manager
@@ -328,12 +325,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 				groups = nil
 				//only administrative users need host access
 				if us.GetAccessLevel() > 249 {
-					hosts, err := sm.nodeMgr.GetHosts()
-					if err != nil {
-						sm.log.Error("Error lookin up hosts: ", err)
-						us.SignalError(m.MessageID, "Error enumerating hosts")
-						continue
-					}
+					hosts := sm.nodeMgr.GetHosts()
 					for _, h := range hosts {
 						us.Send(h)
 					}
