@@ -122,6 +122,9 @@ func (nm nm) process(newConns <-chan nodeSession) {
 				con.conn = c.conn
 				con.cmdMsgs = make(chan Message, 32)
 				go con.process()
+				conns[c.host.ID] = con
+			} else {
+				conns[c.host.ID] = c
 			}
 		case u := <-hostSub.GetReceive():
 			//host update from node, typically Running
