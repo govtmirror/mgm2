@@ -6,6 +6,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/satori/go.uuid"
 )
 
@@ -23,12 +24,12 @@ type WebSocketConnector interface {
 type wsConn struct {
 	httpConnector HTTPConnector
 	session       chan<- core.UserSession
-	logger        core.Logger
+	logger        logger.Log
 }
 
 // NewWebsocketConnector constructs a websocket handler for use
-func NewWebsocketConnector(hc HTTPConnector, s chan<- core.UserSession, logger core.Logger) WebSocketConnector {
-	return wsConn{hc, s, logger}
+func NewWebsocketConnector(hc HTTPConnector, s chan<- core.UserSession, log logger.Log) WebSocketConnector {
+	return wsConn{hc, s, logger.Wrap("WEBSOCK", log)}
 }
 
 var upgrader = &websocket.Upgrader{ReadBufferSize: 1024, WriteBufferSize: 1024}

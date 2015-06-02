@@ -32,13 +32,3 @@ type UserConnector interface {
 	SetPassword(uuid.UUID, string) error
 	ValidatePassword(uuid.UUID, string) (bool, error)
 }
-
-// Logger is the system logging interface
-type Logger interface {
-	Trace(format string, v ...interface{})
-	Debug(format string, v ...interface{})
-	Info(format string, v ...interface{})
-	Warn(format string, v ...interface{})
-	Error(format string, v ...interface{})
-	Fatal(format string, v ...interface{})
-}

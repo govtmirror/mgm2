@@ -5,6 +5,7 @@ import (
 
 	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/database"
+	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
@@ -22,11 +23,11 @@ type regionManager interface {
 }
 
 // NewManager constructs NodeManager instances
-func NewManager(port string, rMgr regionManager, db database.Database, log core.Logger) (Manager, error) {
+func NewManager(port string, rMgr regionManager, db database.Database, log logger.Log) (Manager, error) {
 	mgr := nm{}
 	mgr.listenPort = port
 	mgr.db = hostDatabase{db}
-	mgr.logger = log
+	mgr.logger = logger.Wrap("HOST", log)
 	mgr.hostSubs = core.NewSubscriptionManager()
 	mgr.hostStatSubs = core.NewSubscriptionManager()
 	mgr.internalMsgs = make(chan internalMsg, 32)
@@ -59,7 +60,7 @@ func NewManager(port string, rMgr regionManager, db database.Database, log core.
 
 type nm struct {
 	listenPort   string
-	logger       core.Logger
+	logger       logger.Log
 	listener     net.Listener
 	db           hostDatabase
 	hostSubs     core.SubscriptionManager

@@ -67,7 +67,6 @@ func main() {
 		config.MySQL.Password,
 		config.MySQL.Database,
 		config.MySQL.Host,
-		logger,
 	)
 	//create our simian connector
 	sim, err := simian.NewConnector(config.MGM.SimianURL)

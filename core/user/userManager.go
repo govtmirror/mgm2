@@ -7,6 +7,7 @@ import (
 	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/core/host"
+	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/core/region"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
@@ -28,10 +29,10 @@ type Manager interface {
 }
 
 // NewManager constructs a user.Manager for use
-func NewManager(rMgr region.Manager, hMgr host.Manager, userConnector core.UserConnector, db database.Database, log core.Logger) Manager {
+func NewManager(rMgr region.Manager, hMgr host.Manager, userConnector core.UserConnector, db database.Database, log logger.Log) Manager {
 	um := userManager{}
 	um.db = userDatabase{db}
-	um.log = log
+	um.log = logger.Wrap("USER", log)
 	um.conn = userConnector
 	um.hMgr = hMgr
 	um.rMgr = rMgr
@@ -44,7 +45,7 @@ type userManager struct {
 	hMgr host.Manager
 	db   userDatabase
 	conn core.UserConnector
-	log  core.Logger
+	log  logger.Log
 }
 
 func (um userManager) IsEmailUnique(email string) (bool, error) {

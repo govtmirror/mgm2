@@ -7,8 +7,8 @@ import (
 	"net/mail"
 
 	"github.com/gorilla/sessions"
-	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/job"
+	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/core/user"
 	"github.com/m-o-s-e-s/mgm/email"
 	"github.com/m-o-s-e-s/mgm/simian"
@@ -37,14 +37,14 @@ type HTTPConnector interface {
 type httpConn struct {
 	store         *sessions.CookieStore
 	authenticator simian.Connector
-	logger        core.Logger
+	logger        logger.Log
 	userMgr       user.Manager
 	mailer        email.ClientEmailer
 	jMgr          job.Manager
 }
 
 // NewHTTPConnector constructs an http connector for use
-func NewHTTPConnector(sessionKey string, jobMgr job.Manager, authenticator simian.Connector, userMgr user.Manager, mailer email.ClientEmailer, logger core.Logger) HTTPConnector {
+func NewHTTPConnector(sessionKey string, jobMgr job.Manager, authenticator simian.Connector, userMgr user.Manager, mailer email.ClientEmailer, log logger.Log) HTTPConnector {
 	gob.Register(uuid.UUID{})
 
 	store := sessions.NewCookieStore([]byte(sessionKey))
@@ -52,7 +52,7 @@ func NewHTTPConnector(sessionKey string, jobMgr job.Manager, authenticator simia
 		Path:   "/",
 		MaxAge: 3600 * 8,
 	}
-	return httpConn{store, authenticator, logger, userMgr, mailer, jobMgr}
+	return httpConn{store, authenticator, logger.Wrap("HTTP", log), userMgr, mailer, jobMgr}
 }
 
 func (hc httpConn) GetStore() *sessions.CookieStore {

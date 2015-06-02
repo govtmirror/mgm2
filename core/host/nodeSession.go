@@ -4,6 +4,7 @@ import (
 	"net"
 
 	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
@@ -15,7 +16,7 @@ type nodeSession struct {
 	regionMgr    regionManager
 	nodeMgr      nm
 	cmdMsgs      chan Message
-	log          core.Logger
+	log          logger.Log
 }
 
 func (ns nodeSession) process() {

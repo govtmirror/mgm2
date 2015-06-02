@@ -6,6 +6,7 @@ import (
 	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/host"
 	"github.com/m-o-s-e-s/mgm/core/job"
+	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/core/region"
 	"github.com/m-o-s-e-s/mgm/core/user"
 
@@ -18,12 +19,12 @@ type Manager interface {
 }
 
 // NewManager constructs a session manager for use
-func NewManager(sessionListener <-chan core.UserSession, userMgr user.Manager, jobMgr job.Manager, nodeMgr host.Manager, regionMgr region.Manager, uConn core.UserConnector, logger core.Logger) Manager {
+func NewManager(sessionListener <-chan core.UserSession, userMgr user.Manager, jobMgr job.Manager, nodeMgr host.Manager, regionMgr region.Manager, uConn core.UserConnector, log logger.Log) Manager {
 	sMgr := sessionMgr{}
 	sMgr.jobMgr = jobMgr
 	sMgr.nodeMgr = nodeMgr
 	sMgr.regionMgr = regionMgr
-	sMgr.log = logger
+	sMgr.log = logger.Wrap("SESSION", log)
 	sMgr.userConn = uConn
 	sMgr.userMgr = userMgr
 	sMgr.sessionListener = sessionListener
@@ -40,7 +41,7 @@ type sessionMgr struct {
 	regionMgr       region.Manager
 	userMgr         user.Manager
 	userConn        core.UserConnector
-	log             core.Logger
+	log             logger.Log
 }
 
 func (sm sessionMgr) process() {

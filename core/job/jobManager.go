@@ -7,6 +7,7 @@ import (
 
 	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/database"
+	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
@@ -28,7 +29,7 @@ type fileUpload struct {
 }
 
 // NewManager constructs a jobManager for use
-func NewManager(filePath string, db database.Database, logger core.Logger) Manager {
+func NewManager(filePath string, db database.Database, log logger.Log) Manager {
 
 	subscribeChan := make(chan chan<- mgm.Job, 32)
 	unsubscribeChan := make(chan chan<- mgm.Job, 32)
@@ -37,7 +38,7 @@ func NewManager(filePath string, db database.Database, logger core.Logger) Manag
 	j := jobMgr{}
 	j.fileUp = make(chan fileUpload, 32)
 	j.localPath = filePath
-	j.log = logger
+	j.log = logger.Wrap("JOB", log)
 	j.subscribe = subscribeChan
 	j.unsubscribe = unsubscribeChan
 	j.broadcast = notifyChan
@@ -59,7 +60,7 @@ type jobMgr struct {
 
 	subs core.SubscriptionManager
 
-	log core.Logger
+	log logger.Log
 
 	localPath string
 }

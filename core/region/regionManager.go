@@ -1,8 +1,8 @@
 package region
 
 import (
-	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/database"
+	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
@@ -18,16 +18,16 @@ type Manager interface {
 }
 
 // NewManager constructs a RegionManager for use
-func NewManager(db database.Database, log core.Logger) Manager {
+func NewManager(db database.Database, log logger.Log) Manager {
 	rMgr := regionMgr{}
 	rMgr.db = regionDatabase{db}
-	rMgr.log = log
+	rMgr.log = logger.Wrap("REGION", log)
 	return rMgr
 }
 
 type regionMgr struct {
 	db  regionDatabase
-	log core.Logger
+	log logger.Log
 }
 
 func (rm regionMgr) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error) {

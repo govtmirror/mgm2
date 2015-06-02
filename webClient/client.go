@@ -5,6 +5,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/satori/go.uuid"
 )
 
@@ -14,7 +15,7 @@ type client struct {
 	fromClient   chan []byte
 	guid         uuid.UUID
 	userLevel    uint8
-	logger       core.Logger
+	logger       logger.Log
 	toClientChan chan core.UserObject
 	closing      chan bool
 }

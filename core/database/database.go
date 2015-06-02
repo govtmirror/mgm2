@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/m-o-s-e-s/mgm/core"
-
 	// load mysql driver
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -19,7 +17,6 @@ type db struct {
 	password string
 	database string
 	host     string
-	log      core.Logger
 }
 
 // Database is the database interface for persisting data
@@ -30,8 +27,8 @@ type Database interface {
 }
 
 // NewDatabase is a Database constructor
-func NewDatabase(username string, password string, database string, host string, log core.Logger) Database {
-	return db{username, password, database, host, log}
+func NewDatabase(username string, password string, database string, host string) Database {
+	return db{username, password, database, host}
 }
 
 func (db db) TestConnection() error {
