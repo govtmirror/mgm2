@@ -1,6 +1,8 @@
 package main
 
 import (
+	"strconv"
+
 	"github.com/gorilla/mux"
 	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/database"
@@ -27,8 +29,8 @@ type mgmConfig struct {
 		SimianURL        string
 		SessionSecret    string
 		OpensimPort      string
-		WebPort          string
-		NodePort         string
+		WebPort          int
+		NodePort         int
 		PublicHostname   string
 		LocalFileStorage string
 	}
@@ -107,9 +109,9 @@ func main() {
 	r.HandleFunc("/auth/passwordReset", httpCon.PasswordResetHandler)
 	r.HandleFunc("/upload/{id}", httpCon.UploadHandler)
 
-	//http.Handle("/", r)
-	logger.Info("Listening for clients on :%v", config.MGM.WebPort)
-	if err := http.ListenAndServe(":"+config.MGM.WebPort, nil); err != nil {
+	http.Handle("/", r)
+	logger.Info("Listening for clients on :%d", config.MGM.WebPort)
+	if err := http.ListenAndServe(":"+strconv.Itoa(config.MGM.WebPort), nil); err != nil {
 		logger.Fatal("ListenAndServe:", err)
 	}
 }
