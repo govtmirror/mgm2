@@ -2,6 +2,7 @@ package host
 
 import (
 	"net"
+	"strconv"
 
 	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/database"
@@ -23,7 +24,7 @@ type regionManager interface {
 }
 
 // NewManager constructs NodeManager instances
-func NewManager(port string, rMgr regionManager, db database.Database, log logger.Log) (Manager, error) {
+func NewManager(port int, rMgr regionManager, db database.Database, log logger.Log) (Manager, error) {
 	mgr := nm{}
 	mgr.listenPort = port
 	mgr.db = hostDatabase{db}
@@ -59,7 +60,7 @@ func NewManager(port string, rMgr regionManager, db database.Database, log logge
 }
 
 type nm struct {
-	listenPort   string
+	listenPort   int
 	logger       logger.Log
 	listener     net.Listener
 	db           hostDatabase
@@ -164,13 +165,13 @@ func (nm nm) process(newConns <-chan nodeSession) {
 // NodeManager receives and communicates with mgm Node processes
 func (nm nm) listen(newConns chan<- nodeSession) {
 
-	ln, err := net.Listen("tcp", ":"+nm.listenPort)
+	ln, err := net.Listen("tcp", ":"+strconv.Itoa(nm.listenPort))
 	if err != nil {
 		nm.logger.Fatal("MGM Node listener cannot start: ", err)
 		return
 	}
 	nm.listener = ln
-	nm.logger.Info("Listening for mgmNode instances on :" + nm.listenPort)
+	nm.logger.Info("Listening for mgm host instances on :%d", nm.listenPort)
 
 	for {
 		conn, err := nm.listener.Accept()

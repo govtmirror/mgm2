@@ -96,7 +96,6 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 			}
 		case msg := <-clientMsg:
 			//message from client
-			sm.log.Info(string(msg))
 			m := core.UserRequest{}
 			m.Load(msg)
 			switch m.MessageType {

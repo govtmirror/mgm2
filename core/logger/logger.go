@@ -14,12 +14,10 @@ type Log interface {
 func Wrap(prefix string, logger Log) Log {
 	switch logger.(type) {
 	case logPrefixer:
-		logger.Info("pulling log from logPrefixer, new prefix: %s", prefix)
 		//construct new, replacing prefix
 		lp := logger.(logPrefixer)
-		return logPrefixer{prefix, lp.log}
+		return logPrefixer{lp.prefix + "." + prefix, lp.log}
 	default:
-		logger.Info("Wrapping log interface, new prefix: %s", prefix)
 		//wrap logger
 		return logPrefixer{prefix, logger}
 	}
@@ -31,25 +29,43 @@ type logPrefixer struct {
 }
 
 func (lp logPrefixer) Debug(format string, v ...interface{}) {
-	lp.log.Debug(lp.prefix+" "+format, v)
+	var args []interface{}
+	args = append(args, lp.prefix)
+	args = append(args, v...)
+	lp.log.Debug("[%v] "+format, args...)
 }
 
 func (lp logPrefixer) Error(format string, v ...interface{}) {
-	lp.log.Error(lp.prefix+" "+format, v)
+	var args []interface{}
+	args = append(args, lp.prefix)
+	args = append(args, v...)
+	lp.log.Error("[%v] "+format, args...)
 }
 
 func (lp logPrefixer) Fatal(format string, v ...interface{}) {
-	lp.log.Fatal(lp.prefix+" "+format, v)
+	var args []interface{}
+	args = append(args, lp.prefix)
+	args = append(args, v...)
+	lp.log.Fatal("[%v] "+format, args...)
 }
 
 func (lp logPrefixer) Info(format string, v ...interface{}) {
-	lp.log.Info(lp.prefix+" "+format, v)
+	var args []interface{}
+	args = append(args, lp.prefix)
+	args = append(args, v...)
+	lp.log.Info("[%v] "+format, args...)
 }
 
 func (lp logPrefixer) Trace(format string, v ...interface{}) {
-	lp.log.Trace(lp.prefix+" "+format, v)
+	var args []interface{}
+	args = append(args, lp.prefix)
+	args = append(args, v...)
+	lp.log.Trace("[%v] "+format, args...)
 }
 
 func (lp logPrefixer) Warn(format string, v ...interface{}) {
-	lp.log.Warn(lp.prefix+" "+format, v)
+	var args []interface{}
+	args = append(args, lp.prefix)
+	args = append(args, v...)
+	lp.log.Warn("[%v] "+format, args...)
 }
