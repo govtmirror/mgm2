@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
@@ -21,18 +21,18 @@ type RegionManager interface {
 }
 
 // NewRegionManager constructs a region manager for use
-func NewRegionManager(binDir string, regionDir string, log core.Logger) RegionManager {
+func NewRegionManager(binDir string, regionDir string, log logger.Log) RegionManager {
 	return regMgr{
 		copyFrom:  binDir,
 		regionDir: regionDir,
-		logger:    log,
+		logger:    logger.Wrap("RegionManager", log),
 	}
 }
 
 type regMgr struct {
 	copyFrom  string
 	regionDir string
-	logger    core.Logger
+	logger    logger.Log
 	regions   []mgm.Region
 }
 

@@ -1,7 +1,7 @@
 package remote
 
 import (
-	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
@@ -20,16 +20,16 @@ type region struct {
 
 	cmds chan regionCmd
 
-	log core.Logger
+	log logger.Log
 }
 
 // NewRegion constructs a Region for use
-func NewRegion(regionRecord mgm.Region, logger core.Logger) Region {
+func NewRegion(regionRecord mgm.Region, log logger.Log) Region {
 	reg := region{}
 	reg.region = regionRecord
 	reg.cmds = make(chan regionCmd, 8)
 
-	reg.log = logger
+	reg.log = logger.Wrap("Region", log)
 
 	go reg.communicate()
 	go reg.process()

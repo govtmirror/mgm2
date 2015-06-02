@@ -10,8 +10,8 @@ import (
 	"code.google.com/p/gcfg"
 
 	"github.com/jcelliott/lumber"
-	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/host"
+	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/m-o-s-e-s/mgm/remote"
 	"github.com/satori/go.uuid"
@@ -37,11 +37,11 @@ type nodeConfig struct {
 }
 
 type mgmNode struct {
-	logger core.Logger
+	logger logger.Log
 }
 
 func main() {
-	n := mgmNode{lumber.NewConsoleLogger(lumber.DEBUG)}
+	n := mgmNode{logger.Wrap("HOST", lumber.NewConsoleLogger(lumber.DEBUG))}
 	connectedAtLeastOnce := false
 
 	cfgPtr := flag.String("config", "/opt/mgm/node.gcfg", "path to config file")
