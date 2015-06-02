@@ -2,9 +2,12 @@ package host
 
 import (
 	"encoding/json"
+	"io"
 	"net"
+	"syscall"
 
 	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
@@ -12,7 +15,7 @@ import (
 type Comms struct {
 	Connection net.Conn
 	Closing    chan bool
-	Log        core.Logger
+	Log        logger.Log
 }
 
 // Message is a messagestructure for MGM<->node messages
@@ -41,7 +44,8 @@ func (node Comms) ReadConnection(readMsgs chan<- Message) {
 		nmsg := Message{}
 		err := d.Decode(&nmsg)
 		if err != nil {
-			if err.Error() == "EOF" {
+			oe, ok := err.(*net.OpError)
+			if err == io.EOF || ok && oe.Err == syscall.ECONNRESET {
 				close(node.Closing)
 				node.Connection.Close()
 				return
@@ -63,7 +67,7 @@ func (node Comms) WriteConnection(writeMsgs <-chan Message) {
 		case msg := <-writeMsgs:
 			data, _ := json.Marshal(msg)
 			_, err := node.Connection.Write(data)
-			if err != nil {
+			if oe, ok := err.(*net.OpError); ok && (oe.Err == syscall.EPIPE || oe.Err == syscall.ECONNRESET) {
 				node.Connection.Close()
 				return
 			}
