@@ -11,17 +11,17 @@ type Region struct {
 	UUID         uuid.UUID
 	Name         string
 	Size         uint
-	HTTPPort     int       `json:"-"`
-	ConsolePort  int       `json:"-"`
-	ConsoleUname uuid.UUID `json:"-"`
-	ConsolePass  uuid.UUID `json:"-"`
+	HTTPPort     int
+	ConsolePort  int
+	ConsoleUname uuid.UUID
+	ConsolePass  uuid.UUID
 	LocX         uint
 	LocY         uint
-	Host         uint `json:"-"`
+	Host         uint
 	IsRunning    bool
 	EstateName   string
 
-	frames chan int `json:"-"`
+	frames chan int
 }
 
 func (r *Region) countFrames() {
@@ -54,7 +54,18 @@ func (r *Region) countFrames() {
 
 // Serialize implements UserObject interface Serialize function
 func (r Region) Serialize() []byte {
-	data, _ := json.Marshal(r)
+	type clientSafeRegion struct {
+		UUID       uuid.UUID
+		Name       string
+		Size       uint
+		LocX       uint
+		LocY       uint
+		Host       uint
+		IsRunning  bool
+		EstateName string
+	}
+	csr := clientSafeRegion{r.UUID, r.Name, r.Size, r.LocX, r.LocY, r.Host, r.IsRunning, r.EstateName}
+	data, _ := json.Marshal(csr)
 	return data
 }
 
