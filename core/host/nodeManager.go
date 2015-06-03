@@ -7,6 +7,7 @@ import (
 	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/core/logger"
+	"github.com/m-o-s-e-s/mgm/core/region"
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
@@ -19,12 +20,8 @@ type Manager interface {
 	GetHosts() []mgm.Host
 }
 
-type regionManager interface {
-	GetRegionsOnHost(mgm.Host) ([]mgm.Region, error)
-}
-
 // NewManager constructs NodeManager instances
-func NewManager(port int, rMgr regionManager, db database.Database, log logger.Log) (Manager, error) {
+func NewManager(port int, rMgr region.Manager, db database.Database, log logger.Log) (Manager, error) {
 	mgr := nm{}
 	mgr.listenPort = port
 	mgr.db = hostDatabase{db}
@@ -49,7 +46,7 @@ func NewManager(port int, rMgr regionManager, db database.Database, log logger.L
 			hostStatSubs: mgr.hostStatSubs,
 			nodeMgr:      mgr,
 			regionMgr:    rMgr,
-			log:          log,
+			log:          logger.Wrap(strconv.Itoa(h.ID), mgr.logger),
 		}
 		ch <- s
 	}
@@ -66,7 +63,7 @@ type nm struct {
 	db           hostDatabase
 	hostSubs     core.SubscriptionManager
 	hostStatSubs core.SubscriptionManager
-	regionMgr    regionManager
+	regionMgr    region.Manager
 
 	requestChan  chan Message
 	internalMsgs chan internalMsg
@@ -111,7 +108,7 @@ func (nm nm) SubscribeHostStats() core.Subscription {
 }
 
 func (nm nm) process(newConns <-chan nodeSession) {
-	conns := make(map[uint]nodeSession)
+	conns := make(map[int]nodeSession)
 
 	//subscribe to own hosts to gather updates
 	hostSub := nm.hostSubs.Subscribe()
@@ -141,6 +138,19 @@ func (nm nm) process(newConns <-chan nodeSession) {
 			switch nc.MessageType {
 			case "StartRegion":
 				if c, ok := conns[nc.Host.ID]; ok {
+					//trigger region to record config files
+					dcfgs, err := nm.regionMgr.GetDefaultConfigs()
+					if err != nil {
+						nc.SR(false, "Error getting default configs")
+						continue
+					}
+					cfgs, err := nm.regionMgr.GetConfigs(nc.Region.UUID)
+					if err != nil {
+						nc.SR(false, "Error getting region configs")
+						continue
+					}
+					nc.DefaultConfigs = dcfgs
+					nc.Configs = cfgs
 					c.cmdMsgs <- nc
 				} else {
 					nm.logger.Info("Host %v not found", nc.Host.ID)

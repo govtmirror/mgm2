@@ -21,10 +21,11 @@ type RegionManager interface {
 }
 
 // NewRegionManager constructs a region manager for use
-func NewRegionManager(binDir string, regionDir string, log logger.Log) RegionManager {
+func NewRegionManager(binDir string, regionDir string, hostname string, log logger.Log) RegionManager {
 	return regMgr{
 		copyFrom:  binDir,
 		regionDir: regionDir,
+		hostName:  hostname,
 		logger:    logger.Wrap("RegionManager", log),
 	}
 }
@@ -33,15 +34,16 @@ type regMgr struct {
 	copyFrom  string
 	regionDir string
 	logger    logger.Log
+	hostName  string
 	regions   []mgm.Region
 }
 
 func (rm regMgr) AddRegion(r mgm.Region) (Region, error) {
-	err := rm.copyBinaries("TestName")
+	path, err := rm.copyBinaries(r.UUID.String())
 	if err != nil {
 		return region{}, err
 	}
-	reg := NewRegion(r, rm.logger)
+	reg := NewRegion(r, path, rm.hostName, rm.logger)
 
 	return reg, nil
 }
@@ -50,13 +52,13 @@ func (rm regMgr) RemoveRegion(r mgm.Region) error {
 	return nil
 }
 
-func (rm regMgr) copyBinaries(name string) error {
+func (rm regMgr) copyBinaries(name string) (string, error) {
 	copyTo := filepath.Join(rm.regionDir, name)
 	err := os.Mkdir(copyTo, 0700)
 	if err != nil {
-		return err
+		return "", err
 	}
-	return filepath.Walk(rm.copyFrom, func(path string, info os.FileInfo, err error) error {
+	err = filepath.Walk(rm.copyFrom, func(path string, info os.FileInfo, err error) error {
 		if path == rm.copyFrom {
 			return nil
 		}
@@ -79,8 +81,8 @@ func (rm regMgr) copyBinaries(name string) error {
 			return err
 		}
 		return dst.Close()
-
 	})
+	return copyTo, err
 }
 
 func (rm regMgr) Initialize() error {

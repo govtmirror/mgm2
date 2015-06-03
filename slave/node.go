@@ -73,7 +73,7 @@ func main() {
 	hStats := make(chan mgm.HostStat, 8)
 	go n.collectHostStatistics(hStats)
 
-	rMgr := remote.NewRegionManager(config.Node.OpensimBinDir, config.Node.RegionDir, n.logger)
+	rMgr := remote.NewRegionManager(config.Node.OpensimBinDir, config.Node.RegionDir, config.Opensim.ExternalAddress, n.logger)
 	err = rMgr.Initialize()
 	if err != nil {
 		n.logger.Error("Error instantiating RegionManager: ", err.Error())
@@ -130,12 +130,39 @@ func main() {
 				switch msg.MessageType {
 				case "AddRegion":
 					r := msg.Region
-					reg, err := rMgr.AddRegion(r)
+					reg, err := rMgr.AddRegion(r.UUID)
 					regions[r.UUID] = reg
 					if err != nil {
 						n.logger.Error("Error adding region: ", err.Error())
 					}
 					n.logger.Info("AddRegion: %v Complete", r.UUID.String())
+				case "StartRegion":
+					reg := msg.Region
+					if r, ok := regions[reg.UUID]; ok {
+						//ready response
+						m := host.Message{}
+						m.ID = msg.ID
+						err := r.WriteRegionINI(reg)
+						if err != nil {
+							n.logger.Error("Error writing region ini: %v", err.Error())
+							m.MessageType = "Failure"
+							m.Message = err.Error()
+							sendChan <- m
+							continue
+						}
+						err = r.WriteOpensimINI(msg.DefaultConfigs, msg.Configs)
+						if err != nil {
+							n.logger.Error("Error writing opensim ini: %v", err.Error())
+							m.MessageType = "Failure"
+							m.Message = err.Error()
+							sendChan <- m
+							continue
+						}
+						r.Start()
+						m.MessageType = "Success"
+						m.Message = "Region flagged for start"
+						sendChan <- m
+					}
 				default:
 					n.logger.Info("unexpected message from MGM: %v", msg.MessageType)
 				}

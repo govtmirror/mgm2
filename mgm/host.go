@@ -8,7 +8,7 @@ import (
 
 // Host is an MGM server record
 type Host struct {
-	ID              uint
+	ID              int
 	Address         string
 	ExternalAddress string
 	Hostname        string
@@ -30,7 +30,7 @@ func (h Host) ObjectType() string {
 
 // HostStat holds mgm host statistical info
 type HostStat struct {
-	ID         uint
+	ID         int
 	CPUPercent []float64
 	MEMTotal   uint64
 	MEMUsed    uint64
