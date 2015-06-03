@@ -11,12 +11,13 @@ import (
 
 	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/mgm"
+	"github.com/satori/go.uuid"
 )
 
 // RegionManager interfaces with the region management objects
 type RegionManager interface {
 	Initialize() error
-	AddRegion(mgm.Region) (Region, error)
+	AddRegion(uuid.UUID) (Region, error)
 	RemoveRegion(mgm.Region) error
 }
 
@@ -38,12 +39,12 @@ type regMgr struct {
 	regions   []mgm.Region
 }
 
-func (rm regMgr) AddRegion(r mgm.Region) (Region, error) {
-	path, err := rm.copyBinaries(r.UUID.String())
+func (rm regMgr) AddRegion(rID uuid.UUID) (Region, error) {
+	path, err := rm.copyBinaries(rID.String())
 	if err != nil {
 		return region{}, err
 	}
-	reg := NewRegion(r, path, rm.hostName, rm.logger)
+	reg := NewRegion(rID, path, rm.hostName, rm.logger)
 
 	return reg, nil
 }

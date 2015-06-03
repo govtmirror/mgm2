@@ -3,6 +3,7 @@ package remote
 import (
 	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/mgm"
+	"github.com/satori/go.uuid"
 )
 
 // Region is a management interface for region processes
@@ -18,7 +19,7 @@ type regionCmd struct {
 }
 
 type region struct {
-	region    mgm.Region
+	UUID      uuid.UUID
 	cmds      chan regionCmd
 	log       logger.Log
 	dir       string
@@ -27,16 +28,15 @@ type region struct {
 }
 
 // NewRegion constructs a Region for use
-func NewRegion(regionRecord mgm.Region, path string, hostname string, log logger.Log) Region {
+func NewRegion(rID uuid.UUID, path string, hostname string, log logger.Log) Region {
 	reg := region{}
-	reg.region = regionRecord
+	reg.UUID = rID
 	reg.cmds = make(chan regionCmd, 8)
 	reg.log = logger.Wrap("Region", log)
 	reg.dir = path
 	reg.hostName = hostname
 
 	go reg.communicate()
-	go reg.process()
 
 	return reg
 }
@@ -50,7 +50,7 @@ func (r region) communicate() {
 				r.log.Info("start region goes here")
 				//if already running, exit
 				if r.isRunning {
-					r.log.Error("Region is already running", r.region.UUID)
+					r.log.Error("Region is already running", r.UUID)
 				}
 				//load ini files
 				//err := writeOpensimINI(cmd.DefaultConfig, r.dir)
@@ -60,10 +60,6 @@ func (r region) communicate() {
 			}
 		}
 	}
-}
-
-func (r region) process() {
-
 }
 
 func (r region) Start() {
