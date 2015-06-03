@@ -150,7 +150,7 @@ func main() {
 							sendChan <- m
 							continue
 						}
-						err = r.WriteOpensimINI(msg.DefaultConfigs, msg.Configs)
+						err = r.WriteOpensimINI(msg.Configs)
 						if err != nil {
 							n.logger.Error("Error writing opensim ini: %v", err.Error())
 							m.MessageType = "Failure"

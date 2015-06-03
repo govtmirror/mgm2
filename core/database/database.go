@@ -24,6 +24,8 @@ type Database interface {
 	TestConnection() error
 
 	GetConnection() (*sql.DB, error)
+
+	GetConnectionString() string
 }
 
 // NewDatabase is a Database constructor
@@ -48,4 +50,8 @@ func (db db) GetConnection() (*sql.DB, error) {
 		return nil, err
 	}
 	return con, nil
+}
+
+func (db db) GetConnectionString() string {
+	return fmt.Sprintf("Data Source=%s;Database=%s;User ID=%s;Password=%s;Old Guids=true;", db.host, db.database, db.user, db.password)
 }

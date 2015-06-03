@@ -1,4 +1,5 @@
 [mgm]
+  MgmUrl = 127.0.0.1
   SimianUrl = 127.0.0.1
   SessionSecret = 35FA4ACE5EF326AE5474AE14EF143
   OpensimPort = 8000
@@ -12,6 +13,12 @@
   Password = mgm
   Host = 127.0.0.1
   Database = mgm
+
+[Opensim]
+  Username = opensim
+  Password = opensim
+  Host = 127.0.0.1
+  Database = opensim
 
 [Email]
   Host = mailprovider.com

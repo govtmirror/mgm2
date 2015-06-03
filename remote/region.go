@@ -9,7 +9,7 @@ import (
 // Region is a management interface for region processes
 type Region interface {
 	WriteRegionINI(mgm.Region) error
-	WriteOpensimINI([]mgm.ConfigOption, []mgm.ConfigOption) error
+	WriteOpensimINI([]mgm.ConfigOption) error
 	Start()
 }
 

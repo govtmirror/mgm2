@@ -20,16 +20,15 @@ type Comms struct {
 
 // Message is a messagestructure for MGM<->node messages
 type Message struct {
-	ID             uint
-	MessageType    string
-	Region         mgm.Region          `json:",omitempty"`
-	Message        string              `json:",omitempty"`
-	Register       Registration        `json:",omitempty"`
-	HStats         mgm.HostStat        `json:",omitempty"`
-	DefaultConfigs []mgm.ConfigOption  `json:",omitempty"`
-	Configs        []mgm.ConfigOption  `json:",omitempty"`
-	Host           mgm.Host            `json:"-"`
-	SR             core.ServiceRequest `json:"-"`
+	ID          uint
+	MessageType string
+	Region      mgm.Region          `json:",omitempty"`
+	Message     string              `json:",omitempty"`
+	Register    Registration        `json:",omitempty"`
+	HStats      mgm.HostStat        `json:",omitempty"`
+	Configs     []mgm.ConfigOption  `json:",omitempty"`
+	Host        mgm.Host            `json:"-"`
+	SR          core.ServiceRequest `json:"-"`
 }
 
 // Registration holds mgmNode information for MGM

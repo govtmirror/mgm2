@@ -41,27 +41,21 @@ ExternalHostName = %s
 	return err
 }
 
-func (r region) WriteOpensimINI(defaultConfigs []mgm.ConfigOption, regionConfigs []mgm.ConfigOption) error {
+func (r region) WriteOpensimINI(configs []mgm.ConfigOption) error {
 	opensimINI := path.Join(r.dir, "OpenSim.ini")
-	//Consolidate configuration options into a single set
-	configs := make(map[string]map[string]string)
-	for _, cfg := range defaultConfigs {
-		if _, ok := configs[cfg.Section]; !ok {
-			configs[cfg.Section] = make(map[string]string)
+
+	cfgs := make(map[string]map[string]string)
+	for _, cfg := range configs {
+		if _, ok := cfgs[cfg.Section]; !ok {
+			cfgs[cfg.Section] = make(map[string]string)
 		}
-		configs[cfg.Section][cfg.Item] = cfg.Content
-	}
-	for _, cfg := range regionConfigs {
-		if _, ok := configs[cfg.Section]; !ok {
-			configs[cfg.Section] = make(map[string]string)
-		}
-		configs[cfg.Section][cfg.Item] = cfg.Content
+		cfgs[cfg.Section][cfg.Item] = cfg.Content
 	}
 
 	//write the configuration into a buffer
 	var buffer bytes.Buffer
 
-	for section, m := range configs {
+	for section, m := range cfgs {
 		buffer.WriteString(fmt.Sprintf("[%s]\n", section))
 		for item, content := range m {
 			buffer.WriteString(fmt.Sprintf("  %s = %s\n", item, content))

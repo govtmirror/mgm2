@@ -26,6 +26,7 @@ import (
 
 type mgmConfig struct {
 	MGM struct {
+		MgmURL           string
 		SimianURL        string
 		SessionSecret    string
 		OpensimPort      string
@@ -36,6 +37,13 @@ type mgmConfig struct {
 	}
 
 	MySQL struct {
+		Username string
+		Password string
+		Host     string
+		Database string
+	}
+
+	Opensim struct {
 		Username string
 		Password string
 		Host     string
@@ -76,6 +84,17 @@ func main() {
 		logger.Error("Connecting to mysql: ", err)
 		return
 	}
+	osdb := database.NewDatabase(
+		config.Opensim.Username,
+		config.Opensim.Password,
+		config.Opensim.Database,
+		config.Opensim.Host,
+	)
+	err = osdb.TestConnection()
+	if err != nil {
+		logger.Error("Connecting to opensim mysql: ", err)
+		return
+	}
 	//create our simian connector
 	sim, err := simian.NewConnector(config.MGM.SimianURL)
 	if err != nil {
@@ -85,7 +104,7 @@ func main() {
 
 	//Hook up core processing...
 	jMgr := job.NewManager(config.MGM.LocalFileStorage, db, logger)
-	rMgr := region.NewManager(db, logger)
+	rMgr := region.NewManager(config.MGM.MgmURL, config.MGM.SimianURL, db, osdb, logger)
 	nMgr, err := host.NewManager(config.MGM.NodePort, rMgr, db, logger)
 	if err != nil {
 		logger.Error("Error instantiating host manager: ", err)

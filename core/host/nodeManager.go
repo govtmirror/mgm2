@@ -139,17 +139,11 @@ func (nm nm) process(newConns <-chan nodeSession) {
 			case "StartRegion":
 				if c, ok := conns[nc.Host.ID]; ok {
 					//trigger region to record config files
-					dcfgs, err := nm.regionMgr.GetDefaultConfigs()
-					if err != nil {
-						nc.SR(false, "Error getting default configs")
-						continue
-					}
-					cfgs, err := nm.regionMgr.GetConfigs(nc.Region.UUID)
+					cfgs, err := nm.regionMgr.ServeConfigs(nc.Region, nc.Host)
 					if err != nil {
 						nc.SR(false, "Error getting region configs")
 						continue
 					}
-					nc.DefaultConfigs = dcfgs
 					nc.Configs = cfgs
 					c.cmdMsgs <- nc
 				} else {
