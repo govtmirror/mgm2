@@ -26,7 +26,7 @@ func NewManager(mgmURL string, simianURL string, db database.Database, osdb data
 	rMgr.simianURL = simianURL
 	rMgr.mgmURL = mgmURL
 	rMgr.db = regionDatabase{db}
-	rMgr.osdb = osdb
+	rMgr.osdb = simDatabase{osdb}
 	rMgr.log = logger.Wrap("REGION", log)
 	return rMgr
 }
@@ -35,12 +35,24 @@ type regionMgr struct {
 	simianURL string
 	mgmURL    string
 	db        regionDatabase
-	osdb      database.Database
+	osdb      simDatabase
 	log       logger.Log
 }
 
 func (rm regionMgr) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error) {
-	return rm.db.GetRegionsForUser(guid)
+	rgs, err := rm.db.GetRegionsForUser(guid)
+	if err != nil {
+		return nil, err
+	}
+	for i, r := range rgs {
+		n, err := rm.osdb.GetEstateNameForRegion(r)
+		if err != nil {
+			rm.log.Error("Error getting estate for region: %s", err.Error())
+		} else {
+			rgs[i].EstateName = n
+		}
+	}
+	return rgs, nil
 }
 
 func (rm regionMgr) GetRegionByID(id uuid.UUID) (mgm.Region, error) {
@@ -56,11 +68,35 @@ func (rm regionMgr) GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error) {
 }
 
 func (rm regionMgr) GetRegions() ([]mgm.Region, error) {
-	return rm.db.GetRegions()
+	rgs, err := rm.db.GetRegions()
+	if err != nil {
+		return nil, err
+	}
+	for i, r := range rgs {
+		n, err := rm.osdb.GetEstateNameForRegion(r)
+		if err != nil {
+			rm.log.Error("Error getting estate for region: %s", err.Error())
+		} else {
+			rgs[i].EstateName = n
+		}
+	}
+	return rgs, nil
 }
 
 func (rm regionMgr) GetRegionsOnHost(host mgm.Host) ([]mgm.Region, error) {
-	return rm.db.GetRegionsOnHost(host)
+	rgs, err := rm.db.GetRegionsOnHost(host)
+	if err != nil {
+		return nil, err
+	}
+	for i, r := range rgs {
+		n, err := rm.osdb.GetEstateNameForRegion(r)
+		if err != nil {
+			rm.log.Error("Error getting estate for region: %s", err.Error())
+		} else {
+			rgs[i].EstateName = n
+		}
+	}
+	return rgs, nil
 }
 
 func (rm regionMgr) ServeConfigs(region mgm.Region, host mgm.Host) ([]mgm.ConfigOption, error) {
@@ -75,8 +111,16 @@ func (rm regionMgr) ServeConfigs(region mgm.Region, host mgm.Host) ([]mgm.Config
 		return result, err
 	}
 
-	//map configs to eliminate duplicates, and so we can override values below
 	configs := make(map[string]map[string]string)
+
+	//insert initial values that may be overridden
+	configs["Const"] = make(map[string]string)
+	configs["Startup"] = make(map[string]string)
+	configs["Network"] = make(map[string]string)
+	configs["ClientStack.LindenCaps"] = make(map[string]string)
+	configs["DatabaseService"] = make(map[string]string)
+
+	//map configs to eliminate duplicates, and so we can override values below
 	for _, cfg := range defaultConfigs {
 		if _, ok := configs[cfg.Section]; !ok {
 			configs[cfg.Section] = make(map[string]string)
@@ -91,110 +135,50 @@ func (rm regionMgr) ServeConfigs(region mgm.Region, host mgm.Host) ([]mgm.Config
 	}
 
 	//override fields with installation-static options
-	if _, ok := configs["Startup"]; !ok {
-		configs["Startup"] = make(map[string]string)
-	}
+	configs["Const"]["SimianURL"] = "http://" + rm.simianURL + "/Grid/"
+	configs["Const"]["MGMURL"] = "http://" + rm.mgmURL
+
+	configs["Startup"]["PIDFile"] = "moses.pid"
 	configs["Startup"]["region_info_source"] = "filesystem"
+	configs["Startup"]["allow_regionless"] = "false"
 	configs["Startup"]["Stats_URI"] = "jsonSimStats"
-	if _, ok := configs["Network"]; !ok {
-		configs["Network"] = make(map[string]string)
-	}
+	configs["Startup"]["OutboundDisallowForUserScripts"] = "0.0.0.0/8|10.0.0.0/8|100.64.0.0/10|127.0.0.0/8|169.254.0.0/16|172.16.0.0/12|192.0.0.0/24|192.0.2.0/24|192.88.99.0/24|192.168.0.0/16|198.18.0.0/15|198.51.100.0/24|203.0.113.0/24|224.0.0.0/4|240.0.0.0/4|255.255.255.255/32"
+
 	configs["Network"]["ConsoleUser"] = region.ConsoleUname.String()
 	configs["Network"]["ConsolePass"] = region.ConsolePass.String()
 	configs["Network"]["console_port"] = strconv.Itoa(region.ConsolePort)
 	configs["Network"]["http_listener_port"] = strconv.Itoa(region.HTTPPort)
 	configs["Network"]["ExternalHostNameForLSL"] = host.ExternalAddress
-	if _, ok := configs["Messaging"]; !ok {
-		configs["Messaging"] = make(map[string]string)
-	}
-	configs["Messaging"]["Gatekeeper"] = rm.simianURL
-	configs["Messaging"]["OfflineMessageURL"] = rm.mgmURL + "messages"
-	configs["Messaging"]["MuteListURL"] = rm.simianURL
-	//if _, ok := configs["Groups"]; !ok {
-	//	configs["Groups"] = make(map[string]string)
-	//}
-	//configs["Groups"]["GroupsServerURI"] = rm.simianURL
-	//configs["Groups"]["XmlRpcServiceReadKey"] = groupsRead
-	//configs["Groups"]["XmlRpcServiceWriteKey"] = groupsWrite
-	if _, ok := configs["GridService"]; !ok {
-		configs["GridService"] = make(map[string]string)
-	}
-	configs["GridService"]["GridServerURI"] = rm.simianURL
-	configs["GridService"]["Gatekeeper"] = rm.simianURL
-	if _, ok := configs["AssetService"]; !ok {
-		configs["AssetService"] = make(map[string]string)
-	}
-	configs["AssetService"]["AssetServerURI"] = rm.simianURL
-	if _, ok := configs["DatabaseService"]; !ok {
-		configs["DatabaseService"] = make(map[string]string)
-	}
-	configs["DatabaseService"]["ConnectionString"] = rm.osdb.GetConnectionString()
-	configs["DatabaseService"]["EstateConnectionString"] = rm.osdb.GetConnectionString()
-	if _, ok := configs["InventoryService"]; !ok {
-		configs["InventoryService"] = make(map[string]string)
-	}
-	configs["InventoryService"]["InventoryServerURI"] = rm.simianURL
-	if _, ok := configs["GridInfo"]; !ok {
-		configs["GridInfo"] = make(map[string]string)
-	}
-	configs["GridInfo"]["Gatekeeper"] = rm.simianURL
-	if _, ok := configs["AvatarService"]; !ok {
-		configs["AvatarService"] = make(map[string]string)
-	}
-	configs["AvatarService"]["AvatarServerURI"] = rm.simianURL
-	if _, ok := configs["PresenceService"]; !ok {
-		configs["PresenceService"] = make(map[string]string)
-	}
-	configs["PresenceService"]["PresenceServerURI"] = rm.simianURL
-	if _, ok := configs["UserAccountService"]; !ok {
-		configs["UserAccountService"] = make(map[string]string)
-	}
-	configs["UserAccountService"]["UserAccountServerURI"] = rm.simianURL
-	if _, ok := configs["GridUserService"]; !ok {
-		configs["GridUserService"] = make(map[string]string)
-	}
-	configs["GridUserService"]["GridUserServerURI"] = rm.simianURL
-	if _, ok := configs["AuthenticationService"]; !ok {
-		configs["AuthenticationService"] = make(map[string]string)
-	}
-	configs["AuthenticationService"]["AuthenticationServerURI"] = rm.simianURL
-	if _, ok := configs["FriendsService"]; !ok {
-		configs["FriendsService"] = make(map[string]string)
-	}
-	configs["FriendsService"]["FriendsServerURI"] = rm.simianURL
-	//if _, ok := configs["HGInventoryAccessModule"]; !ok {
-	//	configs["HGInventoryAccessModule"] = make(map[string]string)
-	//}
-	//configs["HGInventoryAccessModule"]["HomeURI"] = rm.simianURL
-	//configs["HGInventoryAccessModule"]["GateKeeper"] = rm.simianURL
-	//if _, ok := configs["HGAssetService"]; !ok {
-	//	configs["HGAssetService"] = make(map[string]string)
-	//}
-	//configs["HGAssetService"]["HomeURI"] = rm.simianURL
-	if _, ok := configs["UserAgentService"]; !ok {
-		configs["UserAgentService"] = make(map[string]string)
-	}
-	configs["UserAgentService"]["UserAgentServiceURI"] = rm.simianURL
-	if _, ok := configs["MapImageService"]; !ok {
-		configs["MapImageService"] = make(map[string]string)
-	}
-	configs["MapImageService"]["MapImageServiceURI"] = rm.simianURL
-	if _, ok := configs["SimianGrid"]; !ok {
-		configs["SimianGrid"] = make(map[string]string)
-	}
-	configs["SimianGrid"]["SimianServiceURL"] = rm.simianURL
-	configs["SimianGrid"]["SimulatorCapability"] = "00000000-0000-0000-0000-000000000000"
-	if _, ok := configs["SimianGridMaptiles"]; !ok {
-		configs["SimianGridMaptiles"] = make(map[string]string)
-	}
-	configs["SimianGridMaptiles"]["Enabled"] = "true"
-	configs["SimianGridMaptiles"]["MaptileURL"] = rm.simianURL
-	configs["SimianGridMaptiles"]["RefreshTime"] = "7200"
-	if _, ok := configs["Terrain"]; !ok {
-		configs["Terrain"] = make(map[string]string)
-	}
-	configs["Terrain"]["SendTerrainUpdatesByViewDistance"] = "true"
 
+	configs["ClientStack.LindenCaps"]["Cap_CopyInventoryFromNotecard"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_EnvironmentSettings"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_EventQueueGet"] = "localhost"
+	configs["ClientStack.LindenCaps"]["ObjectMedia"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_ObjectMediaNavigate"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_GetDisplayNames"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_GetTexture"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_GetMesh"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_MapLayer"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_MapLayerGod"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_NewFileAgentInventory"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_NewFileAgentInventoryVariablePrice"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_ObjectAdd"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_ParcelPropertiesUpdate"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_RemoteParcelRequest"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_UpdateNotecardAgentInventory"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_UpdateScriptAgent"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_UpdateNotecardTaskInventory"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_UpdateScriptTask"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_UploadBakedTexture"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_UploadObjectAsset"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_AvatarPickerSearch"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_FetchInventoryDescendents2"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_FetchInventory2"] = "localhost"
+
+	configs["DatabaseService"]["StorageProvider"] = "OpenSim.Data.MySQL.dll"
+	configs["DatabaseService"]["ConnectionString"] = rm.osdb.GetConnectionString()
+
+	//convert map into a single slice of ConfigOption
 	for section, m := range configs {
 		for item, content := range m {
 			result = append(result, mgm.ConfigOption{region.UUID, section, item, content})

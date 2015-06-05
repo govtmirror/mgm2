@@ -58,7 +58,7 @@ func (r region) WriteOpensimINI(configs []mgm.ConfigOption) error {
 	for section, m := range cfgs {
 		buffer.WriteString(fmt.Sprintf("[%s]\n", section))
 		for item, content := range m {
-			buffer.WriteString(fmt.Sprintf("  %s = %s\n", item, content))
+			buffer.WriteString(fmt.Sprintf("  %s = \"%s\"\n", item, content))
 		}
 	}
 

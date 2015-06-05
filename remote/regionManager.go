@@ -27,7 +27,7 @@ func NewRegionManager(binDir string, regionDir string, hostname string, log logg
 		copyFrom:  binDir,
 		regionDir: regionDir,
 		hostName:  hostname,
-		logger:    logger.Wrap("RegionManager", log),
+		logger:    logger.Wrap("Region", log),
 	}
 }
 

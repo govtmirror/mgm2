@@ -8,7 +8,6 @@ import (
 	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/core/host"
 	"github.com/m-o-s-e-s/mgm/core/job"
-	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/core/region"
 	"github.com/m-o-s-e-s/mgm/core/session"
 	"github.com/m-o-s-e-s/mgm/core/user"
@@ -55,7 +54,7 @@ type mgmConfig struct {
 
 func main() {
 	//instantiate our logger
-	logger := logger.Wrap("MGM", lumber.NewConsoleLogger(lumber.DEBUG))
+	logger := lumber.NewConsoleLogger(lumber.DEBUG)
 
 	cfgPtr := flag.String("config", "/opt/mgm/mgm.gcfg", "path to config file")
 
@@ -110,7 +109,7 @@ func main() {
 		logger.Error("Error instantiating host manager: ", err)
 		return
 	}
-	uMgr := user.NewManager(rMgr, nMgr, sim, db, logger)
+	uMgr := user.NewManager(rMgr, nMgr, sim, db, osdb, logger)
 	sessionListenerChan := make(chan core.UserSession, 64)
 
 	_ = session.NewManager(sessionListenerChan, uMgr, jMgr, nMgr, rMgr, sim, logger)

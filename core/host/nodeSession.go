@@ -82,17 +82,17 @@ func (ns nodeSession) process() {
 				hStats.ID = ns.host.ID
 				ns.hostStatSubs.Broadcast(hStats)
 			case "GetRegions":
-				ns.log.Info("requesting regions list: ", ns.host.ID)
+				ns.log.Info("requesting regions list")
 				regions, err := ns.regionMgr.GetRegionsOnHost(ns.host)
 				if err != nil {
 					ns.log.Error("Error getting regions: ", err.Error())
 				} else {
-					ns.log.Info("Serving %v regions", len(regions), ns.host.ID)
+					ns.log.Info("Serving %v regions", len(regions))
 					for _, r := range regions {
 						writeMsgs <- Message{MessageType: "AddRegion", Region: r}
 					}
 				}
-				ns.log.Info("Region list served", ns.host.ID)
+				ns.log.Info("Region list served")
 			case "Success":
 				//an MGM request has succeeded
 				if req, ok := pendingRequests[nmsg.ID]; ok {
@@ -104,7 +104,7 @@ func (ns nodeSession) process() {
 					req.SR(false, nmsg.Message)
 				}
 			default:
-				ns.log.Info("Received invalid message: ", nmsg.MessageType)
+				ns.log.Info("Received invalid message: %s", nmsg.MessageType)
 			}
 		}
 

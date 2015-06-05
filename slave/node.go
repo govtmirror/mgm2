@@ -41,7 +41,7 @@ type mgmNode struct {
 }
 
 func main() {
-	n := mgmNode{logger.Wrap("HOST", lumber.NewConsoleLogger(lumber.DEBUG))}
+	n := mgmNode{lumber.NewConsoleLogger(lumber.DEBUG)}
 	connectedAtLeastOnce := false
 
 	cfgPtr := flag.String("config", "/opt/mgm/node.gcfg", "path to config file")

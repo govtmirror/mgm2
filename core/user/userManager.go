@@ -29,9 +29,10 @@ type Manager interface {
 }
 
 // NewManager constructs a user.Manager for use
-func NewManager(rMgr region.Manager, hMgr host.Manager, userConnector core.UserConnector, db database.Database, log logger.Log) Manager {
+func NewManager(rMgr region.Manager, hMgr host.Manager, userConnector core.UserConnector, db database.Database, sdb database.Database, log logger.Log) Manager {
 	um := userManager{}
 	um.db = userDatabase{db}
+	um.sdb = simDatabase{sdb}
 	um.log = logger.Wrap("USER", log)
 	um.conn = userConnector
 	um.hMgr = hMgr
@@ -44,6 +45,7 @@ type userManager struct {
 	rMgr region.Manager
 	hMgr host.Manager
 	db   userDatabase
+	sdb  simDatabase
 	conn core.UserConnector
 	log  logger.Log
 }
@@ -109,7 +111,7 @@ func (um userManager) CreatePasswordResetToken(userID uuid.UUID) (uuid.UUID, err
 }
 
 func (um userManager) GetEstates() ([]mgm.Estate, error) {
-	return um.db.GetEstates()
+	return um.sdb.GetEstates()
 }
 
 func (um userManager) RequestControlPermission(region mgm.Region, user mgm.User) (mgm.Host, error) {

@@ -101,12 +101,11 @@ func (db regionDatabase) GetRegions() ([]mgm.Region, error) {
 	defer con.Close()
 
 	rows, err := con.Query(
-		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host, EstateName from regions, estate_map, estate_settings " +
-			"where estate_map.RegionID = regions.uuid AND estate_map.EstateID = estate_settings.EstateID")
-	defer rows.Close()
+		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host from regions")
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	var regions []mgm.Region
 	for rows.Next() {
@@ -122,7 +121,6 @@ func (db regionDatabase) GetRegions() ([]mgm.Region, error) {
 			&r.LocX,
 			&r.LocY,
 			&r.Host,
-			&r.EstateName,
 		)
 		if err != nil {
 			rows.Close()
