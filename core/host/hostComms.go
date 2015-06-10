@@ -26,6 +26,7 @@ type Message struct {
 	Message     string              `json:",omitempty"`
 	Register    Registration        `json:",omitempty"`
 	HStats      mgm.HostStat        `json:",omitempty"`
+	RStats      mgm.RegionStat      `json:",omitempty"`
 	Configs     []mgm.ConfigOption  `json:",omitempty"`
 	Host        mgm.Host            `json:"-"`
 	SR          core.ServiceRequest `json:"-"`

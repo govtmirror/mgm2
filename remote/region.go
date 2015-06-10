@@ -33,16 +33,18 @@ type region struct {
 	log       logger.Log
 	dir       string
 	hostName  string
+	rStat     chan<- mgm.RegionStat
 	isRunning bool
 }
 
 // NewRegion constructs a Region for use
-func NewRegion(rID uuid.UUID, path string, hostname string, log logger.Log) Region {
+func NewRegion(rID uuid.UUID, path string, hostname string, rStat chan<- mgm.RegionStat, log logger.Log) Region {
 	reg := region{}
 	reg.UUID = rID
 	reg.cmds = make(chan regionCmd, 8)
 	reg.log = logger.Wrap(rID.String(), log)
 	reg.dir = path
+	reg.rStat = rStat
 	reg.hostName = hostname
 
 	go reg.communicate()
@@ -75,41 +77,53 @@ func (r region) communicate() {
 					r.log.Error("Error starting process: %s", err.Error())
 				} else {
 					r.log.Info("Started Successfully")
+					r.isRunning = true
 				}
 			default:
 				r.log.Info("Received unexpected command: %v", cmd.command)
 			}
 		case <-ticker.C:
+			stat := mgm.RegionStat{UUID: r.UUID}
+			r.isRunning = false
+			stat.Running = false
 			//test for region state
 			idBytes, err := ioutil.ReadFile(pidFile)
 			if err != nil {
-				r.isRunning = false
+				r.rStat <- stat
 				continue
 			}
 			//pid exists
 			pid, err := strconv.ParseInt(strings.TrimSpace(string(idBytes)), 10, 32)
 			if err != nil {
 				r.log.Error("PID contains non-integer content: %s: %s", string(idBytes), err.Error())
+				r.rStat <- stat
 				continue
 			}
 			proc, err := process.NewProcess(int32(pid))
 			if err != nil {
-				//process does not exist
-				r.isRunning = false
+				r.log.Error("Error creating psutil process.  May not exist")
+				r.rStat <- stat
 				continue
 			}
 			cpuPercent, err := proc.CPUPercent(0)
 			if err != nil {
 				r.log.Error("Error getting cpu for pid: %s", err.Error())
-				continue
+			} else {
+				stat.CPUPercent = cpuPercent
 			}
-			r.log.Info("Proc CPU Percent: %f", cpuPercent)
 			memInfo, err := proc.MemoryInfo()
 			if err != nil {
 				r.log.Error("Error getting memory for pid: %s", err.Error())
-				continue
+			} else {
+				stat.MemKB = (float64(memInfo.RSS) / 1024.0)
 			}
 			r.log.Info("Proc MemB: %v", memInfo.RSS)
+			r.log.Info("Proc MemKB: %v", float64(memInfo.RSS)/1024.0)
+
+			// having trouble pinning this one down.  It moves, and CreateTime should be the process's created time, which is static
+			//ct, err := proc.CreateTime()
+
+			r.rStat <- stat
 		}
 	}
 }

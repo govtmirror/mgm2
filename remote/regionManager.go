@@ -22,11 +22,12 @@ type RegionManager interface {
 }
 
 // NewRegionManager constructs a region manager for use
-func NewRegionManager(binDir string, regionDir string, hostname string, log logger.Log) RegionManager {
+func NewRegionManager(binDir string, regionDir string, hostname string, rStat chan<- mgm.RegionStat, log logger.Log) RegionManager {
 	return regMgr{
 		copyFrom:  binDir,
 		regionDir: regionDir,
 		hostName:  hostname,
+		rStat:     rStat,
 		logger:    logger.Wrap("Region", log),
 	}
 }
@@ -36,6 +37,7 @@ type regMgr struct {
 	regionDir string
 	logger    logger.Log
 	hostName  string
+	rStat     chan<- mgm.RegionStat
 	regions   []mgm.Region
 }
 
@@ -44,13 +46,13 @@ func (rm regMgr) AddRegion(rID uuid.UUID) (Region, error) {
 	if err != nil {
 		return region{}, err
 	}
-	reg := NewRegion(rID, path, rm.hostName, rm.logger)
+	reg := NewRegion(rID, path, rm.hostName, rm.rStat, rm.logger)
 
 	return reg, nil
 }
 
 func (rm regMgr) RemoveRegion(r mgm.Region) error {
-	return nil
+	return errors.New("Not Implemented")
 }
 
 func (rm regMgr) copyBinaries(name string) (string, error) {

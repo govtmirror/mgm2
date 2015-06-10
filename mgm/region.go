@@ -24,6 +24,14 @@ type Region struct {
 	frames chan int
 }
 
+// RegionStat holds region-specific runtime metrics
+type RegionStat struct {
+	UUID       uuid.UUID
+	Running    bool
+	CPUPercent float64
+	MemKB      float64
+}
+
 func (r *Region) countFrames() {
 	/*vals := []int{}
 	  start := time.Now()

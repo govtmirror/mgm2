@@ -72,8 +72,9 @@ func main() {
 
 	hStats := make(chan mgm.HostStat, 8)
 	go n.collectHostStatistics(hStats)
+	rStats := make(chan mgm.RegionStat, 64)
 
-	rMgr := remote.NewRegionManager(config.Node.OpensimBinDir, config.Node.RegionDir, config.Opensim.ExternalAddress, n.logger)
+	rMgr := remote.NewRegionManager(config.Node.OpensimBinDir, config.Node.RegionDir, config.Opensim.ExternalAddress, rStats, n.logger)
 	err = rMgr.Initialize()
 	if err != nil {
 		n.logger.Error("Error instantiating RegionManager: ", err.Error())
@@ -125,6 +126,11 @@ func main() {
 				nmsg := host.Message{}
 				nmsg.MessageType = "HostStats"
 				nmsg.HStats = stats
+				sendChan <- nmsg
+			case stats := <-rStats:
+				nmsg := host.Message{}
+				nmsg.MessageType = "RegionStats"
+				nmsg.RStats = stats
 				sendChan <- nmsg
 			case msg := <-receiveChan:
 				switch msg.MessageType {
