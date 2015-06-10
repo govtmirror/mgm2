@@ -8,7 +8,7 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('RegionsCtrl', function ($scope, $location, mgm) {
+  .controller('RegionsCtrl', function ($scope, $location, $timeout, mgm) {
 
     if ($scope.auth === undefined || $scope.auth === {}) {
       mgm.pushLocation($location.url());
@@ -27,6 +27,16 @@ angular.module('mgmApp')
       }
     }
 
+    $scope.humanReadableUptime = function(ns){
+      var seconds = ns / 1000000000;
+      var days = Math.floor(seconds/86400)
+      seconds = seconds % (86400)
+      var hours = Math.floor(seconds/3600)
+      seconds = seconds % (3600)
+      var minutes = Math.floor(seconds/60)
+      return days+":"+hours+":"+minutes;
+    }
+
 
     for (var ID in mgm.estates) {
       modUserEstates("", mgm.estates[ID])
@@ -38,6 +48,13 @@ angular.module('mgmApp')
 
     $scope.$on("EstateUpdate", modUserEstates);
     $scope.$on("RegionUpdate", estateifyRegion);
+    $scope.$on("RegionStatusUpdate", function(event, status){
+      if(status.UUID in regions){
+        $timeout(function(){
+          $scope.estates[regions[status.UUID].EstateName].Status = status
+        })
+      }
+    })
 
     function estateifyRegion(event, region) {
       if (region.UUID in regions) {

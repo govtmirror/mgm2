@@ -112,6 +112,12 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
           $rootScope.$broadcast("HostStatusUpdate", message.Message);
         }
         break;
+      case "RegionStat":
+        if(message.Message.UUID in self.regions){
+          self.regions[message.Message.UUID].Status = message.Message;
+          $rootScope.$broadcast("RegionStatusUpdate", message.Message);
+        }
+        break;
       case "Success":
         var msgID = message.MessageID;
         if (msgID in requestMap) {
@@ -119,6 +125,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
           delete requestMap[msgID];
         } else {
           console.log("Invalid success for nonexistant request: " + msgID);
+          console.log(message.Message);
         }
         break;
       case "Error":

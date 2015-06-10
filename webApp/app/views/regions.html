@@ -8,16 +8,16 @@
     </tr>
     <tr ng-repeat="r in regions|orderBy: 'Name'" ng-class-odd="'odd'" ng-class-even="'even'">
       <td>{{r.Name}}</td>
-      <td ng-if="r.IsRunning"> %CPU</td>
-      <td ng-if="r.IsRunning"> %MEM</td>
-      <td ng-if="r.IsRunning">Up {{r.status.simStats['Uptime'].split(".").slice(0,-1).join(" days ")}}</td>
-      <td ng-if="r.IsRunning">{{r.Status.simStats.RootAg}} Users</td>
-      <td ng-if="!r.IsRunning" colspan="4">~ is not running</td>
+      <td ng-if="r.Status.Running"> {{r.Status.CPUPercent.toFixed(2)}}% CPU</td>
+      <td ng-if="r.Status.Running"> {{r.Status.MemKB}} KB</td>
+      <td ng-if="r.Status.Running">Up {{humanReadableUptime(r.Status.Uptime)}}</td>
+      <td ng-if="r.Status.Running">{{r.Status.simStats.RootAg}} Users</td>
+      <td ng-if="!r.Status.Running" colspan="4">~ is not running</td>
       <td align="right">
-        <button ng-if="!r.IsRunning" ng-click="region.start(r)" class="btn btn-xs btn-default">Start</button>
-        <button ng-if="r.isRunning" ng-click="region.stop(r)" class="btn btn-xs btn-default">Stop</button>
-        <button ng-if="r.isRunning" ng-click="region.kill(r)" class="btn btn-xs btn-danger">Kill</button>
-        <button ng-click="collapse.showContent(r)" ng-if="r.isRunning" class="btn btn-xs btn-default">Content</button>
+        <button ng-if="!r.Status.Running" ng-click="region.start(r)" class="btn btn-xs btn-default">Start</button>
+        <button ng-if="r.Status.Running" ng-click="region.stop(r)" class="btn btn-xs btn-default">Stop</button>
+        <button ng-if="r.Status.Running" ng-click="region.kill(r)" class="btn btn-xs btn-danger">Kill</button>
+        <button ng-click="collapse.showContent(r)" ng-if="r.Status.Running" class="btn btn-xs btn-default">Content</button>
         <button ng-click="collapse.showManage(r)" ng-if="auth.AccessLevel > 249" class="btn btn-xs btn-default">Manage</button>
         <button ng-click="region.viewLog(r)" class="btn btn-xs btn-default">log</button>
       </td>

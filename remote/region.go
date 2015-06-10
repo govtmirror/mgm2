@@ -56,6 +56,7 @@ func (r region) communicate() {
 	var exe *exec.Cmd
 	exe = nil
 	var start time.Time
+	var proc *process.Process
 
 	//process communication
 	terminated := make(chan bool)
@@ -85,6 +86,7 @@ func (r region) communicate() {
 				}
 				r.log.Info("Started Successfully")
 				start = time.Now()
+				proc, _ = process.NewProcess(int32(exe.Process.Pid))
 				go func() {
 					//wait for process, ignoring process-specific errors
 					_ = exe.Wait()
@@ -103,12 +105,12 @@ func (r region) communicate() {
 			}
 			stat.Running = true
 
-			proc, err := process.NewProcess(int32(exe.Process.Pid))
-			if err != nil {
-				r.log.Error("Error creating psutil process.  May not exist")
-				r.rStat <- stat
-				continue
-			}
+			//proc, err := process.NewProcess(int32(exe.Process.Pid))
+			//if err != nil {
+			//	r.log.Error("Error creating psutil process.  May not exist")
+			//	r.rStat <- stat
+			//	continue
+			//}
 
 			cpuPercent, err := proc.CPUPercent(0)
 			if err != nil {

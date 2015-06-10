@@ -85,12 +85,12 @@ type RegionStat struct {
 }
 
 // Serialize implements UserObject interface Serialize function
-func (h RegionStat) Serialize() []byte {
-	data, _ := json.Marshal(h)
+func (rs RegionStat) Serialize() []byte {
+	data, _ := json.Marshal(rs)
 	return data
 }
 
 // ObjectType implements UserObject
-func (h RegionStat) ObjectType() string {
+func (rs RegionStat) ObjectType() string {
 	return "RegionStat"
 }
