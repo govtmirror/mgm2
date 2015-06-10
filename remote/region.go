@@ -1,12 +1,8 @@
 package remote
 
 import (
-	"io/ioutil"
 	"os"
 	"os/exec"
-	"path"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/m-o-s-e-s/mgm/core/logger"
@@ -28,13 +24,12 @@ type regionCmd struct {
 }
 
 type region struct {
-	UUID      uuid.UUID
-	cmds      chan regionCmd
-	log       logger.Log
-	dir       string
-	hostName  string
-	rStat     chan<- mgm.RegionStat
-	isRunning bool
+	UUID     uuid.UUID
+	cmds     chan regionCmd
+	log      logger.Log
+	dir      string
+	hostName string
+	rStat    chan<- mgm.RegionStat
 }
 
 // NewRegion constructs a Region for use
@@ -54,16 +49,27 @@ func NewRegion(rID uuid.UUID, path string, hostname string, rStat chan<- mgm.Reg
 
 func (r region) communicate() {
 
+	//collect region statistics
 	ticker := time.NewTicker(5 * time.Second)
-	pidFile := path.Join(r.dir, "moses.pid")
+
+	//object holding process reference
+	var exe *exec.Cmd
+	exe = nil
+	var start time.Time
+
+	//process communication
+	terminated := make(chan bool)
 
 	for {
 		select {
+		case <-terminated:
+			//the process exited for some Reason
+			exe = nil
 		case cmd := <-r.cmds:
 			switch cmd.command {
 			case "start":
 				//if already running, exit
-				if r.isRunning {
+				if exe != nil {
 					r.log.Error("Region is already running", r.UUID)
 					continue
 				}
@@ -71,40 +77,39 @@ func (r region) communicate() {
 				os.Chdir(r.dir)
 				cmdName := "/usr/bin/mono"
 				cmdArgs := []string{"OpenSim.exe"}
-				cmd := exec.Command(cmdName, cmdArgs...)
-				err := cmd.Start()
+				exe = exec.Command(cmdName, cmdArgs...)
+				err := exe.Start()
 				if err != nil {
 					r.log.Error("Error starting process: %s", err.Error())
-				} else {
-					r.log.Info("Started Successfully")
-					r.isRunning = true
+					continue
 				}
+				r.log.Info("Started Successfully")
+				start = time.Now()
+				go func() {
+					//wait for process, ignoring process-specific errors
+					_ = exe.Wait()
+					r.log.Error("Terminated")
+					terminated <- true
+				}()
 			default:
 				r.log.Info("Received unexpected command: %v", cmd.command)
 			}
 		case <-ticker.C:
 			stat := mgm.RegionStat{UUID: r.UUID}
-			r.isRunning = false
-			stat.Running = false
-			//test for region state
-			idBytes, err := ioutil.ReadFile(pidFile)
-			if err != nil {
+			if exe == nil {
+				//trivially halted if we never started
 				r.rStat <- stat
 				continue
 			}
-			//pid exists
-			pid, err := strconv.ParseInt(strings.TrimSpace(string(idBytes)), 10, 32)
-			if err != nil {
-				r.log.Error("PID contains non-integer content: %s: %s", string(idBytes), err.Error())
-				r.rStat <- stat
-				continue
-			}
-			proc, err := process.NewProcess(int32(pid))
+			stat.Running = true
+
+			proc, err := process.NewProcess(int32(exe.Process.Pid))
 			if err != nil {
 				r.log.Error("Error creating psutil process.  May not exist")
 				r.rStat <- stat
 				continue
 			}
+
 			cpuPercent, err := proc.CPUPercent(0)
 			if err != nil {
 				r.log.Error("Error getting cpu for pid: %s", err.Error())
@@ -117,8 +122,9 @@ func (r region) communicate() {
 			} else {
 				stat.MemKB = (float64(memInfo.RSS) / 1024.0)
 			}
-			r.log.Info("Proc MemB: %v", memInfo.RSS)
-			r.log.Info("Proc MemKB: %v", float64(memInfo.RSS)/1024.0)
+
+			elapsed := time.Since(start)
+			stat.Uptime = elapsed
 
 			// having trouble pinning this one down.  It moves, and CreateTime should be the process's created time, which is static
 			//ct, err := proc.CreateTime()

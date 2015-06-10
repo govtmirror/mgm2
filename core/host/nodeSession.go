@@ -11,14 +11,15 @@ import (
 )
 
 type nodeSession struct {
-	host         mgm.Host
-	conn         net.Conn
-	hostSubs     core.SubscriptionManager
-	hostStatSubs core.SubscriptionManager
-	regionMgr    region.Manager
-	nodeMgr      nm
-	cmdMsgs      chan Message
-	log          logger.Log
+	host           mgm.Host
+	conn           net.Conn
+	hostSubs       core.SubscriptionManager
+	hostStatSubs   core.SubscriptionManager
+	regionStatSubs core.SubscriptionManager
+	regionMgr      region.Manager
+	nodeMgr        nm
+	cmdMsgs        chan Message
+	log            logger.Log
 }
 
 func (ns nodeSession) process() {
@@ -81,6 +82,9 @@ func (ns nodeSession) process() {
 				hStats := nmsg.HStats
 				hStats.ID = ns.host.ID
 				ns.hostStatSubs.Broadcast(hStats)
+			case "RegionStats":
+				rStats := nmsg.RStats
+				ns.regionStatSubs.Broadcast(rStats)
 			case "GetRegions":
 				ns.log.Info("requesting regions list")
 				regions, err := ns.regionMgr.GetRegionsOnHost(ns.host)

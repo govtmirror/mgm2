@@ -2,6 +2,7 @@ package mgm
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/satori/go.uuid"
 )
@@ -22,14 +23,6 @@ type Region struct {
 	EstateName   string
 
 	frames chan int
-}
-
-// RegionStat holds region-specific runtime metrics
-type RegionStat struct {
-	UUID       uuid.UUID
-	Running    bool
-	CPUPercent float64
-	MemKB      float64
 }
 
 func (r *Region) countFrames() {
@@ -80,4 +73,24 @@ func (r Region) Serialize() []byte {
 // ObjectType implements UserObject
 func (r Region) ObjectType() string {
 	return "Region"
+}
+
+// RegionStat holds region-specific runtime metrics
+type RegionStat struct {
+	UUID       uuid.UUID
+	Running    bool
+	CPUPercent float64
+	MemKB      float64
+	Uptime     time.Duration
+}
+
+// Serialize implements UserObject interface Serialize function
+func (h RegionStat) Serialize() []byte {
+	data, _ := json.Marshal(h)
+	return data
+}
+
+// ObjectType implements UserObject
+func (h RegionStat) ObjectType() string {
+	return "RegionStat"
 }

@@ -15,6 +15,7 @@ import (
 type Manager interface {
 	SubscribeHost() core.Subscription
 	SubscribeHostStats() core.Subscription
+	SubscribeRegionStats() core.Subscription
 	StartRegionOnHost(mgm.Region, mgm.Host, core.ServiceRequest)
 	GetHostByID(id uint) (mgm.Host, error)
 	GetHosts() []mgm.Host
@@ -28,6 +29,7 @@ func NewManager(port int, rMgr region.Manager, db database.Database, log logger.
 	mgr.logger = logger.Wrap("HOST", log)
 	mgr.hostSubs = core.NewSubscriptionManager()
 	mgr.hostStatSubs = core.NewSubscriptionManager()
+	mgr.regionStatSubs = core.NewSubscriptionManager()
 	mgr.internalMsgs = make(chan internalMsg, 32)
 	mgr.requestChan = make(chan Message, 32)
 	mgr.regionMgr = rMgr
@@ -41,12 +43,13 @@ func NewManager(port int, rMgr region.Manager, db database.Database, log logger.
 	}
 	for _, h := range hosts {
 		s := nodeSession{
-			host:         h,
-			hostSubs:     mgr.hostSubs,
-			hostStatSubs: mgr.hostStatSubs,
-			nodeMgr:      mgr,
-			regionMgr:    rMgr,
-			log:          logger.Wrap(strconv.Itoa(h.ID), mgr.logger),
+			host:           h,
+			hostSubs:       mgr.hostSubs,
+			hostStatSubs:   mgr.hostStatSubs,
+			regionStatSubs: mgr.regionStatSubs,
+			nodeMgr:        mgr,
+			regionMgr:      rMgr,
+			log:            logger.Wrap(strconv.Itoa(h.ID), mgr.logger),
 		}
 		ch <- s
 	}
@@ -57,13 +60,14 @@ func NewManager(port int, rMgr region.Manager, db database.Database, log logger.
 }
 
 type nm struct {
-	listenPort   int
-	logger       logger.Log
-	listener     net.Listener
-	db           hostDatabase
-	hostSubs     core.SubscriptionManager
-	hostStatSubs core.SubscriptionManager
-	regionMgr    region.Manager
+	listenPort     int
+	logger         logger.Log
+	listener       net.Listener
+	db             hostDatabase
+	hostSubs       core.SubscriptionManager
+	hostStatSubs   core.SubscriptionManager
+	regionStatSubs core.SubscriptionManager
+	regionMgr      region.Manager
 
 	requestChan  chan Message
 	internalMsgs chan internalMsg
@@ -105,6 +109,10 @@ func (nm nm) SubscribeHost() core.Subscription {
 
 func (nm nm) SubscribeHostStats() core.Subscription {
 	return nm.hostStatSubs.Subscribe()
+}
+
+func (nm nm) SubscribeRegionStats() core.Subscription {
+	return nm.regionStatSubs.Subscribe()
 }
 
 func (nm nm) process(newConns <-chan nodeSession) {

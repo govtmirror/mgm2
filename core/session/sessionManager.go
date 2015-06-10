@@ -81,6 +81,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 
 	host := sm.nodeMgr.SubscribeHost()
 	hostStats := sm.nodeMgr.SubscribeHostStats()
+	regionStats := sm.nodeMgr.SubscribeRegionStats()
 
 	for {
 		select {
@@ -93,6 +94,10 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 		case hs := <-hostStats.GetReceive():
 			if us.GetAccessLevel() > 249 {
 				us.Send(hs)
+			}
+		case rs := <-regionStats.GetReceive():
+			if us.GetAccessLevel() > 249 {
+				us.Send(rs)
 			}
 		case msg := <-clientMsg:
 			//message from client
