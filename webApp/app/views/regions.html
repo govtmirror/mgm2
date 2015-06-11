@@ -2,7 +2,7 @@
   <tr>
     <td><button>AddNewRegion</button></td>
     <td><select ng-model="search.estateName" ng-options="eName as eName for (eName, regions) in estates| orderBy: eName" /></td>
-    <td>->{{search.estateName}}<-</td>
+    <td><input placeholder="Name Search" type="search" ng-model="search.regionName" style="width: 10em"></td>
   </tr>
 </table>
 <table style="width: 100%">
@@ -15,7 +15,7 @@
         <h3>{{eName}}</h3>
       </td>
     </tr>
-    <tr ng-repeat="r in regions|orderBy: 'Name'" ng-class-odd="'odd'" ng-class-even="'even'">
+    <tr ng-repeat="r in regions|orderBy: 'Name'" ng-class-odd="'odd'" ng-class-even="'even'" ng-show="r.Name.includes(search.regionName)">
       <td>{{r.Name}}</td>
       <td ng-if="r.Status.Running"> {{r.Status.CPUPercent.toFixed(2)}}% CPU</td>
       <td ng-if="r.Status.Running"> {{r.Status.MemKB}} KB</td>

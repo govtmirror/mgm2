@@ -15,13 +15,14 @@ angular.module('mgmApp')
       $location.url("/loading");
     }
 
-    var dummyEntry = ' <show all>';
+    var dummyEntry = ' <show all estates>';
 
     var regions = {}
     $scope.estates = {};
     $scope.estates[dummyEntry] = {};
     $scope.search = {
-      estateName: dummyEntry
+      estateName: dummyEntry,
+      regionName: '',
     };
 
     $scope.region = {
@@ -37,7 +38,14 @@ angular.module('mgmApp')
       if( name === dummyEntry)
         return false;
       if($scope.search.estateName === dummyEntry){
-        return true;
+        //listing all estates
+        //iterate over estates, do not list estates where all regions are filtered out
+        for(var uuid in $scope.estates[name]){
+          if($scope.estates[name][uuid].Name.includes($scope.search.regionName)){
+            return true;
+          }
+        }
+        return false;
       }
       return $scope.search.estateName === name;
     }
@@ -49,7 +57,7 @@ angular.module('mgmApp')
       var hours = Math.floor(seconds/3600)
       seconds = seconds % (3600)
       var minutes = Math.floor(seconds/60)
-      return days+":"+hours+":"+minutes;
+      return days+"d "+hours+"h "+minutes+"m";
     }
 
 
