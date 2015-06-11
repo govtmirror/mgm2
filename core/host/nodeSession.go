@@ -13,6 +13,7 @@ import (
 
 type nodeSession struct {
 	host           mgm.Host
+	Running        bool
 	conn           net.Conn
 	hostSubs       core.SubscriptionManager
 	hostStatSubs   core.SubscriptionManager
@@ -23,7 +24,7 @@ type nodeSession struct {
 	log            logger.Log
 }
 
-func (ns nodeSession) process() {
+func (ns nodeSession) process(closing chan<- int) {
 	readMsgs := make(chan Message, 32)
 	writeMsgs := make(chan Message, 32)
 	nc := Comms{
@@ -62,6 +63,8 @@ func (ns nodeSession) process() {
 					ns.regionStatSubs.Broadcast(stat)
 				}
 			}
+			//notify manager that we disconnected
+			closing <- ns.host.ID
 			return
 
 		case msg := <-ns.cmdMsgs:

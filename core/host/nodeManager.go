@@ -127,6 +127,8 @@ func (nm nm) SubscribeRegionStats() core.Subscription {
 func (nm nm) process(newConns <-chan nodeSession) {
 	conns := make(map[int]nodeSession)
 
+	haltedHost := make(chan int, 16)
+
 	//subscribe to own hosts to gather updates
 	hostSub := nm.hostSubs.Subscribe()
 	defer hostSub.Unsubscribe()
@@ -136,12 +138,18 @@ func (nm nm) process(newConns <-chan nodeSession) {
 		case c := <-newConns:
 			if con, ok := conns[c.host.ID]; ok {
 				//record already exists, this is probably a new connection
+				con.Running = true
 				con.conn = c.conn
 				con.cmdMsgs = make(chan Message, 32)
-				go con.process()
+				go con.process(haltedHost)
 				conns[c.host.ID] = con
 			} else {
 				conns[c.host.ID] = c
+			}
+		case id := <-haltedHost:
+			//a connection went offline
+			if con, ok := conns[id]; ok {
+				con.Running = false
 			}
 		case u := <-hostSub.GetReceive():
 			//host update from node, typically Running
@@ -155,6 +163,10 @@ func (nm nm) process(newConns <-chan nodeSession) {
 			switch nc.MessageType {
 			case "StartRegion":
 				if c, ok := conns[nc.Host.ID]; ok {
+					if !c.Running {
+						nc.SR(false, "Host is not running")
+						continue
+					}
 					//trigger region to record config files
 					cfgs, err := nm.regionMgr.ServeConfigs(nc.Region, nc.Host)
 					if err != nil {
@@ -169,6 +181,10 @@ func (nm nm) process(newConns <-chan nodeSession) {
 				}
 			case "KillRegion":
 				if c, ok := conns[nc.Host.ID]; ok {
+					if !c.Running {
+						nc.SR(false, "Host is not running")
+						continue
+					}
 					c.cmdMsgs <- nc
 				} else {
 					nm.logger.Info("Host %v not found", nc.Host.ID)
