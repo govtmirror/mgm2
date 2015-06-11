@@ -1,6 +1,11 @@
-<button>AddNewRegion</button>
 <table style="width: 100%">
-  <tbody ng-repeat="(eName, regions) in estates|orderBy: eName">
+  <tr>
+    <td><button>AddNewRegion</button></td>
+    <td><select ng-init="search.estateName = firstEstate()" ng-model="search.estateName" ng-options="eName as eName for (eName, regions) in estates| orderBy: eName" /></td>
+  </tr>
+</table>
+<table style="width: 100%">
+  <tbody ng-repeat="(eName, regions) in estates | orderBy: eName | filter:search.estateName" ng-show="eName == search.estateName">
     <tr>
       <td colspan="6">
         <h3>{{eName}}</h3>

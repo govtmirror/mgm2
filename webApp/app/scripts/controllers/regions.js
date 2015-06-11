@@ -27,6 +27,12 @@ angular.module('mgmApp')
       }
     }
 
+    $scope.firstEstate = function(){
+      var keys = Object.keys($scope.estates);
+      keys.sort();
+      return keys[0];
+    }
+
     $scope.humanReadableUptime = function(ns){
       var seconds = ns / 1000000000;
       var days = Math.floor(seconds/86400)
