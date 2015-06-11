@@ -8,6 +8,7 @@ import (
 	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/core/region"
 	"github.com/m-o-s-e-s/mgm/mgm"
+	"github.com/satori/go.uuid"
 )
 
 type nodeSession struct {
@@ -39,6 +40,9 @@ func (ns nodeSession) process() {
 	ns.host.Running = true
 	ns.hostSubs.Broadcast(ns.host)
 
+	//track latest region stats, so we can offline them if the node disconnects
+	regions := make(map[uuid.UUID]mgm.RegionStat)
+
 	//prepare for request tracking, so we might report results back to users
 	var requestNum uint
 	pendingRequests := make(map[uint]Message)
@@ -48,8 +52,16 @@ func (ns nodeSession) process() {
 		select {
 		case <-nc.Closing:
 			ns.log.Info("disconnected")
+			//update host broadcasters
 			ns.host.Running = false
 			ns.hostSubs.Broadcast(ns.host)
+			//update region broadcasters
+			for _, stat := range regions {
+				if stat.Running {
+					stat.Running = false
+					ns.regionStatSubs.Broadcast(stat)
+				}
+			}
 			return
 
 		case msg := <-ns.cmdMsgs:
@@ -84,6 +96,8 @@ func (ns nodeSession) process() {
 				ns.hostStatSubs.Broadcast(hStats)
 			case "RegionStats":
 				rStats := nmsg.RStats
+				//track stats value
+				regions[rStats.UUID] = rStats
 				ns.regionStatSubs.Broadcast(rStats)
 			case "GetRegions":
 				ns.log.Info("requesting regions list")
