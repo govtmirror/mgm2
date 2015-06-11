@@ -51,7 +51,7 @@ angular.module('mgmApp')
     $scope.$on("RegionStatusUpdate", function(event, status){
       if(status.UUID in regions){
         $timeout(function(){
-          $scope.estates[regions[status.UUID].EstateName].Status = status
+          $scope.estates[regions[status.UUID].EstateName][status.UUID].Status = status
         })
       }
     })
