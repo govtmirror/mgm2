@@ -8,7 +8,7 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('RegionsCtrl', function ($scope, $location, $timeout, mgm) {
+  .controller('RegionsCtrl', function ($scope, $location, $timeout, Alertify, mgm) {
 
     if ($scope.auth === undefined || $scope.auth === {}) {
       mgm.pushLocation($location.url());
@@ -31,6 +31,10 @@ angular.module('mgmApp')
         mgm.request("StartRegion", {RegionUUID: region.UUID}, function(success, msg){
           console.log(success + " " + msg)
         })
+      },
+      kill: function(region){
+        console.log("Alertify call here");
+        Alertify.error("Kill not implemented yet");
       }
     }
 
