@@ -16,6 +16,7 @@ type Region interface {
 	WriteRegionINI(mgm.Region) error
 	WriteOpensimINI([]mgm.ConfigOption) error
 	Start()
+	Kill()
 }
 
 type regionCmd struct {
@@ -91,8 +92,18 @@ func (r region) communicate() {
 					//wait for process, ignoring process-specific errors
 					_ = exe.Wait()
 					r.log.Error("Terminated")
+					exe = nil
 					terminated <- true
 				}()
+			case "kill":
+				//if not running, exit
+				if exe == nil {
+					r.log.Error("Region is not running", r.UUID)
+					continue
+				}
+				if err := exe.Process.Kill(); err != nil {
+					r.log.Error("Error killing process: %s", err.Error())
+				}
 			default:
 				r.log.Info("Received unexpected command: %v", cmd.command)
 			}
@@ -138,5 +149,10 @@ func (r region) communicate() {
 
 func (r region) Start() {
 	cmd := regionCmd{command: "start"}
+	r.cmds <- cmd
+}
+
+func (r region) Kill() {
+	cmd := regionCmd{command: "kill"}
 	r.cmds <- cmd
 }

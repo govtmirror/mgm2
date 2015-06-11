@@ -17,6 +17,7 @@ type Manager interface {
 	SubscribeHostStats() core.Subscription
 	SubscribeRegionStats() core.Subscription
 	StartRegionOnHost(mgm.Region, mgm.Host, core.ServiceRequest)
+	KillRegionOnHost(mgm.Region, mgm.Host, core.ServiceRequest)
 	GetHostByID(id uint) (mgm.Host, error)
 	GetHosts() []mgm.Host
 }
@@ -100,7 +101,15 @@ func (nm nm) StartRegionOnHost(region mgm.Region, host mgm.Host, sr core.Service
 		Host:        host,
 		SR:          sr,
 	}
+}
 
+func (nm nm) KillRegionOnHost(region mgm.Region, host mgm.Host, sr core.ServiceRequest) {
+	nm.requestChan <- Message{
+		MessageType: "KillRegion",
+		Region:      region,
+		Host:        host,
+		SR:          sr,
+	}
 }
 
 func (nm nm) SubscribeHost() core.Subscription {
@@ -156,7 +165,14 @@ func (nm nm) process(newConns <-chan nodeSession) {
 					c.cmdMsgs <- nc
 				} else {
 					nm.logger.Info("Host %v not found", nc.Host.ID)
-					nc.SR(false, "Host not found")
+					nc.SR(false, "Host not found, or not assigned")
+				}
+			case "KillRegion":
+				if c, ok := conns[nc.Host.ID]; ok {
+					c.cmdMsgs <- nc
+				} else {
+					nm.logger.Info("Host %v not found", nc.Host.ID)
+					nc.SR(false, "Host not found, or not assigned")
 				}
 			default:
 				nc.SR(false, "Not Implemented")

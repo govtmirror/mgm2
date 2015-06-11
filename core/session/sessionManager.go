@@ -132,11 +132,50 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 				h, err := sm.userMgr.RequestControlPermission(r, user)
 				if err != nil {
 					us.SignalError(m.MessageID, fmt.Sprintf("Error requesting permission: %v", err.Error()))
-					sm.log.Error("start region %v failed, RequestStartPermission error: %v", regionID, err.Error())
+					sm.log.Error("start region %v failed: %v", regionID, err.Error())
 					continue
 				}
 
 				sm.nodeMgr.StartRegionOnHost(r, h, func(success bool, message string) {
+					if success {
+						us.SignalSuccess(m.MessageID, message)
+					} else {
+						us.SignalError(m.MessageID, message)
+					}
+				})
+			case "KillRegion":
+				regionID, err := m.ReadRegionID()
+				if err != nil {
+					us.SignalError(m.MessageID, "Invalid format")
+					continue
+				}
+				sm.log.Info("User %v requesting kill region %v", us.GetGUID(), regionID)
+				user, exists, err := sm.userConn.GetUserByID(us.GetGUID())
+				if err != nil {
+					us.SignalError(m.MessageID, "Error looking up user")
+					sm.log.Error("kill region %v failed, error finding requesting user", regionID)
+					continue
+				}
+				if !exists {
+					us.SignalError(m.MessageID, "Invalid requesting user")
+					sm.log.Error("kill region %v failed, requesting user does not exist", regionID)
+					continue
+				}
+				r, err := sm.regionMgr.GetRegionByID(regionID)
+				if err != nil {
+					us.SignalError(m.MessageID, fmt.Sprintf("Error locating region: %v", err.Error()))
+					sm.log.Error("kill region %v failed, region not found", regionID)
+					continue
+				}
+
+				h, err := sm.userMgr.RequestControlPermission(r, user)
+				if err != nil {
+					us.SignalError(m.MessageID, fmt.Sprintf("Error requesting permission: %v", err.Error()))
+					sm.log.Error("kill region %v failed: %v", regionID, err.Error())
+					continue
+				}
+
+				sm.nodeMgr.KillRegionOnHost(r, h, func(success bool, message string) {
 					if success {
 						us.SignalSuccess(m.MessageID, message)
 					} else {

@@ -37,7 +37,13 @@ angular.module('mgmApp')
         })
       },
       kill: function(region){
-        Alertify.error("Kill not implemented js");
+        mgm.request("KillRegion", {RegionUUID: region.UUID}, function(success, msg){
+          if(success) {
+            Alertify.success(msg);
+          } else {
+            Alertify.error(msg);
+          }
+        });
       },
       content: function(region){
         Alertify.error("content not implemented js");

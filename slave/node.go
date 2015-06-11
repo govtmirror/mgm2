@@ -169,6 +169,17 @@ func main() {
 						m.Message = "Region flagged for start"
 						sendChan <- m
 					}
+				case "KillRegion":
+					reg := msg.Region
+					if r, ok := regions[reg.UUID]; ok {
+						//ready response
+						m := host.Message{}
+						m.ID = msg.ID
+						r.Kill()
+						m.MessageType = "Success"
+						m.Message = "Region flagged for kill"
+						sendChan <- m
+					}
 				default:
 					n.logger.Info("unexpected message from MGM: %v", msg.MessageType)
 				}
