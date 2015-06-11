@@ -1,6 +1,7 @@
 package host
 
 import (
+	"database/sql"
 	"errors"
 
 	"github.com/m-o-s-e-s/mgm/core/database"
@@ -65,6 +66,9 @@ func (db hostDatabase) GetHosts() ([]mgm.Host, error) {
 // GetHostByAddress retrieves a host record by address
 func (db hostDatabase) GetHostByID(id uint) (mgm.Host, error) {
 	h := mgm.Host{}
+	if id == 0 {
+		return h, errors.New("No assigned host")
+	}
 	con, err := db.mysql.GetConnection()
 	if err != nil {
 		return h, err
@@ -79,8 +83,8 @@ func (db hostDatabase) GetHostByID(id uint) (mgm.Host, error) {
 		&h.Slots,
 	)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
-			return h, errors.New("Host not found")
+		if err == sql.ErrNoRows {
+			return h, errors.New("No Host Found")
 		}
 		return h, err
 	}
