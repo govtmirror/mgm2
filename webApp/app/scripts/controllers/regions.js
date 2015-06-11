@@ -15,8 +15,14 @@ angular.module('mgmApp')
       $location.url("/loading");
     }
 
+    var dummyEntry = ' <show all>';
+
     var regions = {}
     $scope.estates = {};
+    $scope.estates[dummyEntry] = {};
+    $scope.search = {
+      estateName: dummyEntry
+    };
 
     $scope.region = {
       start: function(region){
@@ -27,10 +33,13 @@ angular.module('mgmApp')
       }
     }
 
-    $scope.firstEstate = function(){
-      var keys = Object.keys($scope.estates);
-      keys.sort();
-      return keys[0];
+    $scope.shouldShow = function(name){
+      if( name === dummyEntry)
+        return false;
+      if($scope.search.estateName === dummyEntry){
+        return true;
+      }
+      return $scope.search.estateName === name;
     }
 
     $scope.humanReadableUptime = function(ns){
