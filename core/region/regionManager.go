@@ -138,7 +138,6 @@ func (rm regionMgr) ServeConfigs(region mgm.Region, host mgm.Host) ([]mgm.Config
 	configs["Const"]["SimianURL"] = "http://" + rm.simianURL + "/Grid/"
 	configs["Const"]["MGMURL"] = "http://" + rm.mgmURL
 
-	configs["Startup"]["PIDFile"] = "moses.pid"
 	configs["Startup"]["region_info_source"] = "filesystem"
 	configs["Startup"]["allow_regionless"] = "false"
 	configs["Startup"]["Stats_URI"] = "jsonSimStats"
