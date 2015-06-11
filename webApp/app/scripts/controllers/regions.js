@@ -29,12 +29,27 @@ angular.module('mgmApp')
       start: function(region){
         console.log("Requesting start region: " + region.Name);
         mgm.request("StartRegion", {RegionUUID: region.UUID}, function(success, msg){
-          console.log(success + " " + msg)
+          if(success) {
+            Alertify.success(msg);
+          } else {
+            Alertify.error(msg);
+          }
         })
       },
       kill: function(region){
-        console.log("Alertify call here");
-        Alertify.error("Kill not implemented yet");
+        Alertify.error("Kill not implemented js");
+      },
+      content: function(region){
+        Alertify.error("content not implemented js");
+      },
+      manage: function(region){
+        Alertify.error("manage not implemented js");
+      },
+      log: function(region){
+        Alertify.error("log not implemented js");
+      },
+      showAdd: function(){
+        Alertify.error("Add region not implemented js");
       }
     }
 

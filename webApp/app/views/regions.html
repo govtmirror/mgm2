@@ -1,6 +1,6 @@
 <table style="width: 100%">
   <tr>
-    <td><button>AddNewRegion</button></td>
+    <td><button ng-click="region.showAdd()">AddNewRegion</button></td>
     <td><select ng-model="search.estateName" ng-options="eName as eName for (eName, regions) in estates| orderBy: eName" /></td>
     <td><input placeholder="Name Search" type="search" ng-model="search.regionName" style="width: 10em"></td>
   </tr>
@@ -26,9 +26,9 @@
         <button ng-if="!r.Status.Running" ng-click="region.start(r)" class="btn btn-xs btn-default">Start</button>
         <button ng-if="r.Status.Running" ng-click="region.stop(r)" class="btn btn-xs btn-default">Stop</button>
         <button ng-if="r.Status.Running" ng-click="region.kill(r)" class="btn btn-xs btn-danger">Kill</button>
-        <button ng-click="collapse.showContent(r)" ng-if="r.Status.Running" class="btn btn-xs btn-default">Content</button>
-        <button ng-click="collapse.showManage(r)" ng-if="auth.AccessLevel > 249" class="btn btn-xs btn-default">Manage</button>
-        <button ng-click="region.viewLog(r)" class="btn btn-xs btn-default">log</button>
+        <button ng-click="region.content(r)" ng-if="r.Status.Running" class="btn btn-xs btn-default">Content</button>
+        <button ng-click="region.manage(r)" ng-if="auth.AccessLevel > 249" class="btn btn-xs btn-default">Manage</button>
+        <button ng-click="region.log(r)" class="btn btn-xs btn-default">log</button>
       </td>
     </tr>
   </tbody>
