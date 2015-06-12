@@ -3,7 +3,8 @@ $icon-font-path: "../bower_components/bootstrap-sass-official/assets/fonts/boots
 @import "bootstrap-sass-official/assets/stylesheets/_bootstrap.scss";
 // endbower
 // alertify:css
-@import "../bower_components/ng-alertify/dist/ng-alertify.css";
+@import "../bower_components/alertify.js/themes/alertify.core.css";
+@import "../bower_components/alertify.js/themes/alertify.bootstrap.css";
 // endalertify
 .browsehappy {
   margin: 0.2em 0;

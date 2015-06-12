@@ -8,7 +8,7 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('RegionsCtrl', function ($scope, $location, $timeout, Alertify, mgm) {
+  .controller('RegionsCtrl', function ($scope, $location, $timeout, mgm) {
 
     if ($scope.auth === undefined || $scope.auth === {}) {
       mgm.pushLocation($location.url());
@@ -30,32 +30,32 @@ angular.module('mgmApp')
         console.log("Requesting start region: " + region.Name);
         mgm.request("StartRegion", {RegionUUID: region.UUID}, function(success, msg){
           if(success) {
-            Alertify.success(msg);
+            alertify.success(msg);
           } else {
-            Alertify.error(msg);
+            alertify.error(msg);
           }
         })
       },
       kill: function(region){
         mgm.request("KillRegion", {RegionUUID: region.UUID}, function(success, msg){
           if(success) {
-            Alertify.success(msg);
+            alertify.success(msg);
           } else {
-            Alertify.error(msg);
+            alertify.error(msg);
           }
         });
       },
       content: function(region){
-        Alertify.error("content not implemented js");
+        alertify.error("content not implemented js");
       },
       manage: function(region){
-        Alertify.error("manage not implemented js");
+        alertify.error("manage not implemented js");
       },
       log: function(region){
-        Alertify.error("log not implemented js");
+        alertify.error("log not implemented js");
       },
       showAdd: function(){
-        Alertify.error("Add region not implemented js");
+        alertify.error("Add region not implemented js");
       }
     }
 

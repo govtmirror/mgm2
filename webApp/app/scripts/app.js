@@ -17,8 +17,7 @@ angular
     'ngRoute',
     'ngSanitize',
     'ngTouch',
-    'pageslide-directive',
-    'Alertify'
+    'pageslide-directive'
   ])
   .config(function ($routeProvider) {
     $routeProvider
