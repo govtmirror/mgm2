@@ -116,19 +116,13 @@ func (r region) communicate() {
 			}
 			stat.Running = true
 
-			//proc, err := process.NewProcess(int32(exe.Process.Pid))
-			//if err != nil {
-			//	r.log.Error("Error creating psutil process.  May not exist")
-			//	r.rStat <- stat
-			//	continue
-			//}
-
 			cpuPercent, err := proc.CPUPercent(0)
 			if err != nil {
 				r.log.Error("Error getting cpu for pid: %s", err.Error())
 			} else {
 				stat.CPUPercent = cpuPercent
 			}
+			//memory info from this module may not be correct....
 			memInfo, err := proc.MemoryInfo()
 			if err != nil {
 				r.log.Error("Error getting memory for pid: %s", err.Error())
@@ -138,9 +132,6 @@ func (r region) communicate() {
 
 			elapsed := time.Since(start)
 			stat.Uptime = elapsed
-
-			// having trouble pinning this one down.  It moves, and CreateTime should be the process's created time, which is static
-			//ct, err := proc.CreateTime()
 
 			r.rStat <- stat
 		}
