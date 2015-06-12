@@ -49,7 +49,13 @@ angular.module('mgmApp')
         alertify.error("content not implemented js");
       },
       manage: function(region){
-        alertify.error("manage not implemented js");
+        mgm.request("OpenConsole", {RegionUUID: region.UUID}, function(success, msg){
+          if(success) {
+            alertify.success(msg);
+          } else {
+            alertify.error(msg);
+          }
+        });
       },
       log: function(region){
         alertify.error("log not implemented js");

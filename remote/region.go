@@ -78,7 +78,7 @@ func (r region) communicate() {
 				//execute binaries
 				os.Chdir(r.dir)
 				cmdName := "/usr/bin/mono"
-				cmdArgs := []string{"OpenSim.exe"}
+				cmdArgs := []string{"OpenSim.exe", "-console", "rest"}
 				exe = exec.Command(cmdName, cmdArgs...)
 				err := exe.Start()
 				if err != nil {

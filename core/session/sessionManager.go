@@ -83,6 +83,8 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 	hostStats := sm.nodeMgr.SubscribeHostStats()
 	regionStats := sm.nodeMgr.SubscribeRegionStats()
 
+	var console region.RestConsole
+
 	for {
 		select {
 		case j := <-sLinks.JobLink:
@@ -182,6 +184,42 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 						us.SignalError(m.MessageID, message)
 					}
 				})
+			case "OpenConsole":
+				regionID, err := m.ReadRegionID()
+				if err != nil {
+					us.SignalError(m.MessageID, "Invalid format")
+					continue
+				}
+				sm.log.Info("User %v requesting region console %v", us.GetGUID(), regionID)
+				user, exists, err := sm.userConn.GetUserByID(us.GetGUID())
+				if err != nil {
+					us.SignalError(m.MessageID, "Error looking up user")
+					sm.log.Error("region console %v failed, error finding requesting user", regionID)
+					continue
+				}
+				if !exists {
+					us.SignalError(m.MessageID, "Invalid requesting user")
+					sm.log.Error("region console %v failed, requesting user does not exist", regionID)
+					continue
+				}
+				r, err := sm.regionMgr.GetRegionByID(regionID)
+				if err != nil {
+					us.SignalError(m.MessageID, fmt.Sprintf("Error locating region: %v", err.Error()))
+					sm.log.Error("region console %v failed, region not found", regionID)
+					continue
+				}
+
+				h, err := sm.userMgr.RequestControlPermission(r, user)
+				if err != nil {
+					us.SignalError(m.MessageID, fmt.Sprintf("Error requesting permission: %v", err.Error()))
+					sm.log.Error("region console %v failed: %v", regionID, err.Error())
+					continue
+				}
+
+				console = region.NewRestConsole(r, h)
+				us.SignalSuccess(m.MessageID, "Console opened")
+			case "CloseConsole":
+				console.Close()
 			case "DeleteJob":
 				sm.log.Info("User %v requesting delete job", us.GetGUID())
 				id, err := m.ReadID()
