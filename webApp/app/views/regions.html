@@ -1,15 +1,18 @@
 <table style="width: 100%">
   <tr>
-    <td><button ng-click="region.showAdd()">AddNewRegion</button></td>
-    <td><select ng-model="search.estateName" ng-options="eName as eName for (eName, regions) in estates| orderBy: eName" /></td>
-    <td><input placeholder="Name Search" type="search" ng-model="search.regionName" style="width: 10em"></td>
+    <td>
+      <button ng-click="region.showAdd()">AddNewRegion</button>
+    </td>
+    <td>
+      <select ng-model="search.estateName" ng-options="eName as eName for (eName, regions) in estates| orderBy: eName" />
+    </td>
+    <td>
+      <input placeholder="Name Search" type="search" ng-model="search.regionName" style="width: 10em">
+    </td>
   </tr>
 </table>
 <table style="width: 100%">
-  <tbody
-  ng-repeat="(eName, regions) in estates | orderBy: eName | filter:search.estateName"
-  ng-show="shouldShow(eName)"
-    >
+  <tbody ng-repeat="(eName, regions) in estates | orderBy: eName | filter:search.estateName" ng-show="shouldShow(eName)">
     <tr>
       <td colspan="6">
         <h3>{{eName}}</h3>
@@ -36,18 +39,36 @@
 
 <script type="text/ng-template" id="manageSettingsModal.html">
   <div class="modal-header">
-    <h3 class="modal-title">I'm a modal!</h3>
+    <table>
+      <tr>
+        <td><h3 class="modal-title">{{region.Name}}</h3></td>
+        <td><button style="float:right" ng-click="region.remove(r)">Delete</button></td>
+      </tr>
+    </table>
   </div>
   <div class="modal-body">
-    <ul>
-      <li ng-repeat="item in items">
-        <a ng-click="selected.item = item">{{ item }}</a>
-      </li>
-    </ul>
-    Selected: <b>{{ selected.item }}</b>
+    <table>
+      <tr>
+        <td>Change Estate</td>
+        <td colspan="2"><select ng-model="newEstate" ng-init="newEstate=region.estate" ng-options="est.Name for (eName, est) in estates"></select></td>
+        <td><button ng-click="setEstate(newEstate)">Set</button></td>
+      </tr>
+      <tr>
+        <td>Change Host</td>
+        <td colspan="2"><select ng-model="newHost" ng-init="newHost=region.host" ng-options="h.Hostname for (id, h) in hosts"></select></td>
+        <td><button ng-click="setHost(newHost)">Set</button></td>
+      </tr>
+      <tr>
+        <form>
+        <td>Change Position</td>
+        <td><label>X</label><input ng-model="locX" ng-init="locX=region.LocX" type="number" min="0" step="1" required/></td>
+        <td><label>Y</label><input ng-model="locY" ng-init="locY=region.LocY" type="number" min="0" step="1" required/></td>
+        <td><button type="submit" ng-click="setXY(locX,locY)">Set</button></td>
+        </form>
+      </tr>
+    </table>
   </div>
   <div class="modal-footer">
-    <button class="btn btn-primary" ng-click="ok()">OK</button>
-    <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+    <button class="btn btn-warning" ng-click="close()">Close</button>
   </div>
 </script>

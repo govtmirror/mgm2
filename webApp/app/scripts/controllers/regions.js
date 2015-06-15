@@ -8,7 +8,7 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('RegionsCtrl', function ($scope, $location, $timeout, $modal, mgm) {
+  .controller('RegionsCtrl', function($scope, $location, $timeout, $modal, mgm) {
 
     if ($scope.auth === undefined || $scope.auth === {}) {
       mgm.pushLocation($location.url());
@@ -26,38 +26,58 @@ angular.module('mgmApp')
     };
 
     $scope.region = {
-      start: function(region){
+      start: function(region) {
         console.log('Requesting start region: ' + region.Name);
-        mgm.request('StartRegion', {RegionUUID: region.UUID}, function(success, msg){
-          if(success) {
+        mgm.request('StartRegion', {
+          RegionUUID: region.UUID
+        }, function(success, msg) {
+          if (success) {
             alertify.success(msg);
           } else {
             alertify.error(msg);
           }
         });
       },
-      kill: function(region){
-        mgm.request('KillRegion', {RegionUUID: region.UUID}, function(success, msg){
-          if(success) {
+      kill: function(region) {
+        mgm.request('KillRegion', {
+          RegionUUID: region.UUID
+        }, function(success, msg) {
+          if (success) {
             alertify.success(msg);
           } else {
             alertify.error(msg);
           }
         });
       },
-      content: function(region){
+      content: function(region) {
         alertify.error('content not implemented js: ' + region.Name);
       },
-      manage: function(region){
-        if(region.Running){
-          mgm.request('OpenConsole', {RegionUUID: region.UUID}, function(success, msg){
-            if(success) {
+      manage: function(region) {
+        if (region.Running) {
+          mgm.request('OpenConsole', {
+            RegionUUID: region.UUID
+          }, function(success, msg) {
+            if (success) {
               alertify.success(msg);
             } else {
               alertify.error(msg);
             }
           });
         } else {
+          //prime region with estate object so forms play nicer
+          var estates = mgm.estates;
+          for(var id in estates){
+            if(estates[id].Name === region.EstateName){
+              region.estate = estates[id];
+            }
+          }
+          var hosts = mgm.hosts;
+          hosts[0] = {ID: 0, Hostname: '<none>'}
+          for(var id in hosts){
+            if(hosts[id].ID === region.Host){
+              region.host = hosts[id];
+            }
+          }
           var modInst = $modal.open({
             animation: true,
             templateUrl: 'manageSettingsModal.html',
@@ -65,35 +85,41 @@ angular.module('mgmApp')
             keyboard: false,
             controller: 'ManageRegionSettingsCtrl',
             resolve: {
-              items: function() {
-                return ['item1', 'item2', 'item3'];
+              region: function() {
+                return region;
+              },
+              estates: function() {
+                return estates;
+              },
+              hosts: function() {
+                return hosts;
               }
             }
           });
-          modInst.result.then(function (selectedItem) {
-            $scope.selected = selectedItem;
-              }, function () {
-                console.log('Modal dismissed at: ' + new Date());
+          modInst.result.then(function() {
+            console.log("modal closed");
+            delete region.estate;
+            delete region.host;
           });
         }
       },
-      log: function(region){
+      log: function(region) {
         alertify.error('log not implemented js: ' + region.Name);
       },
-      showAdd: function(){
+      showAdd: function() {
         alertify.error('Add region not implemented js');
       }
     };
 
-    $scope.shouldShow = function(name){
-      if( name === dummyEntry){
+    $scope.shouldShow = function(name) {
+      if (name === dummyEntry) {
         return false;
       }
-      if($scope.search.estateName === dummyEntry){
+      if ($scope.search.estateName === dummyEntry) {
         //listing all estates
         //iterate over estates, do not list estates where all regions are filtered out
-        for(var uuid in $scope.estates[name]){
-          if($scope.estates[name][uuid].Name.includes($scope.search.regionName)){
+        for (var uuid in $scope.estates[name]) {
+          if ($scope.estates[name][uuid].Name.includes($scope.search.regionName)) {
             return true;
           }
         }
@@ -102,14 +128,14 @@ angular.module('mgmApp')
       return $scope.search.estateName === name;
     };
 
-    $scope.humanReadableUptime = function(ns){
+    $scope.humanReadableUptime = function(ns) {
       var seconds = ns / 1000000000;
-      var days = Math.floor(seconds/86400);
+      var days = Math.floor(seconds / 86400);
       seconds = seconds % (86400);
-      var hours = Math.floor(seconds/3600);
+      var hours = Math.floor(seconds / 3600);
       seconds = seconds % (3600);
-      var minutes = Math.floor(seconds/60);
-      return days+'d '+hours+'h '+minutes+'m';
+      var minutes = Math.floor(seconds / 60);
+      return days + 'd ' + hours + 'h ' + minutes + 'm';
     };
 
     function estateifyRegion(event, region) {
@@ -129,7 +155,7 @@ angular.module('mgmApp')
 
     function modUserEstates(event, estate) {
       if ($scope.auth.UUID === estate.Owner || $scope.auth.UUID in estate.Managers || $scope.auth.AccessLevel > 249) {
-        if( !(estate.Name in $scope.estates)){
+        if (!(estate.Name in $scope.estates)) {
           $scope.estates[estate.Name] = {};
         }
       } else {
@@ -147,9 +173,9 @@ angular.module('mgmApp')
 
     $scope.$on('EstateUpdate', modUserEstates);
     $scope.$on('RegionUpdate', estateifyRegion);
-    $scope.$on('RegionStatusUpdate', function(event, status){
-      if(status.UUID in regions){
-        $timeout(function(){
+    $scope.$on('RegionStatusUpdate', function(event, status) {
+      if (status.UUID in regions) {
+        $timeout(function() {
           $scope.estates[regions[status.UUID].EstateName][status.UUID].Status = status;
         });
       }
@@ -165,18 +191,26 @@ angular.module('mgmApp')
 
   });
 
-  angular.module('mgmApp')
-    .controller('ManageRegionSettingsCtrl', function ($scope, $modalInstance, items) {
-      $scope.items = items;
-  $scope.selected = {
-    item: $scope.items[0]
-  };
+angular.module('mgmApp')
+  .controller('ManageRegionSettingsCtrl', function($scope, $modalInstance, region, estates, hosts) {
 
-  $scope.ok = function () {
-    $modalInstance.close($scope.selected.item);
-  };
+    $scope.region = region;
+    $scope.estates = estates;
+    $scope.hosts = hosts;
 
-  $scope.cancel = function () {
-    $modalInstance.dismiss('cancel');
-  };
-    });
+    $scope.close = function() {
+      $modalInstance.close();
+    };
+
+    $scope.setXY = function(x, y){
+      console.log('Set x,y to: ' + x + ', ' + y);
+    }
+
+    $scope.setEstate = function(estate){
+      console.log('Set estate to: ' + estate.Name);
+    }
+
+    $scope.setHost = function(host){
+      console.log('Set host to: ' + host.Hostname);
+    }
+  });
