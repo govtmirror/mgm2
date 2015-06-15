@@ -8,7 +8,7 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('RegionsCtrl', function ($scope, $location, $timeout, mgm) {
+  .controller('RegionsCtrl', function ($scope, $location, $timeout, $modal, mgm) {
 
     if ($scope.auth === undefined || $scope.auth === {}) {
       mgm.pushLocation($location.url());
@@ -49,13 +49,34 @@ angular.module('mgmApp')
         alertify.error("content not implemented js");
       },
       manage: function(region){
-        mgm.request("OpenConsole", {RegionUUID: region.UUID}, function(success, msg){
-          if(success) {
-            alertify.success(msg);
-          } else {
-            alertify.error(msg);
-          }
-        });
+        if(region.Running){
+          mgm.request("OpenConsole", {RegionUUID: region.UUID}, function(success, msg){
+            if(success) {
+              alertify.success(msg);
+            } else {
+              alertify.error(msg);
+            }
+          });
+        } else {
+          var modInst = $modal.open({
+            animation: true,
+            templateUrl: 'manageSettingsModal.html',
+            controller: '',
+            backdrop: 'static',
+            keyboard: false,
+            controller: 'ManageRegionSettingsCtrl',
+            resolve: {
+              items: function() {
+                return ['item1', 'item2', 'item3'];
+              }
+            }
+          });
+          modInst.result.then(function (selectedItem) {
+            $scope.selected = selectedItem;
+              }, function () {
+                console.log('Modal dismissed at: ' + new Date());
+          });
+        }
       },
       log: function(region){
         alertify.error("log not implemented js");
@@ -144,3 +165,19 @@ angular.module('mgmApp')
     }
 
   });
+
+  angular.module('mgmApp')
+    .controller('ManageRegionSettingsCtrl', function ($scope, $modalInstance, items) {
+      $scope.items = items;
+  $scope.selected = {
+    item: $scope.items[0]
+  };
+
+  $scope.ok = function () {
+    $modalInstance.close($scope.selected.item);
+  };
+
+  $scope.cancel = function () {
+    $modalInstance.dismiss('cancel');
+  };
+    });
