@@ -229,6 +229,7 @@ func (nm nm) listen(newConns chan<- nodeSession) {
 		host, err := nm.db.GetHostByAddress(address)
 		if err != nil {
 			nm.logger.Error("Error looking up mgm Node: ", err)
+			conn.Close()
 			continue
 		}
 		if host.Address != address {
