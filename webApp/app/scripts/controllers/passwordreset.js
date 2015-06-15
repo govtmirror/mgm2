@@ -120,10 +120,10 @@ angular.module('mgmApp')
         function () {
           //success
           $scope.stage = 'ResetComplete';
-          $scope.input.uname = "";
-          $scope.input.token = "";
-          $scope.input.password = "";
-          $scope.input.confirm = "";
+          $scope.input.uname = '';
+          $scope.input.token = '';
+          $scope.input.password = '';
+          $scope.input.confirm = '';
         },
         function (msg) {
           $scope.error.other = msg;

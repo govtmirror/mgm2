@@ -11,7 +11,7 @@ angular.module('mgmApp')
   .controller('AccountCtrl', function ($scope, $location, $timeout, mgm) {
 
     if ($scope.auth === undefined || $scope.auth === {}) {
-      $location.url("/loading");
+      $location.url('/loading');
     }
 
     $scope.account = {
@@ -27,7 +27,7 @@ angular.module('mgmApp')
       passwordResult: '',
       password: '',
       confirm: ''
-    }
+    };
 
     $scope.nav = {
       state: '',
@@ -52,7 +52,7 @@ angular.module('mgmApp')
           $scope.nav.state = 'pass';
         }
       }
-    }
+    };
 
     for (var uuid in mgm.activeUsers) {
       if (uuid === $scope.auth.UUID) {
@@ -60,12 +60,12 @@ angular.module('mgmApp')
       }
     }
 
-    $scope.$on("UserUpdate", function (event, user) {
-      if (user.UserID === $scope.auth.UUID && user != $scope.auth) {
+    $scope.$on('UserUpdate', function (event, user) {
+      if (user.UserID === $scope.auth.UUID && user !== $scope.auth) {
         $timeout(function(){
           angular.copy(user, $scope.account);
-        })
-      };
+        });
+      }
     });
 
     $scope.setPassword = function () {
@@ -83,7 +83,7 @@ angular.module('mgmApp')
         return;
       }
       $scope.password.disablePasswordSubmit = true;
-      mgm.request("SetPassword", {
+      mgm.request('SetPassword', {
         UserID: $scope.auth.UUID,
         Password: $scope.password.password
       }, function (success, message) {
@@ -101,7 +101,7 @@ angular.module('mgmApp')
           $scope.password.disablePasswordSubmit = false;
         });
       });
-    }
+    };
 
     $scope.iar = {
       password: '',
@@ -109,19 +109,19 @@ angular.module('mgmApp')
       message: '',
       upload: function () {
         if ($scope.iar.file === undefined) {
-          console.log("invalid file selection");
+          console.log('invalid file selection');
           console.log($scope.iar.file);
           return;
         }
         $scope.iar.message = 'Uploading...';
         //request iar upload from mgm
-        mgm.request("IarUpload", {
+        mgm.request('IarUpload', {
           UserID: $scope.auth.UUID,
           Password: $scope.iar.password
         }, function (success, message) {
           $timeout(function(){
             if (success === true) {
-              mgm.upload("/upload/" + message, $scope.iar.file[0]).then(
+              mgm.upload('/upload/' + message, $scope.iar.file[0]).then(
                 function () {
                   //success
                   $scope.iar.password = '';
@@ -139,6 +139,6 @@ angular.module('mgmApp')
           });
         });
       }
-    }
+    };
 
   });

@@ -1,13 +1,5 @@
 'use strict';
 
-function bin2String(array) {
-  var result = "";
-  for (var i = 0; i < array.length; i++) {
-    result += String.fromCharCode(parseInt(array[i], 2));
-  }
-  return result;
-}
-
 /**
  * @ngdoc service
  * @name mgmApp.mgm
@@ -16,11 +8,11 @@ function bin2String(array) {
  * Service in the mgmApp.
  */
 angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $http) {
-  console.log("mgm service instantiated");
+  console.log('mgm service instantiated');
 
-  var remoteURL = "ws://" + $location.host() + ":" + $location.port() + "/ws";
+  var remoteURL = 'ws://' + $location.host() + ':' + $location.port() + '/ws';
 
-  self = this;
+  var self = this;
 
   self.regions = {};
   self.estates = {};
@@ -32,7 +24,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
   self.jobs = {};
   self.serverConnected = false;
 
-  $rootScope.$on("AuthChange", function (event, value) {
+  $rootScope.$on('AuthChange', function (event, value) {
     if (value === false) {
       //we logged out
       self.regions = {};
@@ -47,23 +39,23 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
   });
 
   self.connect = function () {
-    $rootScope.$broadcast("SyncBegin");
-    console.log("Connecting to: " + remoteURL);
+    $rootScope.$broadcast('SyncBegin');
+    console.log('Connecting to: ' + remoteURL);
     self.ws = new ReconnectingWebSocket(remoteURL);
 
     self.ws.onopen = function () {
-      console.log("Socket has been opened!");
-      $rootScope.$broadcast("ServerConnected");
+      console.log('Socket has been opened!');
+      $rootScope.$broadcast('ServerConnected');
       self.serverConnected = true;
-      self.request("GetState", "", function () {
-        $rootScope.$broadcast("SyncComplete");
+      self.request('GetState', '', function () {
+        $rootScope.$broadcast('SyncComplete');
       });
     };
 
     self.ws.onmessage = function (evt) {
-      var message = $.parseJSON(evt.data);
+      var message = angular.fromJson(evt.data);
       switch (message.MessageType) {
-      case "User":
+      case 'User':
         var user = message.Message;
         if (user.Suspended) {
           self.suspendedUsers[user.UserID] = user;
@@ -76,78 +68,78 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
             delete self.suspendedUsers[user.UserID];
           }
         }
-        $rootScope.$broadcast("UserUpdate", user);
-        break
-      case "PendingUser":
+        $rootScope.$broadcast('UserUpdate', user);
+        break;
+      case 'PendingUser':
         self.pendingUsers[message.Message.UserID] = message.Message;
-        $rootScope.$broadcast("PendingUserUpdate", message.Message);
+        $rootScope.$broadcast('PendingUserUpdate', message.Message);
         break;
-      case "Region":
+      case 'Region':
         self.regions[message.Message.UUID] = message.Message;
-        $rootScope.$broadcast("RegionUpdate", message.Message);
+        $rootScope.$broadcast('RegionUpdate', message.Message);
         break;
-      case "Estate":
+      case 'Estate':
         self.estates[message.Message.ID] = message.Message;
-        $rootScope.$broadcast("EstateUpdate", message.Message);
+        $rootScope.$broadcast('EstateUpdate', message.Message);
         break;
-      case "Group":
+      case 'Group':
         self.groups[message.Message.ID] = message.Message;
-        $rootScope.$broadcast("GroupUpdate", message.Message);
+        $rootScope.$broadcast('GroupUpdate', message.Message);
         break;
-      case "Job":
-        message.Message.Data = JSON.parse(message.Message.Data)
+      case 'Job':
+        message.Message.Data = JSON.parse(message.Message.Data);
         self.jobs[message.Message.ID] = message.Message;
-        $rootScope.$broadcast("JobUpdate", message.Message);
+        $rootScope.$broadcast('JobUpdate', message.Message);
         break;
-      case "Config":
-        $rootScope.$broadcast("ConfigUpdate", message.Message);
+      case 'Config':
+        $rootScope.$broadcast('ConfigUpdate', message.Message);
         break;
-      case "Host":
+      case 'Host':
         self.hosts[message.Message.ID] = message.Message;
-        $rootScope.$broadcast("HostUpdate", message.Message);
+        $rootScope.$broadcast('HostUpdate', message.Message);
         break;
-      case "HostStat":
+      case 'HostStat':
         if( message.Message.ID in self.hosts){
           self.hosts[message.Message.ID].Status = message.Message;
-          $rootScope.$broadcast("HostStatusUpdate", message.Message);
+          $rootScope.$broadcast('HostStatusUpdate', message.Message);
         }
         break;
-      case "RegionStat":
+      case 'RegionStat':
         if(message.Message.UUID in self.regions){
           self.regions[message.Message.UUID].Status = message.Message;
-          $rootScope.$broadcast("RegionStatusUpdate", message.Message);
+          $rootScope.$broadcast('RegionStatusUpdate', message.Message);
         }
         break;
-      case "Success":
+      case 'Success':
         var msgID = message.MessageID;
         if (msgID in requestMap) {
           requestMap[msgID].Callback(true, message.Message);
           delete requestMap[msgID];
         } else {
-          console.log("Invalid success for nonexistant request: " + msgID);
+          console.log('Invalid success for nonexistant request: ' + msgID);
           console.log(message.Message);
         }
         break;
-      case "Error":
-        var msgID = message.MessageID;
+      case 'Error':
+        msgID = message.MessageID;
         if (msgID in requestMap) {
           requestMap[msgID].Callback(false, message.Message);
           delete requestMap[msgID];
         } else {
-          console.log("Invalid error for nonexistant request: " + msgID);
+          console.log('Invalid error for nonexistant request: ' + msgID);
         }
         break;
       default:
-        console.log("Error parsing message:");
+        console.log('Error parsing message:');
         console.log(message);
-      };
+      }
 
-    }
+    };
 
-    self.ws.onclose = function (message) {
-      console.log("Connection closed");
+    self.ws.onclose = function () {
+      console.log('Connection closed');
       self.serverConnected = false;
-    }
+    };
   };
 
   self.disconnect = function () {
@@ -161,48 +153,48 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
     var msgId = requestNum;
     requestNum++;
     requestMap[msgId] = {
-      "MessageID": msgId,
-      "Callback": callback
+      'MessageID': msgId,
+      'Callback': callback
     };
     self.ws.send(JSON.stringify({
-      "MessageID": msgId,
-      "MessageType": requestType,
-      "Message": reqObject
+      'MessageID': msgId,
+      'MessageType': requestType,
+      'Message': reqObject
     }));
-  }
+  };
 
   /* location tracking */
-  var locationStack = new Array();
+  var locationStack = [];
   self.pushLocation = function (url) {
     locationStack.push(url);
-  }
+  };
   self.popLocation = function () {
     return locationStack.pop();
-  }
+  };
 
   self.upload = function (url, file) {
     return $q(function (resolve, reject) {
       var form = new FormData();
-      form.append("file", file);
+      form.append('file', file);
       $http.post(url, form, {
           transformRequest: angular.identity,
           headers: {
             'Content-Type': undefined
           }
         })
-        .success(function (data, status, headers, config) {
+        .success(function (/*data, status, headers, config*/) {
           resolve();
         })
-        .error(function (data, status, headers, config) {
+        .error(function (data, status /*, headers, config*/) {
           reject(status);
         });
     });
-  }
+  };
 
   /* utility functions */
   self.deleteJob = function(job){
     return $q(function (resolve, reject) {
-      self.request("DeleteJob",{
+      self.request('DeleteJob',{
         ID: job.ID
       }, function(success, message){
         if(success){
@@ -211,8 +203,8 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
         } else {
           reject(message);
         }
-      })
+      });
 
     });
-  }
+  };
 });

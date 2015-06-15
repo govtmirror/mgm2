@@ -7,17 +7,12 @@
  * # mgmHostRow
  */
 angular.module('mgmApp')
-  .directive('mgmChart', function ($timeout) {
+  .directive('mgmChart', function () {
 
     var template = '<svg width="80" height="40"></svg>';
 
-    function type(d) {
-      d.value = +d.value; // coerce to number
-      return d;
-    }
-
     var drawChart = function (scope, element, attrs, dataset) {
-      var id = attrs.id
+      var id = attrs.id;
       var margin = {
         top: 0,
         right: 0,
@@ -40,52 +35,52 @@ angular.module('mgmApp')
         .domain([0, 100])
         .range([h, 0]);
 
-      var svg = d3.select('#' + id).select("svg")
-        .attr("width", w + margin.right + margin.left)
-        .attr("height", h + margin.top + margin.bottom)
+      var svg = d3.select('#' + id).select('svg')
+        .attr('width', w + margin.right + margin.left)
+        .attr('height', h + margin.top + margin.bottom);
 
-      var rectCount = svg.selectAll("rect").size();
+      var rectCount = svg.selectAll('rect').size();
 
       if(rectCount > 0){
         //update data
         svg
-          .selectAll("rect")
+          .selectAll('rect')
           .data(dataset)
           .transition()
-          .attr("x", function (d, i) {
+          .attr('x', function (d) {
             return xScale(d.key);
           })
-          .attr("y", function (d) {
+          .attr('y', function (d) {
             return yScale(d.val);
           })
-          .attr("width", xScale.rangeBand())
-          .attr("height", function (d) {
+          .attr('width', xScale.rangeBand())
+          .attr('height', function (d) {
             return h - yScale(d.val);
           })
-          .attr("fill", function (d) {
-            return "rgb(0,0,0)";
-          })
+          .attr('fill', function () {
+            return 'rgb(0,0,0)';
+          });
       } else {
         //insert data
         svg
-          .selectAll("rect")
+          .selectAll('rect')
           .data(dataset)
-          .enter().append("rect")
-          .attr("x", function (d, i) {
+          .enter().append('rect')
+          .attr('x', function (d) {
             return xScale(d.key);
           })
-          .attr("y", function (d) {
+          .attr('y', function (d) {
             return yScale(d.val);
           })
-          .attr("width", xScale.rangeBand())
-          .attr("height", function (d) {
+          .attr('width', xScale.rangeBand())
+          .attr('height', function (d) {
             return h - yScale(d.val);
           })
-          .attr("fill", function (d) {
-            return "rgb(0,0,0)";
-          })
+          .attr('fill', function () {
+            return 'rgb(0,0,0)';
+          });
       }
-    }
+    };
 
     var linkFunction = function (scope, element, attrs) {
       scope.$watch('data', function(){

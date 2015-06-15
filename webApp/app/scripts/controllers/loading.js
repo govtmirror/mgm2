@@ -15,19 +15,19 @@ angular.module('mgmApp')
       mgmPublic.resumeSession();
     }
 
-    $scope.$on("ResumeFailed", function (event) {
-      $location.url("/login");
+    $scope.$on('ResumeFailed', function (/*event*/) {
+      $location.url('/login');
     });
 
-    $scope.$on("SyncComplete", function (event, data) {
+    $scope.$on('SyncComplete', function (/*event, data*/) {
       var url = mgm.popLocation();
-      if (url === undefined || url == "/loading" || url == "/login") {
-        console.log("no url found, redirecting to account page");
+      if (url === undefined || url === '/loading' || url === '/login') {
+        console.log('no url found, redirecting to account page');
         $timeout(function () {
-          $location.url("/account");
+          $location.url('/account');
         }, 1);
       } else {
-        console.log("redirecting to " + url);
+        console.log('redirecting to ' + url);
         $timeout(function () {
           $location.url(url);
         }, 1);

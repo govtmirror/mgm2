@@ -14,6 +14,6 @@ angular.module('mgmApp')
 
     if ($scope.auth === undefined || $scope.auth === {}) {
       mgm.pushLocation($location.url());
-      $location.url("/loading");
+      $location.url('/loading');
     }
   });
