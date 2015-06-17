@@ -80,11 +80,11 @@ angular.module('mgmApp')
             }
           }
           var modInst = $modal.open({
-            animation: true,
+            animation: false,
             templateUrl: 'manageSettingsModal.html',
             backdrop: 'static',
             keyboard: false,
-            controller: 'ManageRegionSettingsCtrl',
+            controller: 'ManageregionCtrl',
             resolve: {
               region: function() {
                 return region;
@@ -195,28 +195,4 @@ angular.module('mgmApp')
       estateifyRegion('', mgm.regions[uuid]);
     }
 
-  });
-
-angular.module('mgmApp')
-  .controller('ManageRegionSettingsCtrl', function($scope, $modalInstance, region, estates, hosts) {
-
-    $scope.region = region;
-    $scope.estates = estates;
-    $scope.hosts = hosts;
-
-    $scope.close = function() {
-      $modalInstance.close();
-    };
-
-    $scope.setXY = function(x, y){
-      console.log('Set x,y to: ' + x + ', ' + y);
-    };
-
-    $scope.setEstate = function(estate){
-      console.log('Set estate to: ' + estate.Name);
-    };
-
-    $scope.setHost = function(host){
-      console.log('Set host to: ' + host.Hostname);
-    };
   });
