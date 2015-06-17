@@ -12,7 +12,7 @@ import (
 // Manager controls and notifies on region / estate changes and permissions
 type Manager interface {
 	GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error)
-	GetRegionByID(id uuid.UUID) (mgm.Region, error)
+	GetRegionByID(id uuid.UUID) (mgm.Region, bool, error)
 	GetDefaultConfigs() ([]mgm.ConfigOption, error)
 	GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error)
 	GetRegions() ([]mgm.Region, error)
@@ -55,7 +55,7 @@ func (rm regionMgr) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error) {
 	return rgs, nil
 }
 
-func (rm regionMgr) GetRegionByID(id uuid.UUID) (mgm.Region, error) {
+func (rm regionMgr) GetRegionByID(id uuid.UUID) (mgm.Region, bool, error) {
 	return rm.db.GetRegionByID(id)
 }
 

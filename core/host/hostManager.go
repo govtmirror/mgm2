@@ -1,6 +1,7 @@
 package host
 
 import (
+	"errors"
 	"net"
 	"strconv"
 
@@ -18,8 +19,9 @@ type Manager interface {
 	SubscribeRegionStats() core.Subscription
 	StartRegionOnHost(mgm.Region, mgm.Host, core.ServiceRequest)
 	KillRegionOnHost(mgm.Region, mgm.Host, core.ServiceRequest)
-	GetHostByID(id uint) (mgm.Host, error)
+	GetHostByID(id int) (mgm.Host, bool, error)
 	GetHosts() []mgm.Host
+	RemoveHost(mgm.Host) error
 }
 
 // NewManager constructs NodeManager instances
@@ -34,7 +36,7 @@ func NewManager(port int, rMgr region.Manager, db database.Database, log logger.
 	mgr.internalMsgs = make(chan internalMsg, 32)
 	mgr.requestChan = make(chan Message, 32)
 	mgr.regionMgr = rMgr
-	ch := make(chan nodeSession, 32)
+	ch := make(chan hostSession, 32)
 	go mgr.process(ch)
 
 	//initialize internal structures
@@ -43,7 +45,7 @@ func NewManager(port int, rMgr region.Manager, db database.Database, log logger.
 		return nm{}, err
 	}
 	for _, h := range hosts {
-		s := nodeSession{
+		s := hostSession{
 			host:           h,
 			hostSubs:       mgr.hostSubs,
 			hostStatSubs:   mgr.hostStatSubs,
@@ -90,7 +92,7 @@ func (nm nm) GetHosts() []mgm.Host {
 	return hosts
 }
 
-func (nm nm) GetHostByID(id uint) (mgm.Host, error) {
+func (nm nm) GetHostByID(id int) (mgm.Host, bool, error) {
 	return nm.db.GetHostByID(id)
 }
 
@@ -112,6 +114,10 @@ func (nm nm) KillRegionOnHost(region mgm.Region, host mgm.Host, sr core.ServiceR
 	}
 }
 
+func (nm nm) RemoveHost(host mgm.Host) error {
+	return errors.New("not implemented")
+}
+
 func (nm nm) SubscribeHost() core.Subscription {
 	return nm.hostSubs.Subscribe()
 }
@@ -124,8 +130,8 @@ func (nm nm) SubscribeRegionStats() core.Subscription {
 	return nm.regionStatSubs.Subscribe()
 }
 
-func (nm nm) process(newConns <-chan nodeSession) {
-	conns := make(map[int]nodeSession)
+func (nm nm) process(newConns <-chan hostSession) {
+	conns := make(map[int]hostSession)
 
 	haltedHost := make(chan int, 16)
 
@@ -207,7 +213,7 @@ func (nm nm) process(newConns <-chan nodeSession) {
 }
 
 // NodeManager receives and communicates with mgm Node processes
-func (nm nm) listen(newConns chan<- nodeSession) {
+func (nm nm) listen(newConns chan<- hostSession) {
 
 	ln, err := net.Listen("tcp", ":"+strconv.Itoa(nm.listenPort))
 	if err != nil {
@@ -226,9 +232,14 @@ func (nm nm) listen(newConns chan<- nodeSession) {
 		//validate connection, and identify host
 		addr := conn.RemoteAddr()
 		address := addr.(*net.TCPAddr).IP.String()
-		host, err := nm.db.GetHostByAddress(address)
+		host, exists, err := nm.db.GetHostByAddress(address)
 		if err != nil {
 			nm.logger.Error("Error looking up mgm Node %v: %v", address, err)
+			conn.Close()
+			continue
+		}
+		if !exists {
+			nm.logger.Error("mgm Node %v does not exist", address, err)
 			conn.Close()
 			continue
 		}
@@ -238,7 +249,7 @@ func (nm nm) listen(newConns chan<- nodeSession) {
 		}
 		nm.logger.Info("MGM Node connection from: %v (%v)", host.ID, address)
 
-		s := nodeSession{host: host, conn: conn}
+		s := hostSession{host: host, conn: conn}
 		newConns <- s
 	}
 }

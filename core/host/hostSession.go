@@ -11,7 +11,7 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-type nodeSession struct {
+type hostSession struct {
 	host           mgm.Host
 	Running        bool
 	conn           net.Conn
@@ -24,7 +24,7 @@ type nodeSession struct {
 	log            logger.Log
 }
 
-func (ns nodeSession) process(closing chan<- int) {
+func (ns hostSession) process(closing chan<- int) {
 	readMsgs := make(chan Message, 32)
 	writeMsgs := make(chan Message, 32)
 	nc := Comms{

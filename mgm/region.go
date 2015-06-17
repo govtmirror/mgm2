@@ -18,7 +18,7 @@ type Region struct {
 	ConsolePass  uuid.UUID
 	LocX         uint
 	LocY         uint
-	Host         uint
+	Host         int
 	IsRunning    bool
 	EstateName   string
 
@@ -61,7 +61,7 @@ func (r Region) Serialize() []byte {
 		Size       uint
 		LocX       uint
 		LocY       uint
-		Host       uint
+		Host       int
 		IsRunning  bool
 		EstateName string
 	}

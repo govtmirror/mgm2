@@ -1,7 +1,7 @@
 package region
 
 import (
-	"errors"
+	"database/sql"
 
 	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/mgm"
@@ -61,11 +61,11 @@ func (db regionDatabase) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error)
 }
 
 // GetRegionByID retrieves a single region that matches the id given
-func (db regionDatabase) GetRegionByID(id uuid.UUID) (mgm.Region, error) {
+func (db regionDatabase) GetRegionByID(id uuid.UUID) (mgm.Region, bool, error) {
 	r := mgm.Region{}
 	con, err := db.mysql.GetConnection()
 	if err != nil {
-		return r, err
+		return r, false, err
 	}
 	defer con.Close()
 
@@ -84,12 +84,12 @@ func (db regionDatabase) GetRegionByID(id uuid.UUID) (mgm.Region, error) {
 		&r.Host,
 	)
 	if err != nil {
-		return r, err
+		if err == sql.ErrNoRows {
+			return r, false, nil
+		}
+		return r, false, err
 	}
-	if id != r.UUID {
-		return r, errors.New("Region Not Found")
-	}
-	return r, nil
+	return r, true, nil
 }
 
 // GetRegions gets all region records from the database

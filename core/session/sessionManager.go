@@ -19,10 +19,10 @@ type Manager interface {
 }
 
 // NewManager constructs a session manager for use
-func NewManager(sessionListener <-chan core.UserSession, userMgr user.Manager, jobMgr job.Manager, nodeMgr host.Manager, regionMgr region.Manager, uConn core.UserConnector, log logger.Log) Manager {
+func NewManager(sessionListener <-chan core.UserSession, userMgr user.Manager, jobMgr job.Manager, hostMgr host.Manager, regionMgr region.Manager, uConn core.UserConnector, log logger.Log) Manager {
 	sMgr := sessionMgr{}
 	sMgr.jobMgr = jobMgr
-	sMgr.nodeMgr = nodeMgr
+	sMgr.hostMgr = hostMgr
 	sMgr.regionMgr = regionMgr
 	sMgr.log = logger.Wrap("SESSION", log)
 	sMgr.userConn = uConn
@@ -37,7 +37,7 @@ func NewManager(sessionListener <-chan core.UserSession, userMgr user.Manager, j
 type sessionMgr struct {
 	sessionListener <-chan core.UserSession
 	jobMgr          job.Manager
-	nodeMgr         host.Manager
+	hostMgr         host.Manager
 	regionMgr       region.Manager
 	userMgr         user.Manager
 	userConn        core.UserConnector
@@ -79,9 +79,9 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 
 	go us.Read(clientMsg)
 
-	host := sm.nodeMgr.SubscribeHost()
-	hostStats := sm.nodeMgr.SubscribeHostStats()
-	regionStats := sm.nodeMgr.SubscribeRegionStats()
+	host := sm.hostMgr.SubscribeHost()
+	hostStats := sm.hostMgr.SubscribeHostStats()
+	regionStats := sm.hostMgr.SubscribeRegionStats()
 
 	var console region.RestConsole
 
@@ -106,6 +106,43 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 			m := core.UserRequest{}
 			m.Load(msg)
 			switch m.MessageType {
+			case "RemoveHost":
+				if us.GetAccessLevel() < 250 {
+					us.SignalError(m.MessageID, "Permission Denied")
+					continue
+				}
+				hostID, err := m.ReadID()
+				if err != nil {
+					us.SignalError(m.MessageID, "Invalid format")
+					continue
+				}
+				h, exists, err := sm.hostMgr.GetHostByID(hostID)
+				if err != nil {
+					us.SignalError(m.MessageID, "Error looking up host")
+					sm.log.Error("delete host %v failed, error finding host", hostID)
+					continue
+				}
+				if !exists {
+					us.SignalError(m.MessageID, "Invalid host")
+					sm.log.Error("delete host %v failed, host does not exist", hostID)
+					continue
+				}
+
+				//loop over regions, unassigning them (node kills them if running)
+				for _, uuid := range h.Regions {
+					r, exists, err := sm.regionMgr.GetRegionByID(uuid)
+					if err != nil || !exists {
+						continue
+					}
+					sm.regionMgr.SetHostForRegion(r, mgm.Host{})
+				}
+
+				err = sm.hostMgr.RemoveHost(h)
+				if err != nil {
+					us.SignalError(m.MessageID, err.Error())
+				}
+				us.SignalSuccess(m.MessageID, "host removed")
+
 			case "StartRegion":
 				regionID, err := m.ReadRegionID()
 				if err != nil {
@@ -124,9 +161,14 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 					sm.log.Error("start region %v failed, requesting user does not exist", regionID)
 					continue
 				}
-				r, err := sm.regionMgr.GetRegionByID(regionID)
+				r, exists, err := sm.regionMgr.GetRegionByID(regionID)
 				if err != nil {
 					us.SignalError(m.MessageID, fmt.Sprintf("Error locating region: %v", err.Error()))
+					sm.log.Error("start region %v failed", regionID)
+					continue
+				}
+				if !exists {
+					us.SignalError(m.MessageID, fmt.Sprintf("Region does not exist"))
 					sm.log.Error("start region %v failed, region not found", regionID)
 					continue
 				}
@@ -138,7 +180,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 					continue
 				}
 
-				sm.nodeMgr.StartRegionOnHost(r, h, func(success bool, message string) {
+				sm.hostMgr.StartRegionOnHost(r, h, func(success bool, message string) {
 					if success {
 						us.SignalSuccess(m.MessageID, message)
 					} else {
@@ -163,10 +205,15 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 					sm.log.Error("kill region %v failed, requesting user does not exist", regionID)
 					continue
 				}
-				r, err := sm.regionMgr.GetRegionByID(regionID)
+				r, exists, err := sm.regionMgr.GetRegionByID(regionID)
 				if err != nil {
 					us.SignalError(m.MessageID, fmt.Sprintf("Error locating region: %v", err.Error()))
-					sm.log.Error("kill region %v failed, region not found", regionID)
+					sm.log.Error("kill region %v failed: %v", regionID, err.Error())
+					continue
+				}
+				if !exists {
+					us.SignalError(m.MessageID, fmt.Sprintf("Region does not exist"))
+					sm.log.Error("kill region %v failed, region does not exist", regionID)
 					continue
 				}
 
@@ -177,7 +224,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 					continue
 				}
 
-				sm.nodeMgr.KillRegionOnHost(r, h, func(success bool, message string) {
+				sm.hostMgr.KillRegionOnHost(r, h, func(success bool, message string) {
 					if success {
 						us.SignalSuccess(m.MessageID, message)
 					} else {
@@ -202,10 +249,15 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 					sm.log.Error("region console %v failed, requesting user does not exist", regionID)
 					continue
 				}
-				r, err := sm.regionMgr.GetRegionByID(regionID)
+				r, exists, err := sm.regionMgr.GetRegionByID(regionID)
 				if err != nil {
 					us.SignalError(m.MessageID, fmt.Sprintf("Error locating region: %v", err.Error()))
-					sm.log.Error("region console %v failed, region not found", regionID)
+					sm.log.Error("region console %v failed: %v", regionID, err.Error())
+					continue
+				}
+				if !exists {
+					us.SignalError(m.MessageID, fmt.Sprintf("Region does not exist"))
+					sm.log.Error("region console %v failed, region does not exist", regionID)
 					continue
 				}
 
@@ -407,7 +459,7 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 				groups = nil
 				//only administrative users need host access
 				if us.GetAccessLevel() > 249 {
-					hosts := sm.nodeMgr.GetHosts()
+					hosts := sm.hostMgr.GetHosts()
 					for _, h := range hosts {
 						us.Send(h)
 					}

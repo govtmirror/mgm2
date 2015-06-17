@@ -50,6 +50,15 @@ angular.module('mgmApp')
         });
         modInst.result.then(function() {
           console.log('remove host confirmed');
+          mgm.request('RemoveHost', {'ID' : host.ID}, function(done, message){
+            if(done){
+              //host is deleted
+              console.log("Success: " + message);
+            } else {
+              //an error occurred
+              console.log("Error: " + message);
+            }
+          });
         });
       },
       countRunning: function(host){

@@ -119,7 +119,10 @@ func (um userManager) RequestControlPermission(region mgm.Region, user mgm.User)
 
 	if user.AccessLevel > 249 {
 		//admin level user, grant permission implicitly
-		h, err := um.hMgr.GetHostByID(region.Host)
+		h, exists, err := um.hMgr.GetHostByID(region.Host)
+		if !exists {
+			return h, errors.New("Does Not Exist")
+		}
 		return h, err
 	}
 
@@ -132,10 +135,13 @@ func (um userManager) RequestControlPermission(region mgm.Region, user mgm.User)
 
 	for _, r := range regions {
 		if r.UUID == region.UUID {
-			h, err = um.hMgr.GetHostByID(r.Host)
+			h, exists, err := um.hMgr.GetHostByID(r.Host)
 			if err != nil {
 				um.log.Error("Error host by address: %v", err.Error())
 				return h, err
+			}
+			if !exists {
+				return h, errors.New("Does Not Exist")
 			}
 			return h, nil
 		}

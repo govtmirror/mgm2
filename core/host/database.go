@@ -64,14 +64,14 @@ func (db hostDatabase) GetHosts() ([]mgm.Host, error) {
 }
 
 // GetHostByAddress retrieves a host record by address
-func (db hostDatabase) GetHostByID(id uint) (mgm.Host, error) {
+func (db hostDatabase) GetHostByID(id int) (mgm.Host, bool, error) {
 	h := mgm.Host{}
 	if id == 0 {
-		return h, errors.New("No assigned host")
+		return h, false, errors.New("No assigned host")
 	}
 	con, err := db.mysql.GetConnection()
 	if err != nil {
-		return h, err
+		return h, false, err
 	}
 	defer con.Close()
 
@@ -84,14 +84,14 @@ func (db hostDatabase) GetHostByID(id uint) (mgm.Host, error) {
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return h, errors.New("No Host Found")
+			return h, false, nil
 		}
-		return h, err
+		return h, false, err
 	}
 
 	rows, err := con.Query("SELECT uuid FROM regions WHERE host=?", h.ID)
 	if err != nil {
-		return h, err
+		return h, false, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -100,20 +100,20 @@ func (db hostDatabase) GetHostByID(id uint) (mgm.Host, error) {
 			&u,
 		)
 		if err != nil {
-			return h, err
+			return h, false, err
 		}
 		h.Regions = append(h.Regions, u)
 	}
 
-	return h, nil
+	return h, true, nil
 }
 
 // GetHostByAddress retrieves a host record by address
-func (db hostDatabase) GetHostByAddress(address string) (mgm.Host, error) {
+func (db hostDatabase) GetHostByAddress(address string) (mgm.Host, bool, error) {
 	h := mgm.Host{}
 	con, err := db.mysql.GetConnection()
 	if err != nil {
-		return h, err
+		return h, false, err
 	}
 	defer con.Close()
 
@@ -125,15 +125,15 @@ func (db hostDatabase) GetHostByAddress(address string) (mgm.Host, error) {
 		&h.Slots,
 	)
 	if err != nil {
-		if err.Error() == "sql: no rows in result set" {
-			return h, errors.New("Host not found")
+		if err == sql.ErrNoRows {
+			return h, false, nil
 		}
-		return h, err
+		return h, false, err
 	}
 
 	rows, err := con.Query("SELECT uuid FROM regions WHERE host=?", h.ID)
 	if err != nil {
-		return h, err
+		return h, false, err
 	}
 	defer rows.Close()
 	for rows.Next() {
@@ -142,12 +142,12 @@ func (db hostDatabase) GetHostByAddress(address string) (mgm.Host, error) {
 			&u,
 		)
 		if err != nil {
-			return h, err
+			return h, false, err
 		}
 		h.Regions = append(h.Regions, u)
 	}
 
-	return h, nil
+	return h, true, nil
 }
 
 func (db hostDatabase) UpdateHost(h mgm.Host, reg Registration) (mgm.Host, error) {
