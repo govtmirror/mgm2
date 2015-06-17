@@ -228,7 +228,7 @@ func (nm nm) listen(newConns chan<- nodeSession) {
 		address := addr.(*net.TCPAddr).IP.String()
 		host, err := nm.db.GetHostByAddress(address)
 		if err != nil {
-			nm.logger.Error("Error looking up mgm Node: ", err)
+			nm.logger.Error("Error looking up mgm Node %v: %v", address, err)
 			conn.Close()
 			continue
 		}
