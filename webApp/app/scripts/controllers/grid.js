@@ -8,7 +8,7 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('GridCtrl', function ($scope, mgm, $location, $routeParams, $timeout) {
+  .controller('GridCtrl', function ($scope, mgm, $location, $routeParams, $timeout, $modal) {
 
     if ($scope.auth === undefined || $scope.auth === {}) {
       mgm.pushLocation($location.url());
@@ -27,11 +27,38 @@ angular.module('mgmApp')
 
     $scope.host = {
       delete: function(host){
-        alertify.confirm("Are you sure you want to remove this host?  All regions will be halted, and unassigned.", function(doit) {
-          if(doit) {
-            console.log("Do it!!!! Do It NOW!!!!!!!");
+        host.RunningRegions = 0;
+        if(host.Regions != null){
+          var regions = mgm.regions;
+          for(var uuid in host.Regions){
+            if(regions[uuid].Running){
+              host.RunningRegions++;
+            }
           }
-        })
+        }
+        var modInst = $modal.open({
+          animation: false,
+          templateUrl: 'removeHostModal.html',
+          backdrop: 'static',
+          keyboard: false,
+          controller: 'ConfirmCtrl',
+          resolve: {
+            object: function() {
+              return host;
+            },
+          }
+        });
+        modInst.result.then(function() {
+          console.log('remove host confirmed');
+        });
+      },
+      countRunning: function(host){
+        var running = 0;
+        var regions = mgm.regions;
+        for(var uuid in host.Regions) {
+          console.log(uuid);
+        }
+        return ""+ running;
       }
 
     };

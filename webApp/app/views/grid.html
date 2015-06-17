@@ -84,3 +84,24 @@
     </tr>
   </table>
 </div>
+
+<script type="text/ng-template" id="removeHostModal.html">
+  <div class="modal-header">
+    <table>
+      <tr>
+        <td><h3 class="modal-title">{{object.Hostname}}</h3></td>
+      </tr>
+    </table>
+  </div>
+  <div class="modal-body">
+    <p>Are you sure you want to remove this host?</p>
+
+    <p>There are {{object.RunningRegions}} regions running on this host that will immediately be killed.</p>
+
+    <p>here are {{hst.Regions? hst.Regions.length : 0}} regions running on this host that will be unassigned.</p>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-danger" ng-click="confirm()">Yes</button>
+    <button class="btn btn-primary" ng-click="cancel()">No/Cancel</button>
+  </div>
+</script>
