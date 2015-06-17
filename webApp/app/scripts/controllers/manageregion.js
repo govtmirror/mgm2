@@ -15,7 +15,7 @@ angular.module('mgmApp')
     $scope.hosts = hosts;
 
     $scope.close = function() {
-      $modalInstance.close(true);
+      $modalInstance.close();
     };
 
     $scope.setXY = function(x, y){
