@@ -15,7 +15,7 @@ angular.module('mgmApp')
       $location.url('/loading');
     }
 
-    var dummyEntry = ' <show all estates>';
+    var dummyEntry = '<show all estates>';
 
     var regions = {};
     $scope.estates = {};
@@ -66,14 +66,15 @@ angular.module('mgmApp')
         } else {
           //prime region with estate object so forms play nicer
           var estates = mgm.estates;
-          for(var id in estates){
+          var id;
+          for(id in estates){
             if(estates[id].Name === region.EstateName){
               region.estate = estates[id];
             }
           }
           var hosts = mgm.hosts;
-          hosts[0] = {ID: 0, Hostname: '<none>'}
-          for(var id in hosts){
+          hosts[0] = {ID: 0, Hostname: '<none>'};
+          for(id in hosts){
             if(hosts[id].ID === region.Host){
               region.host = hosts[id];
             }
@@ -97,7 +98,7 @@ angular.module('mgmApp')
             }
           });
           modInst.result.then(function() {
-            console.log("modal closed");
+            console.log('modal closed');
             delete region.estate;
             delete region.host;
           });
@@ -119,6 +120,11 @@ angular.module('mgmApp')
         //listing all estates
         //iterate over estates, do not list estates where all regions are filtered out
         for (var uuid in $scope.estates[name]) {
+          // we cannot use track by, as estate names may contain spaces
+          // so angular adds $$hashKey, which we must test for
+          if( uuid === '$$hashKey') {
+            continue;
+          }
           if ($scope.estates[name][uuid].Name.includes($scope.search.regionName)) {
             return true;
           }
@@ -204,13 +210,13 @@ angular.module('mgmApp')
 
     $scope.setXY = function(x, y){
       console.log('Set x,y to: ' + x + ', ' + y);
-    }
+    };
 
     $scope.setEstate = function(estate){
       console.log('Set estate to: ' + estate.Name);
-    }
+    };
 
     $scope.setHost = function(host){
       console.log('Set host to: ' + host.Hostname);
-    }
+    };
   });

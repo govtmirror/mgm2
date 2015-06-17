@@ -13,7 +13,6 @@ mkdir /home/vagrant/go
 mkdir /home/vagrant/go/bin
 mkdir /home/vagrant/go/src
 
-echo 'export GOPATH=$HOME/dev/go' >> /home/vagrant/.bashrc
+echo 'export GOPATH=$HOME/go' >> /home/vagrant/.bashrc
 echo 'export GOBIN=$GOPATH/bin' >> /home/vagrant/.bashrc
 echo 'export PATH=$PATH:$GOBIN' >> /home/vagrant/.bashrc
-

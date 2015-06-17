@@ -12,7 +12,7 @@
   </tr>
 </table>
 <table style="width: 100%">
-  <tbody ng-repeat="(eName, regions) in estates | orderBy: eName | filter:search.estateName" ng-show="shouldShow(eName)">
+  <tbody ng-repeat="(eName, regions) in estates | orderBy: eName" ng-show="shouldShow(eName)">
     <tr>
       <td colspan="6">
         <h3>{{eName}}</h3>

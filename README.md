@@ -29,7 +29,7 @@ Required packages:
 setup:  In the root folder of the project, execute `npm install` and `bower install` to download all libraries.
 
 To add to the project, execute `yo angular:[type]` where type is as described at https://github.com/yeoman/generator-angular
-yeoman will update seveal portions of the project, including the unit tests, so you can go directly to pop[ulating the newly created object.
+yeoman will update seveal portions of the project, including the unit tests, so you can go directly to populating the newly created object.
 
 ### back-end
 
@@ -40,6 +40,8 @@ The backend is compiled go code.  Once you have Go installed on your system, and
 ### front-end
 
 Run `grunt` for building and `grunt serve` for preview.  Running `grunt test` will execute the testing suite without outputting to the dist folder.  The preview is a self-reloading on edit preview in a new tab of your default web browser.
+
+Grunt required ruby compass to be installed and available for sass compilation
 
 ### back-end
 
