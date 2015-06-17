@@ -58,7 +58,7 @@
   <table style="width: 100%;">
     <tr>
       <th>
-        <button style="float: left;" ng-click="host.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-secondary btn-sm">Add Host</button>
+        <button style="float: left;" ng-click="host.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-primary btn-sm">Add Host</button>
       </th>
       <th>Hostname</th>
       <th>Address</th>
@@ -70,7 +70,7 @@
     <tr ng-repeat="hst in hosts | orderBy:'Name'" ng-class-odd="'odd'" ng-class-even="'even'">
       <tr style="height:45px;" ng-repeat="hst in hosts | orderBy:'Name'" ng-class-odd="'odd'" ng-class-even="'even'">
         <td>
-          <button>Remove</button>
+          <button class="btn btn-danger btn-sm" ng-click="host.delete(hst)">Remove</button>
         </td>
         <td>{{hst.Hostname}}</td>
         <td>{{hst.Address}}</td>

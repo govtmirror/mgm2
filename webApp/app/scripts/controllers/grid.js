@@ -25,6 +25,17 @@ angular.module('mgmApp')
       return this.section === section;
     };
 
+    $scope.host = {
+      delete: function(host){
+        alertify.confirm("Are you sure you want to remove this host?  All regions will be halted, and unassigned.", function(doit) {
+          if(doit) {
+            console.log("Do it!!!! Do It NOW!!!!!!!");
+          }
+        })
+      }
+
+    };
+
     $scope.estates = mgm.estates;
     $scope.groups = mgm.groups;
     $scope.hosts = mgm.hosts;
