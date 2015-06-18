@@ -49,3 +49,18 @@ func (h HostStat) Serialize() []byte {
 func (h HostStat) ObjectType() string {
 	return "HostStat"
 }
+
+type HostRemoved struct {
+	ID int
+}
+
+// Serialize implements UserObject interface Serialize function
+func (h HostRemoved) Serialize() []byte {
+	data, _ := json.Marshal(h)
+	return data
+}
+
+// ObjectType implements UserObject
+func (h HostRemoved) ObjectType() string {
+	return "HostRemoved"
+}

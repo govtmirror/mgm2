@@ -1,7 +1,7 @@
 package host
 
 import (
-	"errors"
+	"fmt"
 	"net"
 	"strconv"
 
@@ -114,8 +114,13 @@ func (nm nm) KillRegionOnHost(region mgm.Region, host mgm.Host, sr core.ServiceR
 	}
 }
 
-func (nm nm) RemoveHost(host mgm.Host) error {
-	return errors.New("not implemented")
+func (nm nm) RemoveHost(h mgm.Host) error {
+	nm.requestChan <- Message{
+		MessageType: "RemoveHost",
+		Host:        h,
+		SR:          func(ok bool, msg string) {},
+	}
+	return nil
 }
 
 func (nm nm) SubscribeHost() core.Subscription {
@@ -196,6 +201,13 @@ func (nm nm) process(newConns <-chan hostSession) {
 					nm.logger.Info("Host %v not found", nc.Host.ID)
 					nc.SR(false, "Host not found, or not assigned")
 				}
+			case "RemoveHost":
+				if c, ok := conns[nc.Host.ID]; ok {
+					c.conn.Close()
+					c.Running = false
+					c.host.Running = false
+					nm.hostSubs.Broadcast(c.host)
+				}
 			default:
 				nc.SR(false, "Not Implemented")
 			}
@@ -234,12 +246,14 @@ func (nm nm) listen(newConns chan<- hostSession) {
 		address := addr.(*net.TCPAddr).IP.String()
 		host, exists, err := nm.db.GetHostByAddress(address)
 		if err != nil {
-			nm.logger.Error("Error looking up mgm Node %v: %v", address, err)
+			errmsg := fmt.Sprintf("Error looking up mgm Node %v: %v", address, err)
+			nm.logger.Error(errmsg)
 			conn.Close()
 			continue
 		}
 		if !exists {
-			nm.logger.Error("mgm Node %v does not exist", address, err)
+			errmsg := fmt.Sprintf("mgm Node %v does not exist", address)
+			nm.logger.Error(errmsg)
 			conn.Close()
 			continue
 		}

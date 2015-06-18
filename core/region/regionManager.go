@@ -1,6 +1,7 @@
 package region
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/m-o-s-e-s/mgm/core/database"
@@ -47,7 +48,8 @@ func (rm regionMgr) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error) {
 	for i, r := range rgs {
 		n, err := rm.osdb.GetEstateNameForRegion(r)
 		if err != nil {
-			rm.log.Error("Error getting estate for region: %s", err.Error())
+			errMsg := fmt.Sprintf("Error getting estate for region: %s", err.Error())
+			rm.log.Error(errMsg)
 		} else {
 			rgs[i].EstateName = n
 		}
@@ -75,7 +77,8 @@ func (rm regionMgr) GetRegions() ([]mgm.Region, error) {
 	for i, r := range rgs {
 		n, err := rm.osdb.GetEstateNameForRegion(r)
 		if err != nil {
-			rm.log.Error("Error getting estate for region: %s", err.Error())
+			errMsg := fmt.Sprintf("Error getting estate for region: %s", err.Error())
+			rm.log.Error(errMsg)
 		} else {
 			rgs[i].EstateName = n
 		}
@@ -91,7 +94,8 @@ func (rm regionMgr) GetRegionsOnHost(host mgm.Host) ([]mgm.Region, error) {
 	for i, r := range rgs {
 		n, err := rm.osdb.GetEstateNameForRegion(r)
 		if err != nil {
-			rm.log.Error("Error getting estate for region: %s", err.Error())
+			errMsg := fmt.Sprintf("Error getting estate for region: %s", err.Error())
+			rm.log.Error(errMsg)
 		} else {
 			rgs[i].EstateName = n
 		}
@@ -180,7 +184,14 @@ func (rm regionMgr) ServeConfigs(region mgm.Region, host mgm.Host) ([]mgm.Config
 	//convert map into a single slice of ConfigOption
 	for section, m := range configs {
 		for item, content := range m {
-			result = append(result, mgm.ConfigOption{region.UUID, section, item, content})
+			result = append(result,
+				mgm.ConfigOption{
+					Region:  region.UUID,
+					Section: section,
+					Item:    item,
+					Content: content,
+				},
+			)
 		}
 	}
 

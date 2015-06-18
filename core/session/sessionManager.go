@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/host"
@@ -56,10 +57,10 @@ func (sm sessionMgr) process() {
 			case s := <-sm.sessionListener:
 				//new user session
 				userMap[s.GetGUID()] = core.SessionLookup{
-					make(chan mgm.Job, 32),
-					make(chan mgm.HostStat, 32),
-					make(chan mgm.Host, 8),
-					s.GetAccessLevel(),
+					JobLink:      make(chan mgm.Job, 32),
+					HostStatLink: make(chan mgm.HostStat, 32),
+					HostLink:     make(chan mgm.Host, 8),
+					AccessLevel:  s.GetAccessLevel(),
 				}
 				sm.log.Info("User %v Connected", s.GetGUID().String())
 				go sm.userSession(s, userMap[s.GetGUID()], clientClosed)
@@ -119,15 +120,18 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 				h, exists, err := sm.hostMgr.GetHostByID(hostID)
 				if err != nil {
 					us.SignalError(m.MessageID, "Error looking up host")
-					sm.log.Error("delete host %v failed, error finding host", hostID)
+					errMsg := fmt.Sprintf("delete host %v failed, error finding host", hostID)
+					sm.log.Error(errMsg)
 					continue
 				}
 				if !exists {
 					us.SignalError(m.MessageID, "Invalid host")
-					sm.log.Error("delete host %v failed, host does not exist", hostID)
+					errMsg := fmt.Sprintf("delete host %v failed, host does not exist", hostID)
+					sm.log.Error(errMsg)
 					continue
 				}
 
+				//clean off any regions on the host
 				//loop over regions, unassigning them (node kills them if running)
 				for _, uuid := range h.Regions {
 					r, exists, err := sm.regionMgr.GetRegionByID(uuid)
@@ -137,10 +141,16 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 					sm.regionMgr.SetHostForRegion(r, mgm.Host{})
 				}
 
+				var wg sync.WaitGroup
+				wg.Add(1)
+
 				err = sm.hostMgr.RemoveHost(h)
 				if err != nil {
 					us.SignalError(m.MessageID, err.Error())
 				}
+				hd := mgm.HostRemoved{}
+				hd.ID = h.ID
+				us.Send(hd)
 				us.SignalSuccess(m.MessageID, "host removed")
 
 			case "StartRegion":
@@ -153,30 +163,35 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 				user, exists, err := sm.userConn.GetUserByID(us.GetGUID())
 				if err != nil {
 					us.SignalError(m.MessageID, "Error looking up user")
-					sm.log.Error("start region %v failed, error finding requesting user", regionID)
+					errMsg := fmt.Sprintf("start region %v failed, error finding requesting user", regionID)
+					sm.log.Error(errMsg)
 					continue
 				}
 				if !exists {
 					us.SignalError(m.MessageID, "Invalid requesting user")
-					sm.log.Error("start region %v failed, requesting user does not exist", regionID)
+					errMsg := fmt.Sprintf("start region %v failed, requesting user does not exist", regionID)
+					sm.log.Error(errMsg)
 					continue
 				}
 				r, exists, err := sm.regionMgr.GetRegionByID(regionID)
 				if err != nil {
 					us.SignalError(m.MessageID, fmt.Sprintf("Error locating region: %v", err.Error()))
-					sm.log.Error("start region %v failed", regionID)
+					errMsg := fmt.Sprintf("start region %v failed", regionID)
+					sm.log.Error(errMsg)
 					continue
 				}
 				if !exists {
 					us.SignalError(m.MessageID, fmt.Sprintf("Region does not exist"))
-					sm.log.Error("start region %v failed, region not found", regionID)
+					errMsg := fmt.Sprintf("start region %v failed, region not found", regionID)
+					sm.log.Error(errMsg)
 					continue
 				}
 
 				h, err := sm.userMgr.RequestControlPermission(r, user)
 				if err != nil {
 					us.SignalError(m.MessageID, fmt.Sprintf("Error: %v", err.Error()))
-					sm.log.Error("start region %v failed: %v", regionID, err.Error())
+					errMsg := fmt.Sprintf("start region %v failed: %v", regionID, err.Error())
+					sm.log.Error(errMsg)
 					continue
 				}
 
@@ -197,30 +212,35 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 				user, exists, err := sm.userConn.GetUserByID(us.GetGUID())
 				if err != nil {
 					us.SignalError(m.MessageID, "Error looking up user")
-					sm.log.Error("kill region %v failed, error finding requesting user", regionID)
+					errMsg := fmt.Sprintf("kill region %v failed, error finding requesting user", regionID)
+					sm.log.Error(errMsg)
 					continue
 				}
 				if !exists {
 					us.SignalError(m.MessageID, "Invalid requesting user")
-					sm.log.Error("kill region %v failed, requesting user does not exist", regionID)
+					errMsg := fmt.Sprintf("kill region %v failed, requesting user does not exist", regionID)
+					sm.log.Error(errMsg)
 					continue
 				}
 				r, exists, err := sm.regionMgr.GetRegionByID(regionID)
 				if err != nil {
 					us.SignalError(m.MessageID, fmt.Sprintf("Error locating region: %v", err.Error()))
-					sm.log.Error("kill region %v failed: %v", regionID, err.Error())
+					errMsg := fmt.Sprintf("kill region %v failed: %v", regionID, err.Error())
+					sm.log.Error(errMsg)
 					continue
 				}
 				if !exists {
 					us.SignalError(m.MessageID, fmt.Sprintf("Region does not exist"))
-					sm.log.Error("kill region %v failed, region does not exist", regionID)
+					errMsg := fmt.Sprintf("kill region %v failed, region does not exist", regionID)
+					sm.log.Error(errMsg)
 					continue
 				}
 
 				h, err := sm.userMgr.RequestControlPermission(r, user)
 				if err != nil {
 					us.SignalError(m.MessageID, fmt.Sprintf("Error requesting permission: %v", err.Error()))
-					sm.log.Error("kill region %v failed: %v", regionID, err.Error())
+					errMsg := fmt.Sprintf("kill region %v failed: %v", regionID, err.Error())
+					sm.log.Error(errMsg)
 					continue
 				}
 
@@ -241,30 +261,35 @@ func (sm sessionMgr) userSession(us core.UserSession, sLinks core.SessionLookup,
 				user, exists, err := sm.userConn.GetUserByID(us.GetGUID())
 				if err != nil {
 					us.SignalError(m.MessageID, "Error looking up user")
-					sm.log.Error("region console %v failed, error finding requesting user", regionID)
+					errMsg := fmt.Sprintf("region console %v failed, error finding requesting user", regionID)
+					sm.log.Error(errMsg)
 					continue
 				}
 				if !exists {
 					us.SignalError(m.MessageID, "Invalid requesting user")
-					sm.log.Error("region console %v failed, requesting user does not exist", regionID)
+					errMsg := fmt.Sprintf("region console %v failed, requesting user does not exist", regionID)
+					sm.log.Error(errMsg)
 					continue
 				}
 				r, exists, err := sm.regionMgr.GetRegionByID(regionID)
 				if err != nil {
 					us.SignalError(m.MessageID, fmt.Sprintf("Error locating region: %v", err.Error()))
-					sm.log.Error("region console %v failed: %v", regionID, err.Error())
+					errMsg := fmt.Sprintf("region console %v failed: %v", regionID, err.Error())
+					sm.log.Error(errMsg)
 					continue
 				}
 				if !exists {
 					us.SignalError(m.MessageID, fmt.Sprintf("Region does not exist"))
-					sm.log.Error("region console %v failed, region does not exist", regionID)
+					errMsg := fmt.Sprintf("region console %v failed, region does not exist", regionID)
+					sm.log.Error(errMsg)
 					continue
 				}
 
 				h, err := sm.userMgr.RequestControlPermission(r, user)
 				if err != nil {
 					us.SignalError(m.MessageID, fmt.Sprintf("Error requesting permission: %v", err.Error()))
-					sm.log.Error("region console %v failed: %v", regionID, err.Error())
+					errMsg := fmt.Sprintf("region console %v failed: %v", regionID, err.Error())
+					sm.log.Error(errMsg)
 					continue
 				}
 
