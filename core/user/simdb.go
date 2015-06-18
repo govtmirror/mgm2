@@ -1,13 +1,13 @@
 package user
 
 import (
-	"github.com/m-o-s-e-s/mgm/core/database"
+	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
 
 type simDatabase struct {
-	mysql database.Database
+	mysql persist.Database
 }
 
 // GetEstates retrieves all estates from mgm

@@ -1,12 +1,12 @@
 package region
 
 import (
-	"github.com/m-o-s-e-s/mgm/core/database"
+	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
 type simDatabase struct {
-	mysql database.Database
+	mysql persist.Database
 }
 
 func (db simDatabase) GetConnectionString() string {

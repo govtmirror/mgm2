@@ -9,7 +9,7 @@ import (
 // Estate is an opensim estate record
 type Estate struct {
 	Name     string
-	ID       uint
+	ID       int
 	Owner    uuid.UUID
 	Managers []uuid.UUID
 	Regions  []uuid.UUID

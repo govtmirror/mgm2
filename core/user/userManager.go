@@ -1,13 +1,12 @@
 package user
 
 import (
-	"errors"
 	"time"
 
 	"github.com/m-o-s-e-s/mgm/core"
-	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/core/host"
 	"github.com/m-o-s-e-s/mgm/core/logger"
+	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/core/region"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
@@ -15,10 +14,9 @@ import (
 
 // Manager is an interface for working with pending and actual user accounts
 type Manager interface {
-	RequestControlPermission(mgm.Region, mgm.User) (mgm.Host, error)
+	//RequestControlPermission(mgm.Region, mgm.User) (mgm.Host, error)
 	GetPendingUsers() ([]mgm.PendingUser, error)
 	AddPendingUser(name string, email string, template string, password string, summary string) error
-	GetEstates() ([]mgm.Estate, error)
 
 	IsEmailUnique(string) (bool, error)
 	IsNameUnique(name string) (bool, error)
@@ -29,10 +27,9 @@ type Manager interface {
 }
 
 // NewManager constructs a user.Manager for use
-func NewManager(rMgr region.Manager, hMgr host.Manager, userConnector core.UserConnector, db database.Database, sdb database.Database, log logger.Log) Manager {
+func NewManager(rMgr region.Manager, hMgr host.Manager, userConnector core.UserConnector, db persist.Database, log logger.Log) Manager {
 	um := userManager{}
 	um.db = userDatabase{db}
-	um.sdb = simDatabase{sdb}
 	um.log = logger.Wrap("USER", log)
 	um.conn = userConnector
 	um.hMgr = hMgr
@@ -45,7 +42,6 @@ type userManager struct {
 	rMgr region.Manager
 	hMgr host.Manager
 	db   userDatabase
-	sdb  simDatabase
 	conn core.UserConnector
 	log  logger.Log
 }
@@ -110,11 +106,7 @@ func (um userManager) CreatePasswordResetToken(userID uuid.UUID) (uuid.UUID, err
 	return um.db.CreatePasswordResetToken(userID)
 }
 
-func (um userManager) GetEstates() ([]mgm.Estate, error) {
-	return um.sdb.GetEstates()
-}
-
-func (um userManager) RequestControlPermission(region mgm.Region, user mgm.User) (mgm.Host, error) {
+/*func (um userManager) RequestControlPermission(region mgm.Region, user mgm.User) (mgm.Host, error) {
 	h := mgm.Host{}
 
 	if user.AccessLevel > 249 {
@@ -129,7 +121,8 @@ func (um userManager) RequestControlPermission(region mgm.Region, user mgm.User)
 	//make sure user may control this region
 	regions, err := um.rMgr.GetRegionsForUser(user.UserID)
 	if err != nil {
-		um.log.Error("Error retrieving regions for user: %v", err.Error())
+		errMsg := fmt.Sprintf("Error retrieving regions for user: %v", err.Error())
+		um.log.Error(errMsg)
 		return h, err
 	}
 
@@ -137,7 +130,8 @@ func (um userManager) RequestControlPermission(region mgm.Region, user mgm.User)
 		if r.UUID == region.UUID {
 			h, exists, err := um.hMgr.GetHostByID(r.Host)
 			if err != nil {
-				um.log.Error("Error host by address: %v", err.Error())
+				errMsg := fmt.Sprintf("Error host by address: %v", err.Error())
+				um.log.Error(errMsg)
 				return h, err
 			}
 			if !exists {
@@ -147,7 +141,7 @@ func (um userManager) RequestControlPermission(region mgm.Region, user mgm.User)
 		}
 	}
 	return h, errors.New("Permission Denied")
-}
+}*/
 
 func (um userManager) expirePasswordTokens() {
 	for {

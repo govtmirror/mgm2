@@ -4,24 +4,22 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/logger"
+	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/core/region"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
 
 type hostSession struct {
-	host           mgm.Host
-	Running        bool
-	conn           net.Conn
-	hostSubs       core.SubscriptionManager
-	hostStatSubs   core.SubscriptionManager
-	regionStatSubs core.SubscriptionManager
-	regionMgr      region.Manager
-	nodeMgr        nm
-	cmdMsgs        chan Message
-	log            logger.Log
+	host      mgm.Host
+	Running   bool
+	conn      net.Conn
+	regionMgr region.Manager
+	nodeMgr   nm
+	mgm       persist.MGMDB
+	cmdMsgs   chan Message
+	log       logger.Log
 }
 
 func (ns hostSession) process(closing chan<- int) {
@@ -39,7 +37,7 @@ func (ns hostSession) process(closing chan<- int) {
 
 	//place host online
 	ns.host.Running = true
-	ns.hostSubs.Broadcast(ns.host)
+	ns.mgm.UpdateHost(ns.host)
 
 	//track latest region stats, so we can offline them if the node disconnects
 	regions := make(map[uuid.UUID]mgm.RegionStat)
@@ -55,12 +53,12 @@ func (ns hostSession) process(closing chan<- int) {
 			ns.log.Info("disconnected")
 			//update host broadcasters
 			ns.host.Running = false
-			ns.hostSubs.Broadcast(ns.host)
+			ns.mgm.UpdateHost(ns.host)
 			//update region broadcasters
 			for _, stat := range regions {
 				if stat.Running {
 					stat.Running = false
-					ns.regionStatSubs.Broadcast(stat)
+					ns.mgm.UpdateRegionStat(stat)
 				}
 			}
 			//notify manager that we disconnected
@@ -87,21 +85,28 @@ func (ns hostSession) process(closing chan<- int) {
 			switch nmsg.MessageType {
 			case "Register":
 				reg := nmsg.Register
-				h, err := ns.nodeMgr.db.UpdateHost(ns.host, reg)
-				ns.host = h
-				if err != nil {
-					ns.log.Error("Error registering: ", err.Error())
+				//update existing host
+				hosts := ns.mgm.GetHosts()
+				for _, h := range hosts {
+					if h.ExternalAddress == reg.ExternalAddress {
+						h.Hostname = reg.Name
+						h.Slots = reg.Slots
+						ns.mgm.UpdateHost(h)
+						continue
+					}
 				}
-				ns.hostSubs.Broadcast(ns.host)
+				//this host does not exist
+				errMsg := fmt.Sprintf("Recieved registration for nonexistant host: %v", reg.ExternalAddress)
+				ns.log.Error(errMsg)
 			case "HostStats":
 				hStats := nmsg.HStats
 				hStats.ID = ns.host.ID
-				ns.hostStatSubs.Broadcast(hStats)
+				ns.mgm.UpdateHostStat(hStats)
 			case "RegionStats":
 				rStats := nmsg.RStats
 				//track stats value
 				regions[rStats.UUID] = rStats
-				ns.regionStatSubs.Broadcast(rStats)
+				ns.mgm.UpdateRegionStat(regions[rStats.UUID])
 			case "GetRegions":
 				ns.log.Info("requesting regions list")
 				regions, err := ns.regionMgr.GetRegionsOnHost(ns.host)

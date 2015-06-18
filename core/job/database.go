@@ -3,13 +3,13 @@ package job
 import (
 	"encoding/json"
 
-	"github.com/m-o-s-e-s/mgm/core/database"
+	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
 
 type jobDatabase struct {
-	mysql database.Database
+	mysql persist.Database
 }
 
 // GetJobByID retrieve a job record using the id of the job

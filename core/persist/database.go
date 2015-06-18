@@ -1,4 +1,4 @@
-package database
+package persist
 
 import (
 	"database/sql"
@@ -7,10 +7,6 @@ import (
 	// load mysql driver
 	_ "github.com/go-sql-driver/mysql"
 )
-
-//type RegionManager interface {
-//	LoadedRegion(mgm.Region)
-//}
 
 type db struct {
 	user     string

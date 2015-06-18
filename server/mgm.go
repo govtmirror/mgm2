@@ -5,9 +5,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/m-o-s-e-s/mgm/core"
-	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/core/host"
 	"github.com/m-o-s-e-s/mgm/core/job"
+	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/core/region"
 	"github.com/m-o-s-e-s/mgm/core/session"
 	"github.com/m-o-s-e-s/mgm/core/user"
@@ -72,7 +72,7 @@ func main() {
 	mailer := email.NewClientMailer(config.Email, config.MGM.PublicHostname)
 
 	//create our database connector
-	db := database.NewDatabase(
+	db := persist.NewDatabase(
 		config.MySQL.Username,
 		config.MySQL.Password,
 		config.MySQL.Database,
@@ -83,7 +83,7 @@ func main() {
 		logger.Error("Connecting to mysql: ", err)
 		return
 	}
-	osdb := database.NewDatabase(
+	osdb := persist.NewDatabase(
 		config.Opensim.Username,
 		config.Opensim.Password,
 		config.Opensim.Database,
@@ -101,18 +101,21 @@ func main() {
 		return
 	}
 
+	//instantiate our persistance handler
+	pers := persist.NewMGMDB(db, osdb, sim, logger)
+
 	//Hook up core processing...
-	jMgr := job.NewManager(config.MGM.LocalFileStorage, db, logger)
+	jMgr := job.NewManager(config.MGM.LocalFileStorage, pers, logger)
 	rMgr := region.NewManager(config.MGM.MgmURL, config.MGM.SimianURL, db, osdb, logger)
-	nMgr, err := host.NewManager(config.MGM.NodePort, rMgr, db, logger)
+	hMgr, err := host.NewManager(config.MGM.NodePort, rMgr, pers, logger)
 	if err != nil {
 		logger.Error("Error instantiating host manager: ", err)
 		return
 	}
-	uMgr := user.NewManager(rMgr, nMgr, sim, db, osdb, logger)
+	uMgr := user.NewManager(rMgr, hMgr, sim, db, logger)
 	sessionListenerChan := make(chan core.UserSession, 64)
 
-	_ = session.NewManager(sessionListenerChan, uMgr, jMgr, nMgr, rMgr, sim, logger)
+	_ = session.NewManager(sessionListenerChan, pers, uMgr, jMgr, hMgr, rMgr, sim, logger)
 
 	httpCon := webClient.NewHTTPConnector(config.MGM.SessionSecret, jMgr, sim, uMgr, mailer, logger)
 	sockCon := webClient.NewWebsocketConnector(httpCon, sessionListenerChan, logger)

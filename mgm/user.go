@@ -33,6 +33,12 @@ func (u User) Serialize() []byte {
 	return data
 }
 
+//UserCredential holds a users authentication token
+type UserCredential struct {
+	UserID uuid.UUID
+	Hash   string
+}
+
 // PendingUser is a user who has applied, but has not been approved or denied
 type PendingUser struct {
 	Name         string

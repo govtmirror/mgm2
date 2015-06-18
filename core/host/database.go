@@ -4,13 +4,13 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/m-o-s-e-s/mgm/core/database"
+	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
 
 type hostDatabase struct {
-	mysql database.Database
+	mysql persist.Database
 }
 
 // GetHosts retrieves all host records from the database

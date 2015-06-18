@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/core/logger"
+	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
@@ -22,7 +22,7 @@ type Manager interface {
 }
 
 // NewManager constructs a RegionManager for use
-func NewManager(mgmURL string, simianURL string, db database.Database, osdb database.Database, log logger.Log) Manager {
+func NewManager(mgmURL string, simianURL string, db persist.Database, osdb persist.Database, log logger.Log) Manager {
 	rMgr := regionMgr{}
 	rMgr.simianURL = simianURL
 	rMgr.mgmURL = mgmURL

@@ -3,13 +3,13 @@ package region
 import (
 	"database/sql"
 
-	"github.com/m-o-s-e-s/mgm/core/database"
+	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
 
 type regionDatabase struct {
-	mysql database.Database
+	mysql persist.Database
 }
 
 // GetRegionsForUser retrieves region records for a user where the user owns the estate they are in, or is a manager for said estate

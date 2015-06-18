@@ -6,33 +6,24 @@ import (
 	"strconv"
 
 	"github.com/m-o-s-e-s/mgm/core"
-	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/core/logger"
+	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/core/region"
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
 // Manager is the interface to mgmNodes
 type Manager interface {
-	SubscribeHost() core.Subscription
-	SubscribeHostStats() core.Subscription
-	SubscribeRegionStats() core.Subscription
 	StartRegionOnHost(mgm.Region, mgm.Host, core.ServiceRequest)
 	KillRegionOnHost(mgm.Region, mgm.Host, core.ServiceRequest)
-	GetHostByID(id int) (mgm.Host, bool, error)
-	GetHosts() []mgm.Host
-	RemoveHost(mgm.Host) error
 }
 
 // NewManager constructs NodeManager instances
-func NewManager(port int, rMgr region.Manager, db database.Database, log logger.Log) (Manager, error) {
+func NewManager(port int, rMgr region.Manager, pers persist.MGMDB, log logger.Log) (Manager, error) {
 	mgr := nm{}
 	mgr.listenPort = port
-	mgr.db = hostDatabase{db}
+	mgr.mgm = pers
 	mgr.logger = logger.Wrap("HOST", log)
-	mgr.hostSubs = core.NewSubscriptionManager()
-	mgr.hostStatSubs = core.NewSubscriptionManager()
-	mgr.regionStatSubs = core.NewSubscriptionManager()
 	mgr.internalMsgs = make(chan internalMsg, 32)
 	mgr.requestChan = make(chan Message, 32)
 	mgr.regionMgr = rMgr
@@ -40,19 +31,13 @@ func NewManager(port int, rMgr region.Manager, db database.Database, log logger.
 	go mgr.process(ch)
 
 	//initialize internal structures
-	hosts, err := mgr.db.GetHosts()
-	if err != nil {
-		return nm{}, err
-	}
+	hosts := mgr.mgm.GetHosts()
 	for _, h := range hosts {
 		s := hostSession{
-			host:           h,
-			hostSubs:       mgr.hostSubs,
-			hostStatSubs:   mgr.hostStatSubs,
-			regionStatSubs: mgr.regionStatSubs,
-			nodeMgr:        mgr,
-			regionMgr:      rMgr,
-			log:            logger.Wrap(strconv.Itoa(h.ID), mgr.logger),
+			host:      h,
+			nodeMgr:   mgr,
+			regionMgr: rMgr,
+			log:       logger.Wrap(strconv.Itoa(h.ID), mgr.logger),
 		}
 		ch <- s
 	}
@@ -63,14 +48,11 @@ func NewManager(port int, rMgr region.Manager, db database.Database, log logger.
 }
 
 type nm struct {
-	listenPort     int
-	logger         logger.Log
-	listener       net.Listener
-	db             hostDatabase
-	hostSubs       core.SubscriptionManager
-	hostStatSubs   core.SubscriptionManager
-	regionStatSubs core.SubscriptionManager
-	regionMgr      region.Manager
+	listenPort int
+	logger     logger.Log
+	listener   net.Listener
+	mgm        persist.MGMDB
+	regionMgr  region.Manager
 
 	requestChan  chan Message
 	internalMsgs chan internalMsg
@@ -92,8 +74,14 @@ func (nm nm) GetHosts() []mgm.Host {
 	return hosts
 }
 
-func (nm nm) GetHostByID(id int) (mgm.Host, bool, error) {
-	return nm.db.GetHostByID(id)
+func (nm nm) GetHostByID(id int) (mgm.Host, bool) {
+	hosts := nm.mgm.GetHosts()
+	for _, h := range hosts {
+		if h.ID == id {
+			return h, true
+		}
+	}
+	return mgm.Host{}, false
 }
 
 func (nm nm) StartRegionOnHost(region mgm.Region, host mgm.Host, sr core.ServiceRequest) {
@@ -123,26 +111,10 @@ func (nm nm) RemoveHost(h mgm.Host) error {
 	return nil
 }
 
-func (nm nm) SubscribeHost() core.Subscription {
-	return nm.hostSubs.Subscribe()
-}
-
-func (nm nm) SubscribeHostStats() core.Subscription {
-	return nm.hostStatSubs.Subscribe()
-}
-
-func (nm nm) SubscribeRegionStats() core.Subscription {
-	return nm.regionStatSubs.Subscribe()
-}
-
 func (nm nm) process(newConns <-chan hostSession) {
 	conns := make(map[int]hostSession)
 
 	haltedHost := make(chan int, 16)
-
-	//subscribe to own hosts to gather updates
-	hostSub := nm.hostSubs.Subscribe()
-	defer hostSub.Unsubscribe()
 
 	for {
 		select {
@@ -162,14 +134,14 @@ func (nm nm) process(newConns <-chan hostSession) {
 			if con, ok := conns[id]; ok {
 				con.Running = false
 			}
-		case u := <-hostSub.GetReceive():
-			//host update from node, typically Running
-			h := u.(mgm.Host)
-			con, ok := conns[h.ID]
-			if ok {
-				con.host = h
-				conns[h.ID] = con
-			}
+		//case u := <-hostSub.GetReceive():
+		//	//host update from node, typically Running
+		//	h := u.(mgm.Host)
+		//	con, ok := conns[h.ID]
+		//	if ok {
+		//		con.host = h
+		//		conns[h.ID] = con
+		//	}
 		case nc := <-nm.requestChan:
 			switch nc.MessageType {
 			case "StartRegion":
@@ -206,7 +178,7 @@ func (nm nm) process(newConns <-chan hostSession) {
 					c.conn.Close()
 					c.Running = false
 					c.host.Running = false
-					nm.hostSubs.Broadcast(c.host)
+					nm.mgm.UpdateHost(c.host)
 				}
 			default:
 				nc.SR(false, "Not Implemented")
@@ -244,12 +216,14 @@ func (nm nm) listen(newConns chan<- hostSession) {
 		//validate connection, and identify host
 		addr := conn.RemoteAddr()
 		address := addr.(*net.TCPAddr).IP.String()
-		host, exists, err := nm.db.GetHostByAddress(address)
-		if err != nil {
-			errmsg := fmt.Sprintf("Error looking up mgm Node %v: %v", address, err)
-			nm.logger.Error(errmsg)
-			conn.Close()
-			continue
+		hosts := nm.mgm.GetHosts()
+		var host mgm.Host
+		exists := false
+		for _, h := range hosts {
+			if h.Address == address {
+				exists = true
+				host = h
+			}
 		}
 		if !exists {
 			errmsg := fmt.Sprintf("mgm Node %v does not exist", address)

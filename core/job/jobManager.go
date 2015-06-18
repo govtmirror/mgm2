@@ -1,25 +1,21 @@
 package job
 
 import (
-	"encoding/json"
-	"io/ioutil"
-	"path"
+	"time"
 
-	"github.com/m-o-s-e-s/mgm/core"
-	"github.com/m-o-s-e-s/mgm/core/database"
 	"github.com/m-o-s-e-s/mgm/core/logger"
+	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
 
 // Manager manages jobs, updating database, and notifying subscribed parties
 type Manager interface {
-	Subscribe() core.Subscription
 	FileUploaded(int, uuid.UUID, []byte)
-	GetJobByID(id int) (mgm.Job, error)
-	DeleteJob(job mgm.Job) error
-	CreateLoadIarJob(owner uuid.UUID, inventoryPath string) (mgm.Job, error)
-	GetJobsForUser(userID uuid.UUID) ([]mgm.Job, error)
+	GetJobByID(int) (mgm.Job, bool)
+	DeleteJob(mgm.Job)
+	CreateLoadIarJob(mgm.User, string)
+	GetJobsForUser(mgm.User) []mgm.Job
 }
 
 type fileUpload struct {
@@ -29,22 +25,13 @@ type fileUpload struct {
 }
 
 // NewManager constructs a jobManager for use
-func NewManager(filePath string, db database.Database, log logger.Log) Manager {
-
-	subscribeChan := make(chan chan<- mgm.Job, 32)
-	unsubscribeChan := make(chan chan<- mgm.Job, 32)
-	notifyChan := make(chan mgm.Job, 32)
+func NewManager(filePath string, pers persist.MGMDB, log logger.Log) Manager {
 
 	j := jobMgr{}
 	j.fileUp = make(chan fileUpload, 32)
 	j.localPath = filePath
 	j.log = logger.Wrap("JOB", log)
-	j.subscribe = subscribeChan
-	j.unsubscribe = unsubscribeChan
-	j.broadcast = notifyChan
-	j.db = jobDatabase{db}
-
-	j.subs = core.NewSubscriptionManager()
+	j.mgm = pers
 
 	go j.process()
 
@@ -56,9 +43,7 @@ type jobMgr struct {
 	subscribe   chan chan<- mgm.Job
 	unsubscribe chan chan<- mgm.Job
 	broadcast   chan mgm.Job
-	db          jobDatabase
-
-	subs core.SubscriptionManager
+	mgm         persist.MGMDB
 
 	log logger.Log
 
@@ -69,29 +54,43 @@ func (jm jobMgr) FileUploaded(id int, user uuid.UUID, data []byte) {
 	jm.fileUp <- fileUpload{id, user, data}
 }
 
-func (jm jobMgr) GetJobByID(id int) (mgm.Job, error) {
-	return jm.db.GetJobByID(id)
+func (jm jobMgr) GetJobByID(id int) (mgm.Job, bool) {
+	jobs := jm.mgm.GetJobs()
+	for _, j := range jobs {
+		if j.ID == id {
+			return j, true
+		}
+	}
+	return mgm.Job{}, false
 }
 
-func (jm jobMgr) DeleteJob(j mgm.Job) error {
-	return jm.db.DeleteJob(j)
+func (jm jobMgr) DeleteJob(j mgm.Job) {
+	jm.mgm.RemoveJob(j)
 }
 
-func (jm jobMgr) Subscribe() core.Subscription {
-	return jm.subs.Subscribe()
+func (jm jobMgr) GetJobsForUser(user mgm.User) []mgm.Job {
+	jobs := jm.mgm.GetJobs()
+	var userJobs []mgm.Job
+	for _, j := range jobs {
+		if j.User == user.UserID {
+			userJobs = append(userJobs, j)
+		}
+	}
+	return userJobs
 }
 
-func (jm jobMgr) GetJobsForUser(userID uuid.UUID) ([]mgm.Job, error) {
-	return jm.db.GetJobsForUser(userID)
-}
-
-func (jm jobMgr) CreateLoadIarJob(owner uuid.UUID, inventoryPath string) (mgm.Job, error) {
-	return jm.db.CreateLoadIarJob(owner, inventoryPath)
+func (jm jobMgr) CreateLoadIarJob(owner mgm.User, inventoryPath string) {
+	j := mgm.Job{}
+	j.Type = "load_iar"
+	j.Timestamp = time.Now()
+	j.User = owner.UserID
+	j.Data = inventoryPath
+	jm.mgm.UpdateJob(j)
 }
 
 func (jm jobMgr) process() {
 
-	go func() {
+	/*go func() {
 		for {
 			select {
 
@@ -138,6 +137,6 @@ func (jm jobMgr) process() {
 				}
 			}
 		}
-	}()
+	}()*/
 
 }

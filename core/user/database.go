@@ -5,13 +5,13 @@ import (
 	"database/sql"
 	"encoding/hex"
 
-	"github.com/m-o-s-e-s/mgm/core/database"
+	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
 
 type userDatabase struct {
-	mysql database.Database
+	mysql persist.Database
 }
 
 // GetPendingUsers retrieves all pending users in mgm
