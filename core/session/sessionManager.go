@@ -61,6 +61,7 @@ func (sm sessionMgr) process() {
 					closing: clientClosed,
 					log:     logger.Wrap(s.GetGUID().String(), sm.log),
 					mgm:     sm.mgm,
+					hMgr:    sm.hostMgr,
 				}
 				go us.process()
 			case id := <-clientClosed:

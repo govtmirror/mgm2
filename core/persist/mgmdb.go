@@ -171,6 +171,7 @@ func (m mgmDB) process() {
 				stat := req.object.(mgm.HostStat)
 				hostStats[stat.ID] = stat
 			case "RemoveHost":
+				m.log.Info("Removing host: %v", req.object.(mgm.Host).ID)
 				delete(hosts, req.object.(mgm.Host).ID)
 			default:
 				errMsg := fmt.Sprintf("Unexpected command: %v", req.request)

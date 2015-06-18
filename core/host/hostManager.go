@@ -16,6 +16,7 @@ import (
 type Manager interface {
 	StartRegionOnHost(mgm.Region, mgm.Host, core.ServiceRequest)
 	KillRegionOnHost(mgm.Region, mgm.Host, core.ServiceRequest)
+	RemoveHost(mgm.Host, core.ServiceRequest)
 }
 
 // NewManager constructs NodeManager instances
@@ -63,7 +64,7 @@ type internalMsg struct {
 	hosts   chan mgm.Host
 }
 
-func (nm nm) GetHosts() []mgm.Host {
+/*func (nm nm) GetHosts() []mgm.Host {
 	var hosts []mgm.Host
 	req := internalMsg{"GetHosts", make(chan mgm.Host, 32)}
 	nm.internalMsgs <- req
@@ -82,7 +83,7 @@ func (nm nm) GetHostByID(id int) (mgm.Host, bool) {
 		}
 	}
 	return mgm.Host{}, false
-}
+}*/
 
 func (nm nm) StartRegionOnHost(region mgm.Region, host mgm.Host, sr core.ServiceRequest) {
 	nm.requestChan <- Message{
@@ -102,13 +103,12 @@ func (nm nm) KillRegionOnHost(region mgm.Region, host mgm.Host, sr core.ServiceR
 	}
 }
 
-func (nm nm) RemoveHost(h mgm.Host) error {
+func (nm nm) RemoveHost(h mgm.Host, callback core.ServiceRequest) {
 	nm.requestChan <- Message{
 		MessageType: "RemoveHost",
 		Host:        h,
-		SR:          func(ok bool, msg string) {},
+		SR:          callback,
 	}
-	return nil
 }
 
 func (nm nm) process(newConns <-chan hostSession) {
@@ -175,10 +175,10 @@ func (nm nm) process(newConns <-chan hostSession) {
 				}
 			case "RemoveHost":
 				if c, ok := conns[nc.Host.ID]; ok {
-					c.conn.Close()
-					c.Running = false
-					c.host.Running = false
-					nm.mgm.UpdateHost(c.host)
+					if c.Running {
+						c.cmdMsgs <- nc
+					}
+					nm.mgm.RemoveHost(c.host)
 				}
 			default:
 				nc.SR(false, "Not Implemented")

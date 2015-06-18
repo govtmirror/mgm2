@@ -1,7 +1,10 @@
 package session
 
 import (
+	"fmt"
+
 	"github.com/m-o-s-e-s/mgm/core"
+	"github.com/m-o-s-e-s/mgm/core/host"
 	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/core/region"
@@ -14,6 +17,7 @@ type userSession struct {
 	closing chan<- uuid.UUID
 	mgm     persist.MGMDB
 	log     logger.Log
+	hMgr    host.Manager
 }
 
 func (us userSession) process() {
@@ -22,28 +26,10 @@ func (us userSession) process() {
 
 	go us.client.Read(clientMsg)
 
-	//host := sm.hostMgr.SubscribeHost()
-	//hostStats := sm.hostMgr.SubscribeHostStats()
-	//regionStats := sm.hostMgr.SubscribeRegionStats()
-
 	var console region.RestConsole
 
 	for {
 		select {
-		//case j := <-sLinks.JobLink:
-		//	us.client.Send(j)
-		//case h := <-host.GetReceive():
-		//	if us.GetAccessLevel() > 249 {
-		//		us.Send(h)
-		//	}
-		//case hs := <-hostStats.GetReceive():
-		//	if us.GetAccessLevel() > 249 {
-		//		us.Send(hs)
-		//	}
-		//case rs := <-regionStats.GetReceive():
-		//	if us.GetAccessLevel() > 249 {
-		//		us.Send(rs)
-		//	}
 		case msg := <-clientMsg:
 			//message from client
 			m := core.UserRequest{}
@@ -54,46 +40,34 @@ func (us userSession) process() {
 					us.client.SignalError(m.MessageID, "Permission Denied")
 					continue
 				}
-				//hostID, err := m.ReadID()
-				//if err != nil {
-				//	us.SignalError(m.MessageID, "Invalid format")
-				//	continue
-				//}
-				//h, exists, err := sm.hostMgr.GetHostByID(hostID)
-				//if err != nil {
-				//	us.SignalError(m.MessageID, "Error looking up host")
-				//	errMsg := fmt.Sprintf("delete host %v failed, error finding host", hostID)
-				//	sm.log.Error(errMsg)
-				//	continue
-				//}
-				//if !exists {
-				//	us.SignalError(m.MessageID, "Invalid host")
-				//	errMsg := fmt.Sprintf("delete host %v failed, host does not exist", hostID)
-				//	sm.log.Error(errMsg)
-				//	continue
-				//}
+				hostID, err := m.ReadID()
+				if err != nil {
+					us.client.SignalError(m.MessageID, "Invalid format")
+					continue
+				}
+				var host mgm.Host
+				exists := false
+				for _, h := range us.mgm.GetHosts() {
+					if h.ID == hostID {
+						host = h
+						exists = true
+					}
+				}
+				if !exists {
+					us.client.SignalError(m.MessageID, "Host does not exist")
+					errMsg := fmt.Sprintf("delete host %v failed, host does not exist", hostID)
+					us.log.Error(errMsg)
+					continue
+				}
 
-				//clean off any regions on the host
-				//loop over regions, unassigning them (node kills them if running)
-				//for _, uuid := range h.Regions {
-				//	r, exists, err := sm.regionMgr.GetRegionByID(uuid)
-				//	if err != nil || !exists {
-				//		continue
-				//	}
-				//	sm.regionMgr.SetHostForRegion(r, mgm.Host{})
-				//}
-
-				//var wg sync.WaitGroup
-				//wg.Add(1)
-
-				//err = sm.hostMgr.RemoveHost(h)
-				//if err != nil {
-				//	us.SignalError(m.MessageID, err.Error())
-				//}
-				//hd := mgm.HostRemoved{}
-				//hd.ID = h.ID
-				//us.Send(hd)
-				//us.SignalSuccess(m.MessageID, "host removed")
+				//kill running regions, close connection, any regions present are updated
+				us.hMgr.RemoveHost(host, func(ok bool, msg string) {
+					if ok {
+						us.client.SignalSuccess(m.MessageID, "host removed")
+					} else {
+						us.client.SignalError(m.MessageID, msg)
+					}
+				})
 
 			case "StartRegion":
 				/*regionID, err := m.ReadRegionID()
@@ -441,8 +415,6 @@ func (us userSession) process() {
 			}
 		case <-us.client.GetClosingSignal():
 			//the client connection has closed
-			//host.Unsubscribe()
-			//hostStats.Unsubscribe()
 			us.closing <- us.client.GetGUID()
 			return
 		}

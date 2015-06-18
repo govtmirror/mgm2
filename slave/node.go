@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
+	"fmt"
 	"net"
 	"os"
 	"time"
@@ -150,7 +151,8 @@ func main() {
 						m.ID = msg.ID
 						err := r.WriteRegionINI(reg)
 						if err != nil {
-							n.logger.Error("Error writing region ini: %v", err.Error())
+							errMsg := fmt.Sprintf("Error writing region ini: %v", err.Error())
+							n.logger.Error(errMsg)
 							m.MessageType = "Failure"
 							m.Message = err.Error()
 							sendChan <- m
@@ -158,7 +160,8 @@ func main() {
 						}
 						err = r.WriteOpensimINI(msg.Configs)
 						if err != nil {
-							n.logger.Error("Error writing opensim ini: %v", err.Error())
+							errMsg := fmt.Sprintf("Error writing opensim ini: %v", err.Error())
+							n.logger.Error(errMsg)
 							m.MessageType = "Failure"
 							m.Message = err.Error()
 							sendChan <- m
@@ -180,6 +183,14 @@ func main() {
 						m.Message = "Region flagged for kill"
 						sendChan <- m
 					}
+				case "RemoveHost":
+					n.logger.Info("Received RemoveHost command from MGM, terminating")
+					//terminate connection to MGM
+					conn.Close()
+					//kill any running regions
+					//regions are child processes, and are killed as long as we dont crash out
+					//exit
+					os.Exit(0)
 				default:
 					n.logger.Info("unexpected message from MGM: %v", msg.MessageType)
 				}
