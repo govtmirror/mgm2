@@ -27,6 +27,7 @@ type MGMDB interface {
 	//host functions
 	GetHosts() []mgm.Host
 	GetHostStats() []mgm.HostStat
+	AddHost(mgm.Host)
 	UpdateHost(mgm.Host)
 	UpdateHostStat(mgm.HostStat)
 	RemoveHost(mgm.Host)
@@ -89,8 +90,8 @@ func (m mgmDB) process() {
 		regions[r.UUID] = r
 	}
 	//populate hosts
-	hosts := make(map[int]mgm.Host)
-	hostStats := make(map[int]mgm.HostStat)
+	hosts := make(map[int64]mgm.Host)
+	hostStats := make(map[int64]mgm.HostStat)
 	for _, h := range m.queryHosts() {
 		hosts[h.ID] = h
 		hostStats[h.ID] = mgm.HostStat{}
@@ -122,7 +123,7 @@ func (m mgmDB) process() {
 	}
 	simGroups = nil
 	//populate jobs
-	jobs := make(map[int]mgm.Job)
+	jobs := make(map[int64]mgm.Job)
 	for _, j := range m.queryJobs() {
 		jobs[j.ID] = j
 	}
@@ -176,6 +177,13 @@ func (m mgmDB) process() {
 					req.result <- g
 				}
 				close(req.result)
+			case "AddHost":
+				host := req.object.(mgm.Host)
+				host.ID = m.insertHost(host)
+				if host.ID != 0 {
+					hosts[host.ID] = host
+					m.notify.HostUpdated(host)
+				}
 			case "UpdateHost":
 				host := req.object.(mgm.Host)
 				hosts[host.ID] = host

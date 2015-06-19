@@ -12,7 +12,7 @@ import (
 // Manager manages jobs, updating database, and notifying subscribed parties
 type Manager interface {
 	FileUploaded(int, uuid.UUID, []byte)
-	GetJobByID(int) (mgm.Job, bool)
+	GetJobByID(int64) (mgm.Job, bool)
 	DeleteJob(mgm.Job)
 	CreateLoadIarJob(mgm.User, string)
 	GetJobsForUser(mgm.User) []mgm.Job
@@ -54,7 +54,7 @@ func (jm jobMgr) FileUploaded(id int, user uuid.UUID, data []byte) {
 	jm.fileUp <- fileUpload{id, user, data}
 }
 
-func (jm jobMgr) GetJobByID(id int) (mgm.Job, bool) {
+func (jm jobMgr) GetJobByID(id int64) (mgm.Job, bool) {
 	jobs := jm.mgm.GetJobs()
 	for _, j := range jobs {
 		if j.ID == id {

@@ -58,7 +58,7 @@
   <table style="width: 100%;">
     <tr>
       <th>
-        <button style="float: left;" ng-click="host.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-primary btn-sm">Add Host</button>
+        <button style="float: left;" ng-click="host.new()" ng-if="auth.AccessLevel > 249" class="btn btn-primary btn-sm">Add Host</button>
       </th>
       <th>Hostname</th>
       <th>Address</th>
@@ -84,6 +84,26 @@
     </tr>
   </table>
 </div>
+
+<script type="text/ng-template" id="addHostModal.html">
+  <div class="modal-header">
+    <table>
+      <tr>
+        <td><h3 class="modal-title">Add new host</h3></td>
+      </tr>
+    </table>
+  </div>
+  <form>
+  <div class="modal-body">
+    <p>Add a new host to your MGM grid by entering the IP address that it will use to connect to MGM:</p>
+    <input ng-model="object.address" />
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-danger" type-"submit" ng-click="confirm('yellow')">Add</button>
+    <button class="btn btn-primary" ng-click="cancel()">Cancel</button>
+  </div>
+  </form>
+</script>
 
 <script type="text/ng-template" id="removeHostModal.html">
   <div class="modal-header">

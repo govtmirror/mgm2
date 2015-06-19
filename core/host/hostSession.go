@@ -6,23 +6,22 @@ import (
 
 	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/core/persist"
-	"github.com/m-o-s-e-s/mgm/core/region"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
 
 type hostSession struct {
-	host      mgm.Host
-	Running   bool
-	conn      net.Conn
-	regionMgr region.Manager
-	nodeMgr   nm
-	mgm       persist.MGMDB
-	cmdMsgs   chan Message
-	log       logger.Log
+	host    mgm.Host
+	Running bool
+	conn    net.Conn
+	//regionMgr region.Manager
+	//nodeMgr   nm
+	mgm     persist.MGMDB
+	cmdMsgs chan Message
+	log     logger.Log
 }
 
-func (ns hostSession) process(closing chan<- int) {
+func (ns hostSession) process(closing chan<- int64) {
 	readMsgs := make(chan Message, 32)
 	writeMsgs := make(chan Message, 32)
 	nc := Comms{

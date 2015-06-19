@@ -22,9 +22,9 @@ func (ur *UserMessage) Load(msg []byte) {
 }
 
 // ReadID parses an {ID: int} from the Message body
-func (ur UserMessage) ReadID() (int, error) {
+func (ur UserMessage) ReadID() (int64, error) {
 	type id struct {
-		ID int
+		ID int64
 	}
 	r := id{}
 	err := json.Unmarshal(ur.Message, &r)
@@ -47,7 +47,7 @@ func (ur UserMessage) ReadRegionID() (uuid.UUID, error) {
 	return r.RegionUUID, nil
 }
 
-// ReadPassword parses {UserID: uuid.UUID, Password: string} fromt he message body
+// ReadPassword parses {UserID: uuid.UUID, Password: string} from the message body
 func (ur UserMessage) ReadPassword() (uuid.UUID, string, error) {
 	type pw struct {
 		UserID   uuid.UUID
@@ -59,6 +59,19 @@ func (ur UserMessage) ReadPassword() (uuid.UUID, string, error) {
 		return uuid.UUID{}, "", err
 	}
 	return p.UserID, p.Password, nil
+}
+
+// ReadAddress parses {Address: string} from the message body
+func (ur UserMessage) ReadAddress() (string, error) {
+	type pw struct {
+		Address string
+	}
+	p := pw{}
+	err := json.Unmarshal(ur.Message, &p)
+	if err != nil {
+		return "", err
+	}
+	return p.Address, nil
 }
 
 // ObjectType implements UserObject interface

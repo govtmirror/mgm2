@@ -7,7 +7,26 @@ import (
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
+// hosts are created by clients inserting an ip address, that is all we can insert
+func (m mgmDB) insertHost(host mgm.Host) int64 {
+	con, err := m.db.GetConnection()
+	var id int64
+	if err == nil {
+		res, err := con.Exec("INSERT INTO hosts (address) VALUES (?)",
+			host.Address)
+		if err == nil {
+			id, err = res.LastInsertId()
+		}
+	}
+	if err != nil {
+		errMsg := fmt.Sprintf("Error persisting host record: %v", err.Error())
+		m.log.Error(errMsg)
+	}
+	return id
+}
+
 func (m mgmDB) persistHost(host mgm.Host) {
+	m.log.Info("persisting host %v", host.ID)
 	con, err := m.db.GetConnection()
 	if err == nil {
 		_, err = con.Exec("UPDATE hosts SET externalAddress=?, name=?, slots=? WHERE id=?",
@@ -98,6 +117,13 @@ func (m mgmDB) GetHostStats() []mgm.HostStat {
 func (m mgmDB) UpdateHost(host mgm.Host) {
 	r := mgmReq{}
 	r.request = "UpdateHost"
+	r.object = host
+	m.reqs <- r
+}
+
+func (m mgmDB) AddHost(host mgm.Host) {
+	r := mgmReq{}
+	r.request = "AddHost"
 	r.object = host
 	m.reqs <- r
 }

@@ -8,7 +8,7 @@ import (
 
 // Host is an MGM server record
 type Host struct {
-	ID              int
+	ID              int64
 	Address         string
 	ExternalAddress string
 	Hostname        string
@@ -30,7 +30,7 @@ func (h Host) ObjectType() string {
 
 // HostDeleted is an MGM server record
 type HostDeleted struct {
-	ID int
+	ID int64
 }
 
 // Serialize implements UserObject interface Serialize function
@@ -46,7 +46,7 @@ func (h HostDeleted) ObjectType() string {
 
 // HostStat holds mgm host statistical info
 type HostStat struct {
-	ID         int
+	ID         int64
 	CPUPercent []float64
 	MEMTotal   uint64
 	MEMUsed    uint64

@@ -99,6 +99,28 @@ func (us userSession) process() {
 			m := mgm.UserMessage{}
 			m.Load(msg)
 			switch m.MessageType {
+			case "AddHost":
+				if !isAdmin {
+					us.client.SignalError(m.MessageID, "Permission Denied")
+					continue
+				}
+				address, err := m.ReadAddress()
+				if err != nil {
+					us.client.SignalError(m.MessageID, "Invalid format")
+					continue
+				}
+				us.log.Info("Requesting add new Host %v", address)
+				//double-check for duplicates:
+				for _, h := range us.mgm.GetHosts() {
+					if h.Address == address {
+						us.client.SignalError(m.MessageID, "Host already exists")
+						continue
+					}
+				}
+				host := mgm.Host{}
+				host.Address = address
+				us.mgm.AddHost(host)
+				us.client.SignalSuccess(m.MessageID, "Host added")
 			case "RemoveHost":
 				if !isAdmin {
 					us.client.SignalError(m.MessageID, "Permission Denied")
@@ -109,6 +131,7 @@ func (us userSession) process() {
 					us.client.SignalError(m.MessageID, "Invalid format")
 					continue
 				}
+				us.log.Info("Requesting remove Host %v", hostID)
 				var host mgm.Host
 				exists := false
 				for _, h := range us.mgm.GetHosts() {

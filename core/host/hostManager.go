@@ -31,18 +31,6 @@ func NewManager(port int, rMgr region.Manager, pers persist.MGMDB, log logger.Lo
 	ch := make(chan hostSession, 32)
 	go mgr.process(ch)
 
-	//initialize internal structures
-	hosts := mgr.mgm.GetHosts()
-	for _, h := range hosts {
-		s := hostSession{
-			host:      h,
-			nodeMgr:   mgr,
-			regionMgr: rMgr,
-			log:       logger.Wrap(strconv.Itoa(h.ID), mgr.logger),
-		}
-		ch <- s
-	}
-
 	go mgr.listen(ch)
 
 	return mgr, nil
@@ -112,9 +100,20 @@ func (nm nm) RemoveHost(h mgm.Host, callback core.ServiceRequest) {
 }
 
 func (nm nm) process(newConns <-chan hostSession) {
-	conns := make(map[int]hostSession)
+	conns := make(map[int64]hostSession)
 
-	haltedHost := make(chan int, 16)
+	haltedHost := make(chan int64, 16)
+
+	//initialize internal structures
+	for _, h := range nm.mgm.GetHosts() {
+		s := hostSession{
+			host: h,
+			//nodeMgr:   mgr,
+			//regionMgr: rMgr,
+			log: logger.Wrap(strconv.FormatInt(h.ID, 10), nm.logger),
+		}
+		conns[h.ID] = s
+	}
 
 	for {
 		select {
