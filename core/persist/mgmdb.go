@@ -179,11 +179,15 @@ func (m mgmDB) process() {
 				close(req.result)
 			case "AddHost":
 				host := req.object.(mgm.Host)
-				host.ID = m.insertHost(host)
-				if host.ID != 0 {
-					hosts[host.ID] = host
-					m.notify.HostUpdated(host)
+				//inserts are not asynchronous, as we need the insert ID to populate ourselves
+				host.ID, err = m.insertHost(host)
+				if err != nil {
+					errMsg := fmt.Sprintf("Error adding host: %v", err.Error())
+					m.log.Error(errMsg)
+					continue
 				}
+				hosts[host.ID] = host
+				m.notify.HostUpdated(host)
 			case "UpdateHost":
 				host := req.object.(mgm.Host)
 				hosts[host.ID] = host
@@ -194,7 +198,6 @@ func (m mgmDB) process() {
 				hostStats[stat.ID] = stat
 				m.notify.HostStat(stat)
 			case "RemoveHost":
-				m.log.Info("Removing host: %v", req.object.(mgm.Host).ID)
 				host := req.object.(mgm.Host)
 				delete(hosts, host.ID)
 				go m.purgeHost(host)

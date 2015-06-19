@@ -14,8 +14,6 @@ type hostSession struct {
 	host    mgm.Host
 	Running bool
 	conn    net.Conn
-	//regionMgr region.Manager
-	//nodeMgr   nm
 	mgm     persist.MGMDB
 	cmdMsgs chan Message
 	log     logger.Log

@@ -8,21 +8,24 @@ import (
 )
 
 // hosts are created by clients inserting an ip address, that is all we can insert
-func (m mgmDB) insertHost(host mgm.Host) int64 {
+func (m mgmDB) insertHost(host mgm.Host) (int64, error) {
 	con, err := m.db.GetConnection()
 	var id int64
-	if err == nil {
-		res, err := con.Exec("INSERT INTO hosts (address) VALUES (?)",
-			host.Address)
-		if err == nil {
-			id, err = res.LastInsertId()
-		}
-	}
 	if err != nil {
-		errMsg := fmt.Sprintf("Error persisting host record: %v", err.Error())
-		m.log.Error(errMsg)
+		return 0, err
 	}
-	return id
+	defer con.Close()
+
+	res, err := con.Exec("INSERT INTO hosts (address) VALUES (?)",
+		host.Address)
+	if err != nil {
+		return 0, err
+	}
+	id, err = res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
 }
 
 func (m mgmDB) persistHost(host mgm.Host) {

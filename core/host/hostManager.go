@@ -108,9 +108,8 @@ func (nm nm) process(newConns <-chan hostSession) {
 	for _, h := range nm.mgm.GetHosts() {
 		s := hostSession{
 			host: h,
-			//nodeMgr:   mgr,
-			//regionMgr: rMgr,
-			log: logger.Wrap(strconv.FormatInt(h.ID, 10), nm.logger),
+			log:  logger.Wrap(strconv.FormatInt(h.ID, 10), nm.logger),
+			mgm:  nm.mgm,
 		}
 		conns[h.ID] = s
 	}
@@ -236,7 +235,7 @@ func (nm nm) listen(newConns chan<- hostSession) {
 		}
 		nm.logger.Info("MGM Node connection from: %v (%v)", host.ID, address)
 
-		s := hostSession{host: host, conn: conn}
+		s := hostSession{host: host, conn: conn, mgm: nm.mgm}
 		newConns <- s
 	}
 }

@@ -148,13 +148,15 @@ func (us userSession) process() {
 				}
 
 				//kill running regions, close connection, any regions present are updated
-				us.hMgr.RemoveHost(host, func(ok bool, msg string) {
+				/*us.hMgr.RemoveHost(host, func(ok bool, msg string) {
 					if ok {
 						us.client.SignalSuccess(m.MessageID, "host removed")
 					} else {
 						us.client.SignalError(m.MessageID, msg)
 					}
-				})
+				})*/
+				us.mgm.RemoveHost(host)
+				us.client.SignalSuccess(m.MessageID, "host removed")
 
 			case "StartRegion":
 				/*regionID, err := m.ReadRegionID()
