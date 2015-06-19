@@ -109,12 +109,8 @@ func (ns hostSession) process(closing chan<- int) {
 				ns.mgm.UpdateRegionStat(regions[rStats.UUID])
 			case "GetRegions":
 				ns.log.Info("requesting regions list")
-				regions, err := ns.regionMgr.GetRegionsOnHost(ns.host)
-				if err != nil {
-					ns.log.Error("Error getting regions: ", err.Error())
-				} else {
-					ns.log.Info("Serving %v regions", len(regions))
-					for _, r := range regions {
+				for _, r := range ns.mgm.GetRegions() {
+					if r.Host == ns.host.ID {
 						writeMsgs <- Message{MessageType: "AddRegion", Region: r}
 					}
 				}

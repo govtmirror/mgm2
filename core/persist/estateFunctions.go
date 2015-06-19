@@ -25,6 +25,7 @@ func (m mgmDB) queryEstates() []mgm.Estate {
 	}
 	defer rows.Close()
 	for rows.Next() {
+
 		e := mgm.Estate{Managers: make([]uuid.UUID, 0), Regions: make([]uuid.UUID, 0)}
 		err = rows.Scan(
 			&e.ID,

@@ -13,11 +13,12 @@ import (
 )
 
 type userSession struct {
-	client  core.UserSession
-	closing chan<- uuid.UUID
-	mgm     persist.MGMDB
-	log     logger.Log
-	hMgr    host.Manager
+	client   core.UserSession
+	closing  chan<- uuid.UUID
+	mgm      persist.MGMDB
+	log      logger.Log
+	hMgr     host.Manager
+	notifier Notifier
 }
 
 func (us userSession) process() {
@@ -28,15 +29,78 @@ func (us userSession) process() {
 
 	var console region.RestConsole
 
+	isAdmin := us.client.GetAccessLevel() > 249
+	uid := us.client.GetGUID()
+
+	// if we arent admin, maintain a list of estates and regions that we manage
+	regionsWhitelist := make(map[uuid.UUID]bool)
+	estatesWhitelist := make(map[int]bool)
+
+	if !isAdmin {
+		//populate the whitelists
+		for _, e := range us.mgm.GetEstates() {
+			manage := false
+			if e.Owner == uid {
+				manage = true
+			} else {
+				for _, manager := range e.Managers {
+					if manager == uid {
+						manage = true
+					}
+				}
+			}
+			if manage == true {
+				estatesWhitelist[e.ID] = true
+				for _, id := range e.Regions {
+					regionsWhitelist[id] = true
+				}
+			} else {
+				estatesWhitelist[e.ID] = false
+				for _, id := range e.Regions {
+					regionsWhitelist[id] = false
+				}
+			}
+		}
+	}
+
 	for {
 		select {
+		//MGM EVENTS
+		case h := <-us.notifier.hDel:
+			if isAdmin {
+				us.client.Send(mgm.HostDeleted{h.ID})
+			}
+		case h := <-us.notifier.hUp:
+			if isAdmin {
+				us.client.Send(h)
+			}
+		case s := <-us.notifier.hStat:
+			if isAdmin {
+				us.client.Send(s)
+			}
+		case r := <-us.notifier.rUp:
+			// new or updated region
+			regionsWhitelist[r.UUID] = estatesWhitelist[r.Estate]
+			if regionsWhitelist[r.UUID] {
+				us.client.Send(r)
+			}
+		case r := <-us.notifier.rDel:
+			if regionsWhitelist[r.UUID] {
+				us.client.Send(mgm.RegionDeleted{r.UUID})
+			}
+		case s := <-us.notifier.rStat:
+			if regionsWhitelist[s.UUID] {
+				us.client.Send(s)
+			}
+
+		// COMMANDS FROM THE CLIENT
 		case msg := <-clientMsg:
 			//message from client
-			m := core.UserRequest{}
+			m := mgm.UserMessage{}
 			m.Load(msg)
 			switch m.MessageType {
 			case "RemoveHost":
-				if us.client.GetAccessLevel() < 250 {
+				if !isAdmin {
 					us.client.SignalError(m.MessageID, "Permission Denied")
 					continue
 				}
@@ -280,7 +344,7 @@ func (us userSession) process() {
 					us.log.Error("Error reading password request")
 					continue
 				}
-				if userID != us.client.GetGUID() && us.client.GetAccessLevel() < 250 {
+				if userID != uid && !isAdmin {
 					us.client.SignalError(m.MessageID, "Permission Denied")
 					continue
 				}
@@ -345,7 +409,6 @@ func (us userSession) process() {
 				}*/
 			case "GetState":
 				us.log.Info("Requesting state sync")
-				uid := us.client.GetGUID()
 				for _, u := range us.mgm.GetUsers() {
 					us.client.Send(u)
 				}
@@ -354,55 +417,33 @@ func (us userSession) process() {
 						us.client.Send(j)
 					}
 				}
-				if us.client.GetAccessLevel() > 249 {
+				for _, e := range us.mgm.GetEstates() {
+					us.client.Send(e)
+				}
+				for _, g := range us.mgm.GetGroups() {
+					us.client.Send(g)
+				}
+
+				if isAdmin {
 					for _, pu := range us.mgm.GetPendingUsers() {
 						us.client.Send(pu)
 					}
-				}
-				estates := us.mgm.GetEstates()
-				//calculate regions this user can control
-				if us.client.GetAccessLevel() > 249 {
-					//send them all
+
 					for _, r := range us.mgm.GetRegions() {
 						us.client.Send(r)
 					}
-					for _, e := range estates {
-						us.client.Send(e)
-					}
+
 					for _, h := range us.mgm.GetHosts() {
 						us.client.Send(h)
 					}
+
 				} else {
-					//user must own or manage the estate in question
-					mayManage := make(map[uuid.UUID]bool)
-					for _, e := range estates {
-						manage := false
-						if e.Owner == uid {
-							manage = true
-						} else {
-							for _, manager := range e.Managers {
-								if manager == uid {
-									manage = true
-								}
-							}
-						}
-						if manage == true {
-							for _, rid := range e.Regions {
-								mayManage[rid] = true
-							}
-						}
-						//send estate to client
-						us.client.Send(e)
-					}
+					//non admin, utilize whitelists
 					for _, r := range us.mgm.GetRegions() {
-						if _, ok := mayManage[r.UUID]; ok {
+						if regionsWhitelist[r.UUID] {
 							us.client.Send(r)
 						}
 					}
-				}
-
-				for _, g := range us.mgm.GetGroups() {
-					us.client.Send(g)
 				}
 
 				us.log.Info("State sync complete")

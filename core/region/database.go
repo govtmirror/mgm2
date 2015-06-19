@@ -23,7 +23,7 @@ func (db regionDatabase) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error)
 	var regions []mgm.Region
 
 	rows, err := con.Query(
-		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host, EstateName from regions, estate_map, estate_settings " +
+		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host, EstateID from regions, estate_map, estate_settings " +
 			"where estate_map.RegionID = regions.uuid AND estate_map.EstateID = estate_settings.EstateID AND uuid in " +
 			"(SELECT RegionID FROM estate_map WHERE " +
 			"EstateID in (SELECT EstateID FROM estate_settings WHERE EstateOwner=\"" + guid.String() + "\") OR " +
@@ -49,7 +49,7 @@ func (db regionDatabase) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error)
 			&r.LocX,
 			&r.LocY,
 			&r.Host,
-			&r.EstateName,
+			&r.Estate,
 		)
 		if err != nil {
 			rows.Close()

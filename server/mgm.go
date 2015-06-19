@@ -101,8 +101,11 @@ func main() {
 		return
 	}
 
+	//create a notifier
+	notify := session.NewNotifier()
+
 	//instantiate our persistance handler
-	pers := persist.NewMGMDB(db, osdb, sim, logger)
+	pers := persist.NewMGMDB(db, osdb, sim, logger, notify)
 
 	//Hook up core processing...
 	jMgr := job.NewManager(config.MGM.LocalFileStorage, pers, logger)
@@ -115,7 +118,7 @@ func main() {
 	uMgr := user.NewManager(rMgr, hMgr, sim, db, logger)
 	sessionListenerChan := make(chan core.UserSession, 64)
 
-	_ = session.NewManager(sessionListenerChan, pers, uMgr, jMgr, hMgr, rMgr, sim, logger)
+	_ = session.NewManager(sessionListenerChan, pers, uMgr, jMgr, hMgr, rMgr, sim, logger, notify)
 
 	httpCon := webClient.NewHTTPConnector(config.MGM.SessionSecret, jMgr, sim, uMgr, mailer, logger)
 	sockCon := webClient.NewWebsocketConnector(httpCon, sessionListenerChan, logger)

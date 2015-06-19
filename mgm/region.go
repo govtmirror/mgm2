@@ -20,7 +20,7 @@ type Region struct {
 	LocY         uint
 	Host         int
 	IsRunning    bool
-	EstateName   string
+	Estate       int
 
 	frames chan int
 }
@@ -56,16 +56,16 @@ func (r *Region) countFrames() {
 // Serialize implements UserObject interface Serialize function
 func (r Region) Serialize() []byte {
 	type clientSafeRegion struct {
-		UUID       uuid.UUID
-		Name       string
-		Size       uint
-		LocX       uint
-		LocY       uint
-		Host       int
-		IsRunning  bool
-		EstateName string
+		UUID      uuid.UUID
+		Name      string
+		Size      uint
+		LocX      uint
+		LocY      uint
+		Host      int
+		IsRunning bool
+		Estate    int
 	}
-	csr := clientSafeRegion{r.UUID, r.Name, r.Size, r.LocX, r.LocY, r.Host, r.IsRunning, r.EstateName}
+	csr := clientSafeRegion{r.UUID, r.Name, r.Size, r.LocX, r.LocY, r.Host, r.IsRunning, r.Estate}
 	data, _ := json.Marshal(csr)
 	return data
 }
@@ -93,4 +93,20 @@ func (rs RegionStat) Serialize() []byte {
 // ObjectType implements UserObject
 func (rs RegionStat) ObjectType() string {
 	return "RegionStat"
+}
+
+// RegionDeleted holds region-specific runtime metrics
+type RegionDeleted struct {
+	UUID uuid.UUID
+}
+
+// Serialize implements UserObject interface Serialize function
+func (rs RegionDeleted) Serialize() []byte {
+	data, _ := json.Marshal(rs)
+	return data
+}
+
+// ObjectType implements UserObject
+func (rs RegionDeleted) ObjectType() string {
+	return "RegionDeleted"
 }

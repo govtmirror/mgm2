@@ -28,6 +28,22 @@ func (h Host) ObjectType() string {
 	return "Host"
 }
 
+// HostDeleted is an MGM server record
+type HostDeleted struct {
+	ID int
+}
+
+// Serialize implements UserObject interface Serialize function
+func (h HostDeleted) Serialize() []byte {
+	data, _ := json.Marshal(h)
+	return data
+}
+
+// ObjectType implements UserObject
+func (h HostDeleted) ObjectType() string {
+	return "HostDeleted"
+}
+
 // HostStat holds mgm host statistical info
 type HostStat struct {
 	ID         int
@@ -48,19 +64,4 @@ func (h HostStat) Serialize() []byte {
 // ObjectType implements UserObject
 func (h HostStat) ObjectType() string {
 	return "HostStat"
-}
-
-type HostRemoved struct {
-	ID int
-}
-
-// Serialize implements UserObject interface Serialize function
-func (h HostRemoved) Serialize() []byte {
-	data, _ := json.Marshal(h)
-	return data
-}
-
-// ObjectType implements UserObject
-func (h HostRemoved) ObjectType() string {
-	return "HostRemoved"
 }

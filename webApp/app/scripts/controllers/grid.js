@@ -121,6 +121,15 @@ angular.module('mgmApp')
       }
     });
 
+    $scope.$on('HostDeleted', function (event, stat) {
+      if( stat.ID in $scope.hosts){
+        console.log("Deleting host from display");
+        $timeout(function(){
+          delete $scope.hosts[stat.ID];
+        })
+      }
+    });
+
     $scope.getUserNameFromID = function (uuid) {
       if (uuid in mgm.activeUsers) {
         return mgm.activeUsers[uuid].Name;

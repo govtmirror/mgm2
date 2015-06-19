@@ -74,6 +74,10 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
         self.pendingUsers[message.Message.UserID] = message.Message;
         $rootScope.$broadcast('PendingUserUpdate', message.Message);
         break;
+      case 'RegionDeleted':
+        delete self.regions[message.Message.UUID]
+        $rootScope.$broadcast('RegionDeleted', message.Message);
+        break;
       case 'Region':
         self.regions[message.Message.UUID] = message.Message;
         $rootScope.$broadcast('RegionUpdate', message.Message);
@@ -93,6 +97,10 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
         break;
       case 'Config':
         $rootScope.$broadcast('ConfigUpdate', message.Message);
+        break;
+      case 'HostDeleted':
+        delete self.hosts[message.Message.ID];
+        $rootScope.$broadcast('HostDeleted', message.Message);
         break;
       case 'Host':
         self.hosts[message.Message.ID] = message.Message;

@@ -19,6 +19,17 @@ func (m mgmDB) persistHost(host mgm.Host) {
 	}
 }
 
+func (m mgmDB) purgeHost(host mgm.Host) {
+	con, err := m.db.GetConnection()
+	if err == nil {
+		_, err = con.Exec("DELETE FROM hosts WHERE id=?", host.ID)
+	}
+	if err != nil {
+		errMsg := fmt.Sprintf("Error purging host record: %v", err.Error())
+		m.log.Error(errMsg)
+	}
+}
+
 func (m mgmDB) queryHosts() []mgm.Host {
 	var hosts []mgm.Host
 	con, err := m.db.GetConnection()

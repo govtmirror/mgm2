@@ -9,6 +9,17 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+// Notifier is an object that MGMDB will call as data is modified
+// Notifier is responsible for alerting interested parties
+type Notifier interface {
+	HostUpdated(mgm.Host)
+	HostDeleted(mgm.Host)
+	HostStat(mgm.HostStat)
+	RegionUpdated(mgm.Region)
+	RegionDeleted(mgm.Region)
+	RegionStat(mgm.RegionStat)
+}
+
 //MGMDB interfaces with mysql, caches values for performance, and notifies subscribers of object updates
 // This interface handles persistance with the mysql database, but also caches non-persisted values as
 // a single point of access
@@ -41,13 +52,14 @@ type MGMDB interface {
 }
 
 // NewMGMDB constructs an MGMDB instance for use
-func NewMGMDB(db Database, osdb Database, sim simian.Connector, log logger.Log) MGMDB {
+func NewMGMDB(db Database, osdb Database, sim simian.Connector, log logger.Log, not Notifier) MGMDB {
 	mgm := mgmDB{
-		db:   db,
-		osdb: osdb,
-		sim:  sim,
-		log:  logger.Wrap("MGMDB", log),
-		reqs: make(chan mgmReq, 64),
+		db:     db,
+		osdb:   osdb,
+		sim:    sim,
+		log:    logger.Wrap("MGMDB", log),
+		reqs:   make(chan mgmReq, 64),
+		notify: not,
 	}
 
 	go mgm.process()
@@ -62,11 +74,12 @@ type mgmReq struct {
 }
 
 type mgmDB struct {
-	db   Database
-	osdb Database
-	sim  simian.Connector
-	log  logger.Log
-	reqs chan mgmReq
+	db     Database
+	osdb   Database
+	sim    simian.Connector
+	log    logger.Log
+	notify Notifier
+	reqs   chan mgmReq
 }
 
 func (m mgmDB) process() {
@@ -167,12 +180,17 @@ func (m mgmDB) process() {
 				host := req.object.(mgm.Host)
 				hosts[host.ID] = host
 				go m.persistHost(host)
+				m.notify.HostUpdated(host)
 			case "UpdateHostStat":
 				stat := req.object.(mgm.HostStat)
 				hostStats[stat.ID] = stat
+				m.notify.HostStat(stat)
 			case "RemoveHost":
 				m.log.Info("Removing host: %v", req.object.(mgm.Host).ID)
-				delete(hosts, req.object.(mgm.Host).ID)
+				host := req.object.(mgm.Host)
+				delete(hosts, host.ID)
+				go m.purgeHost(host)
+				m.notify.HostDeleted(host)
 			default:
 				errMsg := fmt.Sprintf("Unexpected command: %v", req.request)
 				m.log.Error(errMsg)

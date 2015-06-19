@@ -1,7 +1,6 @@
 package region
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/m-o-s-e-s/mgm/core/logger"
@@ -12,12 +11,9 @@ import (
 
 // Manager controls and notifies on region / estate changes and permissions
 type Manager interface {
-	GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error)
 	GetRegionByID(id uuid.UUID) (mgm.Region, bool, error)
 	GetDefaultConfigs() ([]mgm.ConfigOption, error)
 	GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error)
-	GetRegions() ([]mgm.Region, error)
-	GetRegionsOnHost(host mgm.Host) ([]mgm.Region, error)
 	ServeConfigs(mgm.Region, mgm.Host) ([]mgm.ConfigOption, error)
 }
 
@@ -40,23 +36,6 @@ type regionMgr struct {
 	log       logger.Log
 }
 
-func (rm regionMgr) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error) {
-	rgs, err := rm.db.GetRegionsForUser(guid)
-	if err != nil {
-		return nil, err
-	}
-	for i, r := range rgs {
-		n, err := rm.osdb.GetEstateNameForRegion(r)
-		if err != nil {
-			errMsg := fmt.Sprintf("Error getting estate for region: %s", err.Error())
-			rm.log.Error(errMsg)
-		} else {
-			rgs[i].EstateName = n
-		}
-	}
-	return rgs, nil
-}
-
 func (rm regionMgr) GetRegionByID(id uuid.UUID) (mgm.Region, bool, error) {
 	return rm.db.GetRegionByID(id)
 }
@@ -67,40 +46,6 @@ func (rm regionMgr) GetDefaultConfigs() ([]mgm.ConfigOption, error) {
 
 func (rm regionMgr) GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error) {
 	return rm.db.GetConfigs(regionID)
-}
-
-func (rm regionMgr) GetRegions() ([]mgm.Region, error) {
-	rgs, err := rm.db.GetRegions()
-	if err != nil {
-		return nil, err
-	}
-	for i, r := range rgs {
-		n, err := rm.osdb.GetEstateNameForRegion(r)
-		if err != nil {
-			errMsg := fmt.Sprintf("Error getting estate for region: %s", err.Error())
-			rm.log.Error(errMsg)
-		} else {
-			rgs[i].EstateName = n
-		}
-	}
-	return rgs, nil
-}
-
-func (rm regionMgr) GetRegionsOnHost(host mgm.Host) ([]mgm.Region, error) {
-	rgs, err := rm.db.GetRegionsOnHost(host)
-	if err != nil {
-		return nil, err
-	}
-	for i, r := range rgs {
-		n, err := rm.osdb.GetEstateNameForRegion(r)
-		if err != nil {
-			errMsg := fmt.Sprintf("Error getting estate for region: %s", err.Error())
-			rm.log.Error(errMsg)
-		} else {
-			rgs[i].EstateName = n
-		}
-	}
-	return rgs, nil
 }
 
 func (rm regionMgr) ServeConfigs(region mgm.Region, host mgm.Host) ([]mgm.ConfigOption, error) {
