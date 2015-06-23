@@ -90,6 +90,7 @@ func (ns hostSession) process(closing chan<- int64) {
 					if h.ExternalAddress == ns.host.ExternalAddress {
 						ns.log.Info("registering node with hostname %v and slots %v", reg.Name, reg.Slots)
 						h.Hostname = reg.Name
+						h.ExternalAddress = reg.ExternalAddress
 						h.Slots = reg.Slots
 						ns.mgm.UpdateHost(h)
 						found = true
