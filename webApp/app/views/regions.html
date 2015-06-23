@@ -39,36 +39,41 @@
 
 <script type="text/ng-template" id="manageSettingsModal.html">
   <div class="modal-header">
-    <table>
+    <table width="560px">
       <tr>
+        <td><button class="btn btn-danger" ng-click="region.remove(r)">Delete</button></td>
         <td><h3 class="modal-title">{{region.Name}}</h3></td>
-        <td><button style="float:right" ng-click="region.remove(r)">Delete</button></td>
       </tr>
     </table>
   </div>
   <div class="modal-body">
-    <table>
+    <table width="600px">
       <tr>
         <td>Change Estate</td>
-        <td colspan="2"><select ng-model="newEstate" ng-init="newEstate=region.estate" ng-options="est.Name for (eName, est) in estates"></select></td>
-        <td><button ng-click="setEstate(newEstate)">Set</button></td>
+        <td colspan="2"><select ng-model="currentEstate" ng-options="est.Name for (eName, est) in estates"></select></td>
+        <td><button ng-click="setEstate()" class="btn btn-xs btn-default" ng-class="{disabled: currentEstate.Name===region.Estate}">Set</button></td>
       </tr>
       <tr>
         <td>Change Host</td>
-        <td colspan="2"><select ng-model="newHost" ng-init="newHost=region.host" ng-options="h.Hostname for (id, h) in hosts"></select></td>
-        <td><button ng-click="setHost(newHost)">Set</button></td>
+        <td colspan="2"><select ng-model="currentHost" ng-options="h.Hostname for (id, h) in hosts"></select></td>
+        <td><button ng-click="setHost()" class="btn btn-xs btn-default" ng-class="{disabled: currentHost.ID===region.Host}">Set</button></td>
       </tr>
       <tr>
         <form>
         <td>Change Position</td>
-        <td><label>X</label><input ng-model="locX" ng-init="locX=region.LocX" type="number" min="0" step="1" required/></td>
-        <td><label>Y</label><input ng-model="locY" ng-init="locY=region.LocY" type="number" min="0" step="1" required/></td>
-        <td><button type="submit" ng-click="setXY(locX,locY)">Set</button></td>
+        <td><label>X</label><input ng-model="currentX" type="text" min="0" step="1" size="12" pattern='[0-9]{1,5}' required/></td>
+        <td><label>Y</label><input ng-model="currentY" type="text" min="0" step="1" size="12" pattern='[0-9]{1,5}' required/></td>
+        <td><button type="submit" ng-click="setXY()" class="btn btn-xs btn-default" ng-class="{disabled: currentX===region.LocX && currentY===region.LocY}">Set</button></td>
         </form>
       </tr>
     </table>
   </div>
   <div class="modal-footer">
-    <button class="btn btn-warning" ng-click="close()">Close</button>
+  <table width="560px">
+    <tr>
+      <td><span style="color:red">{{errorMsg}}</span></td>
+      <td><button class="btn btn-warning" ng-click="close()">Close</button></td>
+    </tr>
+  </table>
   </div>
 </script>

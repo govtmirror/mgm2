@@ -65,20 +65,6 @@ angular.module('mgmApp')
           });
         } else {
           //prime region with estate object so forms play nicer
-          var estates = mgm.estates;
-          var id;
-          for(id in estates){
-            if(estates[id].Name === region.EstateName){
-              region.estate = estates[id];
-            }
-          }
-          var hosts = mgm.hosts;
-          hosts[0] = {ID: 0, Hostname: '<none>'};
-          for(id in hosts){
-            if(hosts[id].ID === region.Host){
-              region.host = hosts[id];
-            }
-          }
           var modInst = $modal.open({
             animation: false,
             templateUrl: 'manageSettingsModal.html',
@@ -88,12 +74,6 @@ angular.module('mgmApp')
             resolve: {
               region: function() {
                 return region;
-              },
-              estates: function() {
-                return estates;
-              },
-              hosts: function() {
-                return hosts;
               }
             }
           });
