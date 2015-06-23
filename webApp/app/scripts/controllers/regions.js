@@ -17,7 +17,7 @@ angular.module('mgmApp')
 
     var dummyEntry = '<show all estates>';
 
-    var regions = {};
+    var eMap = {};
     $scope.estates = {};
     $scope.estates[dummyEntry] = {};
     $scope.search = {
@@ -145,17 +145,8 @@ angular.module('mgmApp')
     };
 
     function estateifyRegion(event, region) {
-      if (region.UUID in regions) {
-        regions[region.UUID] = region;
-      } else {
-        if (region.EstateName in $scope.estates) {
-          regions[region.UUID] = region;
-          $scope.estates[region.EstateName][region.UUID] = region;
-        } else {
-          $scope.estates[region.EstateName] = {};
-          regions[region.UUID] = region;
-          $scope.estates[region.EstateName][region.UUID] = region;
-        }
+      if(region.UUID in eMap) {
+        $scope.estates[eMap[region.UUID]][region.UUID] = region
       }
     }
 
@@ -163,6 +154,9 @@ angular.module('mgmApp')
       if ($scope.auth.UUID === estate.Owner || $scope.auth.UUID in estate.Managers || $scope.auth.AccessLevel > 249) {
         if (!(estate.Name in $scope.estates)) {
           $scope.estates[estate.Name] = {};
+          for (var i = 0; i < estate.Regions.length; i++){
+            eMap[estate.Regions[i]] = estate.Name;
+          }
         }
       } else {
         //remove estate, this user no longer controlls it

@@ -80,7 +80,6 @@ func (us userSession) process() {
 			}
 		case r := <-us.notifier.rUp:
 			// new or updated region
-			regionsWhitelist[r.UUID] = estatesWhitelist[r.Estate]
 			if regionsWhitelist[r.UUID] {
 				us.client.Send(r)
 			}
@@ -92,6 +91,7 @@ func (us userSession) process() {
 			if regionsWhitelist[s.UUID] {
 				us.client.Send(s)
 			}
+		// regions in estate changes will change the estate object, not the region.  Estates know what regions are contained, not vice versa
 
 		// COMMANDS FROM THE CLIENT
 		case msg := <-clientMsg:

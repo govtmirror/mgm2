@@ -19,7 +19,7 @@
       </td>
     </tr>
     <tr ng-repeat="r in regions|orderBy: 'Name'" ng-class-odd="'odd'" ng-class-even="'even'" ng-show="r.Name.includes(search.regionName)">
-      <td>{{r.Name}}</td>
+      <td>{{r.Name}} {{r.Estate}}</td>
       <td ng-if="r.Status.Running"> {{r.Status.CPUPercent.toFixed(2)}}% CPU</td>
       <td ng-if="r.Status.Running"> {{r.Status.MemKB}} KB</td>
       <td ng-if="r.Status.Running">Up {{humanReadableUptime(r.Status.Uptime)}}</td>

@@ -20,7 +20,6 @@ type Region struct {
 	LocY         uint
 	Host         int64
 	IsRunning    bool
-	Estate       int
 
 	frames chan int
 }
@@ -63,9 +62,8 @@ func (r Region) Serialize() []byte {
 		LocY      uint
 		Host      int64
 		IsRunning bool
-		Estate    int
 	}
-	csr := clientSafeRegion{r.UUID, r.Name, r.Size, r.LocX, r.LocY, r.Host, r.IsRunning, r.Estate}
+	csr := clientSafeRegion{r.UUID, r.Name, r.Size, r.LocX, r.LocY, r.Host, r.IsRunning}
 	data, _ := json.Marshal(csr)
 	return data
 }

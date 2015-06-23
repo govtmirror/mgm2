@@ -13,7 +13,7 @@ type regionDatabase struct {
 }
 
 // GetRegionsForUser retrieves region records for a user where the user owns the estate they are in, or is a manager for said estate
-func (db regionDatabase) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error) {
+/*func (db regionDatabase) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error) {
 	con, err := db.mysql.GetConnection()
 	if err != nil {
 		return nil, err
@@ -23,7 +23,7 @@ func (db regionDatabase) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error)
 	var regions []mgm.Region
 
 	rows, err := con.Query(
-		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host, EstateID from regions, estate_map, estate_settings " +
+		"Select uuid, name, size, httpPort, consolePort, consoleUname, consolePass, locX, locY, host from regions, estate_map, estate_settings " +
 			"where estate_map.RegionID = regions.uuid AND estate_map.EstateID = estate_settings.EstateID AND uuid in " +
 			"(SELECT RegionID FROM estate_map WHERE " +
 			"EstateID in (SELECT EstateID FROM estate_settings WHERE EstateOwner=\"" + guid.String() + "\") OR " +
@@ -49,7 +49,6 @@ func (db regionDatabase) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error)
 			&r.LocX,
 			&r.LocY,
 			&r.Host,
-			&r.Estate,
 		)
 		if err != nil {
 			rows.Close()
@@ -58,7 +57,7 @@ func (db regionDatabase) GetRegionsForUser(guid uuid.UUID) ([]mgm.Region, error)
 		regions = append(regions, r)
 	}
 	return regions, nil
-}
+}*/
 
 // GetRegionByID retrieves a single region that matches the id given
 func (db regionDatabase) GetRegionByID(id uuid.UUID) (mgm.Region, bool, error) {
