@@ -84,17 +84,22 @@ func (ns hostSession) process(closing chan<- int64) {
 				reg := nmsg.Register
 				//update existing host
 				hosts := ns.mgm.GetHosts()
+				found := false
 				for _, h := range hosts {
-					if h.ExternalAddress == reg.ExternalAddress {
+					ns.log.Info("searching hosts....%v", h)
+					if h.ExternalAddress == ns.host.ExternalAddress {
+						ns.log.Info("registering node with hostname %v and slots %v", reg.Name, reg.Slots)
 						h.Hostname = reg.Name
 						h.Slots = reg.Slots
 						ns.mgm.UpdateHost(h)
-						continue
+						found = true
 					}
 				}
 				//this host does not exist
-				errMsg := fmt.Sprintf("Recieved registration for nonexistant host: %v", reg.ExternalAddress)
-				ns.log.Error(errMsg)
+				if !found {
+					errMsg := fmt.Sprintf("Recieved registration for nonexistant host: %v", reg.ExternalAddress)
+					ns.log.Error(errMsg)
+				}
 			case "HostStats":
 				hStats := nmsg.HStats
 				hStats.ID = ns.host.ID

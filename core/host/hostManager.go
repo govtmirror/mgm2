@@ -52,27 +52,6 @@ type internalMsg struct {
 	hosts   chan mgm.Host
 }
 
-/*func (nm nm) GetHosts() []mgm.Host {
-	var hosts []mgm.Host
-	req := internalMsg{"GetHosts", make(chan mgm.Host, 32)}
-	nm.internalMsgs <- req
-	nm.logger.Info("Reading from host channel")
-	for h := range req.hosts {
-		hosts = append(hosts, h)
-	}
-	return hosts
-}
-
-func (nm nm) GetHostByID(id int) (mgm.Host, bool) {
-	hosts := nm.mgm.GetHosts()
-	for _, h := range hosts {
-		if h.ID == id {
-			return h, true
-		}
-	}
-	return mgm.Host{}, false
-}*/
-
 func (nm nm) StartRegionOnHost(region mgm.Region, host mgm.Host, sr core.ServiceRequest) {
 	nm.requestChan <- Message{
 		MessageType: "StartRegion",
