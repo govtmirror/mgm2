@@ -15,16 +15,16 @@ angular.module('mgmApp')
       $location.url('/loading');
     }
 
-    var dummyEntry = '<show all estates>';
+    var dummyEntry = {Name: '<show all estates>', Regions: []};
 
     var eMap = {};
     $scope.estates = [];
-    $scope.estates.push({Name: dummyEntry, Regions: []});
+    $scope.estates.push(dummyEntry);
     for(var id in mgm.estates){
       $scope.estates.push(mgm.estates[id]);
     }
     $scope.search = {
-      estateName: dummyEntry,
+      estate: dummyEntry,
       regionName: '',
     };
 
@@ -96,10 +96,10 @@ angular.module('mgmApp')
     };
 
     $scope.shouldShow = function(e) {
-      if (e.Name === dummyEntry) {
+      if (e === dummyEntry) {
         return false;
       }
-      if ($scope.search.estateName === dummyEntry) {
+      if ($scope.search.estate === dummyEntry) {
         //listing all estates
         //iterate over estates, do not list estates where all regions are filtered out
         for (var i = 0; i < e.Regions.length; i++) {
@@ -114,7 +114,7 @@ angular.module('mgmApp')
         }
         return false;
       }
-      return $scope.search.estateName === name;
+      return $scope.search.estate === e;
     };
 
     $scope.humanReadableUptime = function(ns) {

@@ -4,7 +4,7 @@
       <button ng-click="region.showAdd()">AddNewRegion</button>
     </td>
     <td>
-      <select ng-model="search.estateName" ng-options="eName as eName for (eName, regions) in estates| orderBy: eName" />
+      <select ng-model="search.estate" ng-options="e.Name for e in estates | orderBy: 'Name'" />
     </td>
     <td>
       <input placeholder="Name Search" type="search" ng-model="search.regionName" style="width: 10em">
