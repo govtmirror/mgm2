@@ -21,12 +21,22 @@ angular.module('mgmApp')
       regionName: '',
     };
 
+    function regionsList(IDs){
+      var regions = [];
+      for(var i = 0; i < IDs.length; i++){
+        if( IDs[i] in mgm.regions && mgm.regions[IDs[i]].Name.includes($scope.search.regionName)){
+          regions.push(mgm.regions[IDs[i]]);
+        }
+      }
+      return regions;
+    }
+
     var eMap = {};
     $scope.estates = [];
     $scope.estates.push(dummyEntry);
     for(var id in mgm.estates){
-      var estate = mgm.estates[id]
-      estate.regions = regionsList(estate.Regions)
+      var estate = mgm.estates[id];
+      estate.regions = regionsList(estate.Regions);
       $scope.estates.push(estate);
     }
 
@@ -129,37 +139,27 @@ angular.module('mgmApp')
       return days + 'd ' + hours + 'h ' + minutes + 'm';
     };
 
-    function regionsList(IDs){
-      var regions = [];
-      for(var i = 0; i < IDs.length; i++){
-        if( IDs[i] in mgm.regions && mgm.regions[IDs[i]].Name.includes($scope.search.regionName)){
-          regions.push(mgm.regions[IDs[i]]);
-        }
-      }
-      return regions;
-    }
-
     function estateifyRegion(event, region) {
       if(region.UUID in eMap) {
-        $scope.estates[eMap[region.UUID]][region.UUID] = region
+        $scope.estates[eMap[region.UUID]][region.UUID] = region;
       }
     }
 
     $scope.$on('EstateUpdate', function(event, estate){
       for (var i = 0; i < $scope.estates.length; i++) {
-        if ($scope.estates[i].ID == estate.ID){
+        if ($scope.estates[i].ID === estate.ID){
           $scope.estates[i] = estate;
-          $timeout(function(){
-            estate.regions = regionsList(estate.Regions)
-          });
         }
       }
+      $timeout(function(){
+        estate.regions = regionsList(estate.Regions);
+      });
     });
     $scope.$on('RegionUpdate', estateifyRegion);
     $scope.$on('RegionStatusUpdate', function(event, status) {
-      if (status.UUID in regions) {
+      if (status.UUID in $scope.regions) {
         $timeout(function() {
-          $scope.estates[regions[status.UUID].EstateName][status.UUID].Status = status;
+          $scope.estates[$scope.regions[status.UUID].EstateName][status.UUID].Status = status;
         });
       }
     });

@@ -31,7 +31,6 @@ angular.module('mgmApp')
 
       $scope.currentHost = $scope.hosts[$scope.region.Host];
       for (var id in $scope.estates) {
-        var estate = $scope.estates[id];
         for (var i = 0; i < $scope.estates[id].Regions.length; i++) {
           if ($scope.estates[id].Regions[i] === $scope.region.UUID) {
             $scope.currentEstate = $scope.estates[id];
@@ -65,19 +64,24 @@ angular.module('mgmApp')
           'RegionUUID': region.UUID,
           'ID': $scope.currentEstate.ID
         }, function(success, msg) {
-          alertify.log('' + success + ": " + msg);
-
-        })
+          alertify.log('' + success + ': ' + msg);
+        });
       }
     };
 
     $scope.setHost = function() {
       if ($scope.currentHost.ID !== region.Host) {
+        mgm.request('SetHost', {
+          'RegionUUID': region.UUID,
+          'ID': $scope.currentHost.ID
+        }, function(success, msg){
+          alertify.log('' + success +': ' + msg);
+        });
         alertify.log('Set host to: ' + $scope.currentHost.Hostname);
       }
     };
 
-    $scope.$on('EstateUpdate', function(event, estate) {
+    $scope.$on('EstateUpdate', function() {
       $timeout(function() {
         init();
       });

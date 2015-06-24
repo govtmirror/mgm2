@@ -75,7 +75,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
         $rootScope.$broadcast('PendingUserUpdate', message.Message);
         break;
       case 'RegionDeleted':
-        delete self.regions[message.Message.UUID]
+        delete self.regions[message.Message.UUID];
         $rootScope.$broadcast('RegionDeleted', message.Message);
         break;
       case 'Region':

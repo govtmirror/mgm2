@@ -28,7 +28,7 @@ angular.module('mgmApp')
     $scope.host = {
       delete: function(host) {
         host.RunningRegions = 0;
-        if (host.Regions != null) {
+        if (host.Regions !== null) {
           var regions = mgm.regions;
           for (var uuid in host.Regions) {
             if (regions[uuid].Running) {
@@ -54,16 +54,16 @@ angular.module('mgmApp')
           }, function(done, message) {
             if (done) {
               //host is deleted
-              console.log("Success: " + message);
+              console.log('Success: ' + message);
             } else {
               //an error occurred
-              console.log("Error: " + message);
+              console.log('Error: ' + message);
             }
           });
         });
       },
       new: function() {
-        var newHost = {}
+        var newHost = {};
         var modInst = $modal.open({
           animation: false,
           templateUrl: 'addHostModal.html',
@@ -82,21 +82,20 @@ angular.module('mgmApp')
           }, function(done, message) {
             if (done) {
               //host is deleted
-              console.log("Success: " + message);
+              console.log('Success: ' + message);
             } else {
               //an error occurred
-              console.log("Error: " + message);
+              console.log('Error: ' + message);
             }
           });
         });
       },
       countRunning: function(host) {
         var running = 0;
-        var regions = mgm.regions;
         for (var uuid in host.Regions) {
           console.log(uuid);
         }
-        return "" + running;
+        return '' + running;
       }
 
     };
@@ -152,10 +151,10 @@ angular.module('mgmApp')
 
     $scope.$on('HostDeleted', function(event, stat) {
       if (stat.ID in $scope.hosts) {
-        console.log("Deleting host from display");
+        console.log('Deleting host from display');
         $timeout(function() {
           delete $scope.hosts[stat.ID];
-        })
+        });
       }
     });
 

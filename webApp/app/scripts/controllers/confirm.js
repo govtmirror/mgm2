@@ -14,7 +14,7 @@ angular.module('mgmApp')
 
     $scope.confirm = function(){
       $modalInstance.close();
-    }
+    };
 
     $scope.cancel = function() {
       $modalInstance.dismiss();
