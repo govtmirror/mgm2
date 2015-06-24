@@ -12,14 +12,14 @@
   </tr>
 </table>
 <table style="width: 100%">
-  <tbody ng-repeat="(eName, regions) in estates | orderBy: eName" ng-show="shouldShow(eName)">
+  <tbody ng-repeat="e in estates | orderBy: 'Name'" ng-show="shouldShow(e)">
     <tr>
       <td colspan="6">
-        <h3>{{eName}}</h3>
+        <h3>{{e.Name}}</h3>
       </td>
     </tr>
-    <tr ng-repeat="r in regions|orderBy: 'Name'" ng-class-odd="'odd'" ng-class-even="'even'" ng-show="r.Name.includes(search.regionName)">
-      <td>{{r.Name}} {{r.Estate}}</td>
+    <tr ng-repeat="r in regionsList(e.Regions)|orderBy: 'Name'" ng-class-odd="'odd'" ng-class-even="'even'" >
+      <td>{{r.Name}}</td>
       <td ng-if="r.Status.Running"> {{r.Status.CPUPercent.toFixed(2)}}% CPU</td>
       <td ng-if="r.Status.Running"> {{r.Status.MemKB}} KB</td>
       <td ng-if="r.Status.Running">Up {{humanReadableUptime(r.Status.Uptime)}}</td>

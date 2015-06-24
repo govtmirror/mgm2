@@ -18,8 +18,11 @@ angular.module('mgmApp')
     var dummyEntry = '<show all estates>';
 
     var eMap = {};
-    $scope.estates = {};
-    $scope.estates[dummyEntry] = {};
+    $scope.estates = [];
+    $scope.estates.push({Name: dummyEntry, Regions: []});
+    for(var id in mgm.estates){
+      $scope.estates.push(mgm.estates[id]);
+    }
     $scope.search = {
       estateName: dummyEntry,
       regionName: '',
@@ -92,20 +95,20 @@ angular.module('mgmApp')
       }
     };
 
-    $scope.shouldShow = function(name) {
-      if (name === dummyEntry) {
+    $scope.shouldShow = function(e) {
+      if (e.Name === dummyEntry) {
         return false;
       }
       if ($scope.search.estateName === dummyEntry) {
         //listing all estates
         //iterate over estates, do not list estates where all regions are filtered out
-        for (var uuid in $scope.estates[name]) {
+        for (var i = 0; i < e.Regions.length; i++) {
           // we cannot use track by, as estate names may contain spaces
           // so angular adds $$hashKey, which we must test for
-          if( uuid === '$$hashKey') {
+          if( e.Regions[i] === '$$hashKey') {
             continue;
           }
-          if ($scope.estates[name][uuid].Name.includes($scope.search.regionName)) {
+          if ( e.Regions[i] in mgm.regions && mgm.regions[e.Regions[i]].Name.includes($scope.search.regionName)) {
             return true;
           }
         }
@@ -123,6 +126,16 @@ angular.module('mgmApp')
       var minutes = Math.floor(seconds / 60);
       return days + 'd ' + hours + 'h ' + minutes + 'm';
     };
+
+    $scope.regionsList = function(IDs){
+      var regions = [];
+      for(var i = 0; i < IDs.length; i++){
+        if( IDs[i] in mgm.regions && mgm.regions[IDs[i]].Name.includes($scope.search.regionName)){
+          regions.push(mgm.regions[IDs[i]]);
+        }
+      }
+      return regions;
+    }
 
     function estateifyRegion(event, region) {
       if(region.UUID in eMap) {
@@ -161,12 +174,12 @@ angular.module('mgmApp')
       }
     });
 
-    for (var ID in mgm.estates) {
+    /*for (var ID in mgm.estates) {
       modUserEstates('', mgm.estates[ID]);
     }
 
     for (var uuid in mgm.regions) {
       estateifyRegion('', mgm.regions[uuid]);
-    }
+    }*/
 
   });
