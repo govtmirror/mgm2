@@ -50,7 +50,7 @@
     <table width="600px">
       <tr>
         <td>Change Estate</td>
-        <td colspan="2"><select ng-model="currentEstate" ng-options="est.Name for (eName, est) in estates"></select></td>
+        <td colspan="2"><select ng-model="currentEstate" ng-options="est.Name for est in estates | orderBy: 'Name'"></select></td>
         <td><button ng-click="setEstate()" class="btn btn-xs btn-default" ng-class="{disabled: currentEstate.Name===region.Estate}">Set</button></td>
       </tr>
       <tr>

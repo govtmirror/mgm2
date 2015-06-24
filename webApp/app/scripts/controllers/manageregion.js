@@ -11,7 +11,7 @@ angular.module('mgmApp')
   .controller('ManageregionCtrl', function($scope, $modalInstance, $timeout, mgm, region) {
 
     $scope.region = region;
-    $scope.estates = mgm.estates;
+    $scope.estates = [];
     $scope.hosts = mgm.hosts;
     $scope.hosts[0] = {
       ID: 0,
@@ -24,8 +24,14 @@ angular.module('mgmApp')
     $scope.currentY = region.LocY;
 
     function init() {
+      $scope.estates = [];
+      for (var e in mgm.estates){
+        $scope.estates.push(mgm.estates[e]);
+      }
+
       $scope.currentHost = $scope.hosts[$scope.region.Host];
       for (var id in $scope.estates) {
+        var estate = $scope.estates[id];
         for (var i = 0; i < $scope.estates[id].Regions.length; i++) {
           if ($scope.estates[id].Regions[i] === $scope.region.UUID) {
             $scope.currentEstate = $scope.estates[id];
@@ -73,7 +79,6 @@ angular.module('mgmApp')
 
     $scope.$on('EstateUpdate', function(event, estate) {
       $timeout(function() {
-        $scope.estates = mgm.estates;
         init();
       });
     });

@@ -146,7 +146,6 @@ angular.module('mgmApp')
     }
 
     $scope.$on('EstateUpdate', function(event, estate){
-      console.log("Estate update received " + estate.Name);
       for (var i = 0; i < $scope.estates.length; i++) {
         if ($scope.estates[i].ID == estate.ID){
           $scope.estates[i] = estate;
