@@ -18,7 +18,7 @@
         <h3>{{e.Name}}</h3>
       </td>
     </tr>
-    <tr ng-repeat="r in regionsList(e.Regions)|orderBy: 'Name'" ng-class-odd="'odd'" ng-class-even="'even'" >
+    <tr ng-repeat="r in e.regions | orderBy: 'Name'" ng-class-odd="'odd'" ng-class-even="'even'" >
       <td>{{r.Name}}</td>
       <td ng-if="r.Status.Running"> {{r.Status.CPUPercent.toFixed(2)}}% CPU</td>
       <td ng-if="r.Status.Running"> {{r.Status.MemKB}} KB</td>
@@ -69,11 +69,6 @@
     </table>
   </div>
   <div class="modal-footer">
-  <table width="560px">
-    <tr>
-      <td><span style="color:red">{{errorMsg}}</span></td>
-      <td><button class="btn btn-warning" ng-click="close()">Close</button></td>
-    </tr>
-  </table>
+    <button class="btn btn-warning" ng-click="close()">Close</button>
   </div>
 </script>

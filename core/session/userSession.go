@@ -34,7 +34,7 @@ func (us userSession) process() {
 
 	// if we arent admin, maintain a list of estates and regions that we manage
 	regionsWhitelist := make(map[uuid.UUID]bool)
-	estatesWhitelist := make(map[int]bool)
+	estatesWhitelist := make(map[int64]bool)
 
 	if !isAdmin {
 		//populate the whitelists
@@ -91,7 +91,30 @@ func (us userSession) process() {
 			if regionsWhitelist[s.UUID] {
 				us.client.Send(s)
 			}
-		// regions in estate changes will change the estate object, not the region.  Estates know what regions are contained, not vice versa
+		case e := <-us.notifier.eUp:
+			us.log.Info("Sending estate update to client")
+			//make sure we still manage it
+			if isAdmin {
+				us.client.Send(e)
+			} else {
+				manage := false
+				if e.Owner == uid {
+					manage = true
+				} else {
+					for _, manager := range e.Managers {
+						if manager == uid {
+							manage = true
+						}
+					}
+				}
+				if manage {
+					us.client.Send(e)
+				}
+				estatesWhitelist[e.ID] = manage
+			}
+		case e := <-us.notifier.eDel:
+			us.client.Send(mgm.EstateDeleted{e.ID})
+			estatesWhitelist[e.ID] = false
 
 		// COMMANDS FROM THE CLIENT
 		case msg := <-clientMsg:
@@ -147,14 +170,6 @@ func (us userSession) process() {
 					continue
 				}
 
-				//kill running regions, close connection, any regions present are updated
-				/*us.hMgr.RemoveHost(host, func(ok bool, msg string) {
-					if ok {
-						us.client.SignalSuccess(m.MessageID, "host removed")
-					} else {
-						us.client.SignalError(m.MessageID, msg)
-					}
-				})*/
 				us.mgm.RemoveHost(host)
 				us.client.SignalSuccess(m.MessageID, "host removed")
 
@@ -302,6 +317,65 @@ func (us userSession) process() {
 				us.SignalSuccess(m.MessageID, "Console opened")*/
 			case "CloseConsole":
 				console.Close()
+
+			case "SetEstate":
+				estateID, err := m.ReadID()
+				if err != nil {
+					us.client.SignalError(m.MessageID, "Invalid format")
+					continue
+				}
+				regionID, err := m.ReadRegionID()
+				if err != nil {
+					us.client.SignalError(m.MessageID, "Invalid format")
+					continue
+				}
+
+				us.log.Info("Requesting add region %v to estate %v", regionID, estateID)
+
+				//Must be admin to mod region estates
+				if !isAdmin {
+					us.client.SignalError(m.MessageID, "Permission Denied")
+					us.log.Error("Add region to estate failed, permission denied")
+					continue
+				}
+
+				var region mgm.Region
+				regionFound := false
+				var estate mgm.Estate
+				estateFound := false
+				for _, r := range us.mgm.GetRegions() {
+					if r.UUID == regionID {
+						regionFound = true
+						region = r
+					}
+				}
+				if !regionFound {
+					us.client.SignalError(m.MessageID, "Region does not exist")
+					us.log.Error("Add region to estate failed, region not found")
+					continue
+				}
+				for _, e := range us.mgm.GetEstates() {
+					if e.ID == estateID {
+						estateFound = true
+						estate = e
+					}
+				}
+				if !estateFound {
+					us.client.SignalError(m.MessageID, "Estate does not exist")
+					us.log.Error("Add region to estate failed, estate not found")
+					continue
+				}
+
+				success, msg := us.mgm.MoveRegionToEstate(region, estate)
+				if success {
+					us.client.SignalSuccess(m.MessageID, msg)
+					us.log.Error("Add region to estate succeeded")
+				} else {
+					us.client.SignalError(m.MessageID, msg)
+					errMsg := fmt.Sprintf("Add region to estate failed, %v", msg)
+					us.log.Error(errMsg)
+				}
+
 			case "DeleteJob":
 				us.log.Info("Requesting delete job")
 				id, err := m.ReadID()

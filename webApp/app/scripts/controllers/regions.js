@@ -16,17 +16,19 @@ angular.module('mgmApp')
     }
 
     var dummyEntry = {Name: '<show all estates>', Regions: []};
+    $scope.search = {
+      estate: dummyEntry,
+      regionName: '',
+    };
 
     var eMap = {};
     $scope.estates = [];
     $scope.estates.push(dummyEntry);
     for(var id in mgm.estates){
-      $scope.estates.push(mgm.estates[id]);
+      var estate = mgm.estates[id]
+      estate.regions = regionsList(estate.Regions)
+      $scope.estates.push(estate);
     }
-    $scope.search = {
-      estate: dummyEntry,
-      regionName: '',
-    };
 
     $scope.region = {
       start: function(region) {
@@ -127,7 +129,7 @@ angular.module('mgmApp')
       return days + 'd ' + hours + 'h ' + minutes + 'm';
     };
 
-    $scope.regionsList = function(IDs){
+    function regionsList(IDs){
       var regions = [];
       for(var i = 0; i < IDs.length; i++){
         if( IDs[i] in mgm.regions && mgm.regions[IDs[i]].Name.includes($scope.search.regionName)){
@@ -143,28 +145,17 @@ angular.module('mgmApp')
       }
     }
 
-    function modUserEstates(event, estate) {
-      if ($scope.auth.UUID === estate.Owner || $scope.auth.UUID in estate.Managers || $scope.auth.AccessLevel > 249) {
-        if (!(estate.Name in $scope.estates)) {
-          $scope.estates[estate.Name] = {};
-          for (var i = 0; i < estate.Regions.length; i++){
-            eMap[estate.Regions[i]] = estate.Name;
-          }
-        }
-      } else {
-        //remove estate, this user no longer controlls it
-        if (estate.Name in $scope.estates) {
-          delete $scope.estates[estate.Name];
-          for (var uuid in estate.Regions) {
-            if (uuid in regions) {
-              delete regions[uuid];
-            }
-          }
+    $scope.$on('EstateUpdate', function(event, estate){
+      console.log("Estate update received " + estate.Name);
+      for (var i = 0; i < $scope.estates.length; i++) {
+        if ($scope.estates[i].ID == estate.ID){
+          $scope.estates[i] = estate;
+          $timeout(function(){
+            estate.regions = regionsList(estate.Regions)
+          });
         }
       }
-    }
-
-    $scope.$on('EstateUpdate', modUserEstates);
+    });
     $scope.$on('RegionUpdate', estateifyRegion);
     $scope.$on('RegionStatusUpdate', function(event, status) {
       if (status.UUID in regions) {
@@ -173,13 +164,5 @@ angular.module('mgmApp')
         });
       }
     });
-
-    /*for (var ID in mgm.estates) {
-      modUserEstates('', mgm.estates[ID]);
-    }
-
-    for (var uuid in mgm.regions) {
-      estateifyRegion('', mgm.regions[uuid]);
-    }*/
 
   });

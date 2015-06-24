@@ -18,6 +18,8 @@ type Notifier interface {
 	RegionUpdated(mgm.Region)
 	RegionDeleted(mgm.Region)
 	RegionStat(mgm.RegionStat)
+	EstateUpdated(mgm.Estate)
+	EstateDeleted(mgm.Estate)
 }
 
 //MGMDB interfaces with mysql, caches values for performance, and notifies subscribers of object updates
@@ -37,6 +39,7 @@ type MGMDB interface {
 	UpdateRegion(mgm.Region)
 	UpdateRegionStat(mgm.RegionStat)
 	RemoveRegion(mgm.Region)
+	MoveRegionToEstate(mgm.Region, mgm.Estate) (bool, string)
 	//job functions
 	GetJobs() []mgm.Job
 	UpdateJob(mgm.Job)
@@ -71,6 +74,7 @@ func NewMGMDB(db Database, osdb Database, sim simian.Connector, log logger.Log, 
 type mgmReq struct {
 	request string
 	object  interface{}
+	target  interface{}
 	result  chan interface{}
 }
 
@@ -128,11 +132,12 @@ func (m mgmDB) process() {
 		jobs[j.ID] = j
 	}
 	//populate estates
-	estates := make(map[int]mgm.Estate)
+	estates := make(map[int64]mgm.Estate)
 	for _, e := range m.queryEstates() {
 		estates[e.ID] = e
 	}
 
+ProcessingPackets:
 	for {
 		select {
 		case req := <-m.reqs:
@@ -202,6 +207,38 @@ func (m mgmDB) process() {
 				delete(hosts, host.ID)
 				go m.purgeHost(host)
 				m.notify.HostDeleted(host)
+			case "MoveRegionToEstate":
+				reg := req.object.(mgm.Region)
+				est := req.target.(mgm.Estate)
+				//check if region already in estate
+				for _, id := range estates[est.ID].Regions {
+					if id == reg.UUID {
+						req.result <- false
+						req.result <- "Region is already in that estate"
+						close(req.result)
+						break ProcessingPackets
+					}
+				}
+				//persist change
+				go m.persistRegionEstate(reg, est)
+				//remove region from current estate
+				for _, e := range estates {
+					for y, id := range e.Regions {
+						if id == reg.UUID {
+							e.Regions = append(e.Regions[:y], e.Regions[y+1:]...)
+							estates[e.ID] = e
+							m.notify.EstateUpdated(e)
+						}
+					}
+				}
+				//add region to new estate
+				est = estates[est.ID]
+				est.Regions = append(est.Regions, reg.UUID)
+				estates[est.ID] = est
+				m.notify.EstateUpdated(est)
+				req.result <- true
+				req.result <- "estate updated"
+				close(req.result)
 			default:
 				errMsg := fmt.Sprintf("Unexpected command: %v", req.request)
 				m.log.Error(errMsg)

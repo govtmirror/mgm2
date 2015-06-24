@@ -81,6 +81,14 @@ func (sm sessionMgr) process() {
 				for _, note := range userMap {
 					note.RegionStat(s)
 				}
+			case e := <-sm.notifier.eUp:
+				for _, note := range userMap {
+					note.EstateUpdated(e)
+				}
+			case e := <-sm.notifier.eDel:
+				for _, note := range userMap {
+					note.EstateDeleted(e)
+				}
 
 			// SESSION FUNCTIONS
 			case s := <-sm.sessionListener:

@@ -8,6 +8,21 @@ import (
 	"github.com/satori/go.uuid"
 )
 
+func (m mgmDB) persistRegionEstate(region mgm.Region, estate mgm.Estate) {
+	con, err := m.osdb.GetConnection()
+	if err != nil {
+		errMsg := fmt.Sprintf("Error connecting to database: %v", err.Error())
+		log.Fatal(errMsg)
+	}
+	defer con.Close()
+
+	_, err = con.Exec("REPLACE INTO estate_map VALUES (?,?)", region.UUID.String(), estate.ID)
+	if err != nil {
+		errMsg := fmt.Sprintf("Error updating estate_map: %v", err.Error())
+		m.log.Error(errMsg)
+	}
+}
+
 func (m mgmDB) queryEstates() []mgm.Estate {
 	var estates []mgm.Estate
 	con, err := m.osdb.GetConnection()
@@ -96,4 +111,16 @@ func (m mgmDB) GetEstates() []mgm.Estate {
 		}
 		estates = append(estates, h.(mgm.Estate))
 	}
+}
+
+func (m mgmDB) MoveRegionToEstate(r mgm.Region, e mgm.Estate) (bool, string) {
+	req := mgmReq{}
+	req.request = "MoveRegionToEstate"
+	req.object = r
+	req.target = e
+	req.result = make(chan interface{}, 4)
+	m.reqs <- req
+	result, _ := <-req.result
+	message, _ := <-req.result
+	return result.(bool), message.(string)
 }

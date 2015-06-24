@@ -22,9 +22,8 @@ angular.module('mgmApp')
     $scope.currentEstate = '';
     $scope.currentX = region.LocX;
     $scope.currentY = region.LocY;
-    $scope.errorMsg = '';
 
-    function init(){
+    function init() {
       $scope.currentHost = $scope.hosts[$scope.region.Host];
       for (var id in $scope.estates) {
         for (var i = 0; i < $scope.estates[id].Regions.length; i++) {
@@ -41,35 +40,47 @@ angular.module('mgmApp')
     };
 
     $scope.setXY = function() {
-      if($scope.currentX === undefined){
-        $scope.errorMsg = 'X coordinate is invalid';
+      if ($scope.currentX === undefined) {
+        alertify.error('X coordinate is invalid');
         return;
       }
-      if($scope.currentY === undefined){
-        $scope.errorMsg = 'Y coordinate is invalid';
+      if ($scope.currentY === undefined) {
+        alertify.error('Y coordinate is invalid');
         return;
       }
-      $scope.errorMsg = '';
-      if($scope.currentX !== $scope.region.LocX || $scope.currentY !== $scope.region.LocY){
-        console.log('Set x,y to: ' + $scope.currentX + ', ' + $scope.currentY);
+      if ($scope.currentX !== $scope.region.LocX || $scope.currentY !== $scope.region.LocY) {
+        alertify.log('Set x,y to: ' + $scope.currentX + ', ' + $scope.currentY);
       }
     };
 
     $scope.setEstate = function() {
       if ($scope.currentEstate.Name !== region.Estate) {
-        console.log('Set estate to: ' + $scope.currentEstate.Name);
+        mgm.request('SetEstate', {
+          'RegionUUID': region.UUID,
+          'ID': $scope.currentEstate.ID
+        }, function(success, msg) {
+          alertify.log('' + success + ": " + msg);
+
+        })
       }
     };
 
     $scope.setHost = function() {
       if ($scope.currentHost.ID !== region.Host) {
-        console.log('Set host to: ' + $scope.currentHost.Hostname);
+        alertify.log('Set host to: ' + $scope.currentHost.Hostname);
       }
     };
 
-    $scope.$on('RegionUpdate', function(event, r){
-      if(region.UUID === r.UUID){
-        $timeout(function(){
+    $scope.$on('EstateUpdate', function(event, estate) {
+      $timeout(function() {
+        $scope.estates = mgm.estates;
+        init();
+      });
+    });
+
+    $scope.$on('RegionUpdate', function(event, r) {
+      if (region.UUID === r.UUID) {
+        $timeout(function() {
           $scope.region = r;
           init();
         });

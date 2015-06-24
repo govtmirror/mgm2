@@ -73,14 +73,3 @@ func (ur UserMessage) ReadAddress() (string, error) {
 	}
 	return p.Address, nil
 }
-
-// ObjectType implements UserObject interface
-func (ur UserMessage) ObjectType() string {
-	return ur.MessageType
-}
-
-// Serialize implements UserObject
-func (ur UserMessage) Serialize() []byte {
-	data, _ := json.Marshal(ur)
-	return data
-}

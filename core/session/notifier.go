@@ -10,6 +10,8 @@ type Notifier struct {
 	rUp   chan mgm.Region
 	rDel  chan mgm.Region
 	rStat chan mgm.RegionStat
+	eUp   chan mgm.Estate
+	eDel  chan mgm.Estate
 }
 
 //NewNotifier constructs a Notifier, initializing all internal data structures
@@ -21,6 +23,8 @@ func NewNotifier() Notifier {
 		rUp:   make(chan mgm.Region, 32),
 		rStat: make(chan mgm.RegionStat, 32),
 		rDel:  make(chan mgm.Region, 32),
+		eUp:   make(chan mgm.Estate, 32),
+		eDel:  make(chan mgm.Estate, 32),
 	}
 }
 
@@ -52,4 +56,14 @@ func (n Notifier) RegionDeleted(r mgm.Region) {
 //RegionStat notifies that a regions status has been updated
 func (n Notifier) RegionStat(s mgm.RegionStat) {
 	n.rStat <- s
+}
+
+//EstateUpdated notifies that an estate has been modified
+func (n Notifier) EstateUpdated(e mgm.Estate) {
+	n.eUp <- e
+}
+
+//EstateDeleted notifies that an estate has been deleted
+func (n Notifier) EstateDeleted(e mgm.Estate) {
+	n.eDel <- e
 }
