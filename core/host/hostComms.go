@@ -36,7 +36,7 @@ type Message struct {
 type Registration struct {
 	ExternalAddress string
 	Name            string
-	Slots           uint
+	Slots           int
 }
 
 // ReadConnection is a processing loop for reading a socket and parsing messages

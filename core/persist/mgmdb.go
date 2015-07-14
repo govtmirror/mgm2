@@ -39,7 +39,8 @@ type MGMDB interface {
 	UpdateRegion(mgm.Region)
 	UpdateRegionStat(mgm.RegionStat)
 	RemoveRegion(mgm.Region)
-	MoveRegionToEstate(mgm.Region, mgm.Estate) (bool, string)
+	MoveRegionToEstate(mgm.Region, mgm.Estate)
+	MoveRegionToHost(mgm.Region, mgm.Host)
 	//job functions
 	GetJobs() []mgm.Job
 	UpdateJob(mgm.Job)
@@ -207,6 +208,31 @@ ProcessingPackets:
 				delete(hosts, host.ID)
 				go m.purgeHost(host)
 				m.notify.HostDeleted(host)
+			case "MoveRegionToHost":
+				reg := req.object.(mgm.Region)
+				host := req.target.(mgm.Host)
+				h := hosts[host.ID]
+				r := regions[reg.UUID]
+				//make sure there is room in the new hosts
+				if len(h.Regions) >= h.Slots {
+					errMsg := fmt.Sprintf("Host %v already has all slots filled", h.ID)
+					m.log.Error(errMsg)
+					continue
+				}
+				if reg.Host != 0 {
+					//remove region from current host
+					host = hosts[reg.Host]
+				}
+				//place region on new host
+				h.Regions = append(h.Regions, reg.UUID)
+				hosts[h.ID] = h
+				m.notify.HostUpdated(h)
+
+				r.Host = h.ID
+				regions[r.UUID] = r
+				m.notify.RegionUpdated(r)
+				go m.persistRegion(r)
+
 			case "MoveRegionToEstate":
 				reg := req.object.(mgm.Region)
 				est := req.target.(mgm.Estate)
@@ -224,13 +250,16 @@ ProcessingPackets:
 				//remove region from current estate
 				for _, e := range estates {
 					for y, id := range e.Regions {
+						m.log.Error("Found %v", id.String())
 						if id == reg.UUID {
+							m.log.Error("Removing region from current estate object")
 							e.Regions = append(e.Regions[:y], e.Regions[y+1:]...)
 							estates[e.ID] = e
 							m.notify.EstateUpdated(e)
 						}
 					}
 				}
+
 				//add region to new estate
 				est = estates[est.ID]
 				est.Regions = append(est.Regions, reg.UUID)

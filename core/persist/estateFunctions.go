@@ -112,15 +112,3 @@ func (m mgmDB) GetEstates() []mgm.Estate {
 		estates = append(estates, h.(mgm.Estate))
 	}
 }
-
-func (m mgmDB) MoveRegionToEstate(r mgm.Region, e mgm.Estate) (bool, string) {
-	req := mgmReq{}
-	req.request = "MoveRegionToEstate"
-	req.object = r
-	req.target = e
-	req.result = make(chan interface{}, 4)
-	m.reqs <- req
-	result, _ := <-req.result
-	message, _ := <-req.result
-	return result.(bool), message.(string)
-}

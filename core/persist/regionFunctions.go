@@ -7,6 +7,31 @@ import (
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
+func (m mgmDB) persistRegion(region mgm.Region) {
+	con, err := m.osdb.GetConnection()
+	if err != nil {
+		errMsg := fmt.Sprintf("Error connecting to database: %v", err.Error())
+		log.Fatal(errMsg)
+	}
+	defer con.Close()
+
+	_, err = con.Exec("REPLACE INTO regions VALUES (?,?,?,?,?,?,?,?,?,?)",
+		region.UUID.String(),
+		region.Name,
+		region.Size,
+		region.HTTPPort,
+		region.ConsolePort,
+		region.ConsoleUname,
+		region.ConsolePass,
+		region.LocX,
+		region.LocY,
+		region.Host)
+	if err != nil {
+		errMsg := fmt.Sprintf("Error updating region: %v", err.Error())
+		m.log.Error(errMsg)
+	}
+}
+
 func (m mgmDB) queryRegions() []mgm.Region {
 	var regions []mgm.Region
 	con, err := m.db.GetConnection()
@@ -98,4 +123,22 @@ func (m mgmDB) RemoveRegion(region mgm.Region) {
 	r.request = "RemoveRegion"
 	r.object = region
 	m.reqs <- r
+}
+
+func (m mgmDB) MoveRegionToHost(r mgm.Region, h mgm.Host) {
+	req := mgmReq{}
+	req.request = "MoveRegionToHost"
+	req.object = r
+	req.target = h
+	req.result = make(chan interface{}, 4)
+	m.reqs <- req
+}
+
+func (m mgmDB) MoveRegionToEstate(r mgm.Region, e mgm.Estate) {
+	req := mgmReq{}
+	req.request = "MoveRegionToEstate"
+	req.object = r
+	req.target = e
+	req.result = make(chan interface{}, 4)
+	m.reqs <- req
 }

@@ -366,15 +366,8 @@ func (us userSession) process() {
 					continue
 				}
 
-				success, msg := us.mgm.MoveRegionToEstate(region, estate)
-				if success {
-					us.client.SignalSuccess(m.MessageID, msg)
-					us.log.Error("Add region to estate succeeded")
-				} else {
-					us.client.SignalError(m.MessageID, msg)
-					errMsg := fmt.Sprintf("Add region to estate failed, %v", msg)
-					us.log.Error(errMsg)
-				}
+				go us.mgm.MoveRegionToEstate(region, estate)
+				us.client.SignalSuccess(m.MessageID, "Region Flagged for new estate")
 
 			case "DeleteJob":
 				us.log.Info("Requesting delete job")

@@ -108,7 +108,7 @@ func main() {
 			reg := host.Registration{}
 			reg.ExternalAddress = config.Opensim.ExternalAddress
 			reg.Name = hostname
-			reg.Slots = (config.Opensim.MaxRegionPort - config.Opensim.MinRegionPort) + 1
+			reg.Slots = int(config.Opensim.MaxRegionPort-config.Opensim.MinRegionPort) + 1
 			sendChan <- host.Message{MessageType: "Register", Register: reg}
 			//check for region changes since startup
 			sendChan <- host.Message{MessageType: "GetRegions"}

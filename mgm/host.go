@@ -13,7 +13,7 @@ type Host struct {
 	ExternalAddress string
 	Hostname        string
 	Regions         []uuid.UUID
-	Slots           uint
+	Slots           int
 	Running         bool
 }
 
