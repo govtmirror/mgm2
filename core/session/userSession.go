@@ -80,15 +80,15 @@ func (us userSession) process() {
 			}
 		case r := <-us.notifier.rUp:
 			// new or updated region
-			if regionsWhitelist[r.UUID] {
+			if regionsWhitelist[r.UUID] || isAdmin {
 				us.client.Send(r)
 			}
 		case r := <-us.notifier.rDel:
-			if regionsWhitelist[r.UUID] {
+			if regionsWhitelist[r.UUID] || isAdmin {
 				us.client.Send(mgm.RegionDeleted{r.UUID})
 			}
 		case s := <-us.notifier.rStat:
-			if regionsWhitelist[s.UUID] {
+			if regionsWhitelist[s.UUID] || isAdmin {
 				us.client.Send(s)
 			}
 		case e := <-us.notifier.eUp:
@@ -318,7 +318,58 @@ func (us userSession) process() {
 			case "CloseConsole":
 				console.Close()
 
+			case "SetHost":
+				if !isAdmin {
+					us.client.SignalError(m.MessageID, "Permission Denied")
+					continue
+				}
+
+				regionID, err := m.ReadRegionID()
+				if err != nil {
+					us.client.SignalError(m.MessageID, "Invalid format")
+					continue
+				}
+				var region mgm.Region
+				found := false
+				for _, r := range us.mgm.GetRegions() {
+					if r.UUID == regionID {
+						region = r
+						found = true
+					}
+				}
+				if !found {
+					us.client.SignalError(m.MessageID, "Region not found")
+					continue
+				}
+
+				hostID, err := m.ReadID()
+				if err != nil {
+					us.client.SignalError(m.MessageID, "Invalid format")
+					continue
+				}
+				var host mgm.Host
+				found = false
+				for _, h := range us.mgm.GetHosts() {
+					if h.ID == hostID {
+						host = h
+						found = true
+					}
+				}
+				if !found && hostID != 0 {
+					us.client.SignalError(m.MessageID, "Host not found")
+					continue
+				}
+
+				us.mgm.MoveRegionToHost(region, host)
+
+				us.client.SignalError(m.MessageID, "region flagged for new host")
+
 			case "SetEstate":
+				if !isAdmin {
+					us.client.SignalError(m.MessageID, "Permission Denied")
+					continue
+				}
+
 				estateID, err := m.ReadID()
 				if err != nil {
 					us.client.SignalError(m.MessageID, "Invalid format")

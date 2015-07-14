@@ -12,11 +12,8 @@ angular.module('mgmApp')
 
     $scope.region = region;
     $scope.estates = [];
-    $scope.hosts = mgm.hosts;
-    $scope.hosts[0] = {
-      ID: 0,
-      Hostname: '<none>'
-    };
+    $scope.hosts = [];
+
 
     $scope.currentHost = '';
     $scope.currentEstate = '';
@@ -24,12 +21,21 @@ angular.module('mgmApp')
     $scope.currentY = region.LocY;
 
     function init() {
+
       $scope.estates = [];
       for (var e in mgm.estates){
         $scope.estates.push(mgm.estates[e]);
       }
 
-      $scope.currentHost = $scope.hosts[$scope.region.Host];
+      $scope.hosts = [];
+      $scope.hosts[0] = {
+        ID: 0,
+        Hostname: '<none>'
+      };
+      for (var e in mgm.hosts){
+        $scope.hosts[e] = mgm.hosts[e];
+      }
+
       for (var id in $scope.estates) {
         for (var i = 0; i < $scope.estates[id].Regions.length; i++) {
           if ($scope.estates[id].Regions[i] === $scope.region.UUID) {
@@ -38,6 +44,13 @@ angular.module('mgmApp')
           }
         }
       }
+
+      for (var e in $scope.hosts) {
+        if(e == $scope.region.Host){
+          $scope.currentHost = $scope.hosts[e];
+        }
+      }
+      //$scope.currentHost = $scope.hosts[$scope.region.Host];
     }
 
     $scope.close = function() {
@@ -77,7 +90,6 @@ angular.module('mgmApp')
         }, function(success, msg){
           alertify.log('' + success +': ' + msg);
         });
-        alertify.log('Set host to: ' + $scope.currentHost.Hostname);
       }
     };
 

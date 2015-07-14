@@ -214,23 +214,34 @@ ProcessingPackets:
 				h := hosts[host.ID]
 				r := regions[reg.UUID]
 				//make sure there is room in the new hosts
-				if len(h.Regions) >= h.Slots {
+				if len(h.Regions) >= h.Slots && h.ID != 0 {
 					errMsg := fmt.Sprintf("Host %v already has all slots filled", h.ID)
 					m.log.Error(errMsg)
-					continue
+					break ProcessingPackets
 				}
-				if reg.Host != 0 {
+				if r.Host != 0 {
 					//remove region from current host
-					host = hosts[reg.Host]
+					host = hosts[r.Host]
+					for i, id := range host.Regions {
+						if id == r.UUID {
+							host.Regions = append(host.Regions[:i], host.Regions[i+1:]...)
+							hosts[host.ID] = host
+							m.notify.HostUpdated(host)
+						}
+					}
 				}
 				//place region on new host
-				h.Regions = append(h.Regions, reg.UUID)
-				hosts[h.ID] = h
-				m.notify.HostUpdated(h)
+				if h.ID != 0 {
+					h.Regions = append(h.Regions, r.UUID)
+					hosts[h.ID] = h
+					m.notify.HostUpdated(h)
+				}
 
+				//update region record
 				r.Host = h.ID
 				regions[r.UUID] = r
 				m.notify.RegionUpdated(r)
+
 				go m.persistRegion(r)
 
 			case "MoveRegionToEstate":
@@ -250,7 +261,6 @@ ProcessingPackets:
 				//remove region from current estate
 				for _, e := range estates {
 					for y, id := range e.Regions {
-						m.log.Error("Found %v", id.String())
 						if id == reg.UUID {
 							m.log.Error("Removing region from current estate object")
 							e.Regions = append(e.Regions[:y], e.Regions[y+1:]...)

@@ -8,12 +8,15 @@ import (
 )
 
 func (m mgmDB) persistRegion(region mgm.Region) {
-	con, err := m.osdb.GetConnection()
+	con, err := m.db.GetConnection()
 	if err != nil {
 		errMsg := fmt.Sprintf("Error connecting to database: %v", err.Error())
 		log.Fatal(errMsg)
 	}
 	defer con.Close()
+
+	errMsg := fmt.Sprintf("Persisting region %v", region.UUID)
+	m.log.Info(errMsg)
 
 	_, err = con.Exec("REPLACE INTO regions VALUES (?,?,?,?,?,?,?,?,?,?)",
 		region.UUID.String(),
@@ -21,8 +24,8 @@ func (m mgmDB) persistRegion(region mgm.Region) {
 		region.Size,
 		region.HTTPPort,
 		region.ConsolePort,
-		region.ConsoleUname,
-		region.ConsolePass,
+		region.ConsoleUname.String(),
+		region.ConsolePass.String(),
 		region.LocX,
 		region.LocY,
 		region.Host)
