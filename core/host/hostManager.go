@@ -19,6 +19,8 @@ type Manager interface {
 	RemoveHost(mgm.Host, core.ServiceRequest)
 	RemoveRegionFromHost(mgm.Region, mgm.Host)
 	AddRegionToHost(mgm.Region, mgm.Host)
+
+	AddHost(mgm.Host, core.ServiceRequest)
 }
 
 // NewManager constructs NodeManager instances
@@ -75,6 +77,14 @@ func (nm nm) KillRegionOnHost(region mgm.Region, host mgm.Host, sr core.ServiceR
 func (nm nm) RemoveHost(h mgm.Host, callback core.ServiceRequest) {
 	nm.requestChan <- Message{
 		MessageType: "RemoveHost",
+		Host:        h,
+		SR:          callback,
+	}
+}
+
+func (nm nm) AddHost(h mgm.Host, callback core.ServiceRequest) {
+	nm.requestChan <- Message{
+		MessageType: "AddHost",
 		Host:        h,
 		SR:          callback,
 	}
@@ -158,7 +168,21 @@ func (nm nm) process(newConns <-chan hostSession) {
 						c.cmdMsgs <- nc
 					}
 					nm.mgm.RemoveHost(c.host)
+					nc.SR(true, "Host Removed")
+				} else {
+					nc.SR(false, "Host Not Found")
 				}
+			case "AddHost":
+				for _, h := range conns {
+					if h.host.Address == nc.Host.Address {
+						nc.SR(false, "Error, Host address already present")
+					}
+				}
+
+				nm.mgm.AddHost(nc.Host)
+
+				nc.SR(true, "Host Added")
+
 			default:
 				nc.SR(false, "Not Implemented")
 			}

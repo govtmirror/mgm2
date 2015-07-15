@@ -122,56 +122,67 @@ func (us userSession) process() {
 			m := mgm.UserMessage{}
 			m.Load(msg)
 			switch m.MessageType {
-			case "AddHost":
-				if !isAdmin {
-					us.client.SignalError(m.MessageID, "Permission Denied")
-					continue
-				}
-				address, err := m.ReadAddress()
-				if err != nil {
-					us.client.SignalError(m.MessageID, "Invalid format")
-					continue
-				}
-				us.log.Info("Requesting add new Host %v", address)
-				//double-check for duplicates:
-				for _, h := range us.mgm.GetHosts() {
-					if h.Address == address {
-						us.client.SignalError(m.MessageID, "Host already exists")
-						continue
-					}
-				}
-				host := mgm.Host{}
-				host.Address = address
-				us.mgm.AddHost(host)
-				us.client.SignalSuccess(m.MessageID, "Host added")
-			case "RemoveHost":
-				if !isAdmin {
-					us.client.SignalError(m.MessageID, "Permission Denied")
-					continue
-				}
-				hostID, err := m.ReadID()
-				if err != nil {
-					us.client.SignalError(m.MessageID, "Invalid format")
-					continue
-				}
-				us.log.Info("Requesting remove Host %v", hostID)
-				var host mgm.Host
-				exists := false
-				for _, h := range us.mgm.GetHosts() {
-					if h.ID == hostID {
-						host = h
-						exists = true
-					}
-				}
-				if !exists {
-					us.client.SignalError(m.MessageID, "Host does not exist")
-					errMsg := fmt.Sprintf("delete host %v failed, host does not exist", hostID)
-					us.log.Error(errMsg)
-					continue
-				}
 
-				us.mgm.RemoveHost(host)
-				us.client.SignalSuccess(m.MessageID, "host removed")
+			case "AddHost":
+				go func() {
+					if !isAdmin {
+						us.client.SignalError(m.MessageID, "Permission Denied")
+						return
+					}
+					address, err := m.ReadAddress()
+					if err != nil {
+						us.client.SignalError(m.MessageID, "Invalid format")
+						return
+					}
+					us.log.Info("Requesting add new Host %v", address)
+
+					host := mgm.Host{}
+					host.Address = address
+
+					us.hMgr.AddHost(host, func(success bool, msg string) {
+						if success {
+							us.client.SignalSuccess(m.MessageID, msg)
+						} else {
+							us.client.SignalError(m.MessageID, msg)
+						}
+					})
+				}()
+
+			case "RemoveHost":
+				go func() {
+					if !isAdmin {
+						us.client.SignalError(m.MessageID, "Permission Denied")
+						return
+					}
+					hostID, err := m.ReadID()
+					if err != nil {
+						us.client.SignalError(m.MessageID, "Invalid format")
+						return
+					}
+					us.log.Info("Requesting remove Host %v", hostID)
+					var host mgm.Host
+					exists := false
+					for _, h := range us.mgm.GetHosts() {
+						if h.ID == hostID {
+							host = h
+							exists = true
+						}
+					}
+					if !exists {
+						us.client.SignalError(m.MessageID, "Host does not exist")
+						errMsg := fmt.Sprintf("delete host %v failed, host does not exist", hostID)
+						us.log.Error(errMsg)
+						return
+					}
+
+					us.hMgr.RemoveHost(host, func(success bool, msg string) {
+						if success {
+							us.client.SignalSuccess(m.MessageID, msg)
+						} else {
+							us.client.SignalError(m.MessageID, msg)
+						}
+					})
+				}()
 
 			case "StartRegion":
 				/*regionID, err := m.ReadRegionID()
