@@ -223,7 +223,7 @@ ProcessingPackets:
 					//remove region from current host
 					host = hosts[r.Host]
 					for i, id := range host.Regions {
-						if id == r.UUID {
+						if id != r.UUID {
 							host.Regions = append(host.Regions[:i], host.Regions[i+1:]...)
 							hosts[host.ID] = host
 							m.notify.HostUpdated(host)

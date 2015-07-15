@@ -40,7 +40,7 @@ angular.module('mgmApp')
         for (var i = 0; i < $scope.estates[id].Regions.length; i++) {
           if ($scope.estates[id].Regions[i] === $scope.region.UUID) {
             $scope.currentEstate = $scope.estates[id];
-            region.Estate = $scope.estates[id].Name;
+            $scope.region.Estate = $scope.estates[id].Name;
           }
         }
       }
