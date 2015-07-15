@@ -137,12 +137,28 @@ func main() {
 				switch msg.MessageType {
 				case "AddRegion":
 					r := msg.Region
+					n.logger.Info("AddRegion: %v", r.UUID.String())
 					reg, err := rMgr.AddRegion(r.UUID)
 					regions[r.UUID] = reg
 					if err != nil {
 						n.logger.Error("Error adding region: ", err.Error())
 					}
 					n.logger.Info("AddRegion: %v Complete", r.UUID.String())
+				case "RemoveRegion":
+					r := msg.Region
+					n.logger.Info("RemoveRegion: %v", r.UUID.String())
+					if reg, ok := regions[r.UUID]; ok {
+						reg.Kill()
+						delete(regions, r.UUID)
+
+						m := host.Message{}
+						m.MessageType = "Success"
+						m.Message = "Region removed"
+						sendChan <- m
+						n.logger.Info("RemoveRegion: %v Complete", r.UUID.String())
+					} else {
+						n.logger.Info("RemoveRegion: %v failed, not present", r.UUID.String())
+					}
 				case "StartRegion":
 					reg := msg.Region
 					if r, ok := regions[reg.UUID]; ok {

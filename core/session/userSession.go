@@ -2,6 +2,7 @@ package session
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/host"
@@ -327,90 +328,149 @@ func (us userSession) process() {
 				console = region.NewRestConsole(r, h)
 				us.SignalSuccess(m.MessageID, "Console opened")*/
 			case "CloseConsole":
-				console.Close()
+				go func() {
+					console.Close()
+				}()
 
 			case "SetLocation":
-				if !isAdmin {
-					us.client.SignalError(m.MessageID, "Permission Denied")
-					continue
-				}
-
-				regionID, err := m.ReadRegionID()
-				if err != nil {
-					us.client.SignalError(m.MessageID, "Invalid id format")
-					continue
-				}
-				var region mgm.Region
-				found := false
-				for _, r := range us.mgm.GetRegions() {
-					if r.UUID == regionID {
-						found = true
-						region = r
+				go func() {
+					if !isAdmin {
+						us.client.SignalError(m.MessageID, "Permission Denied")
+						return
 					}
-				}
-				if !found {
-					us.client.SignalError(m.MessageID, "Region not found")
-					continue
-				}
 
-				x, y, err := m.ReadCoordinates()
-				if err != nil {
-					us.client.SignalError(m.MessageID, "Invalid coordinate format")
-					continue
-				}
+					regionID, err := m.ReadRegionID()
+					if err != nil {
+						us.client.SignalError(m.MessageID, "Invalid id format")
+						return
+					}
+					var reg mgm.Region
+					found := false
+					for _, r := range us.mgm.GetRegions() {
+						if r.UUID == regionID {
+							found = true
+							reg = r
+						}
+					}
+					if !found {
+						us.client.SignalError(m.MessageID, "Region not found")
+						return
+					}
 
-				us.log.Info("Changing location for region %v to %v, %v", region.UUID, x, y)
-				region.LocX = x
-				region.LocY = y
-				us.mgm.UpdateRegion(region)
+					x, y, err := m.ReadCoordinates()
+					if err != nil {
+						us.client.SignalError(m.MessageID, "Invalid coordinate format")
+						return
+					}
 
-				us.client.SignalError(m.MessageID, "Not implemented")
+					reg.LocX = x
+					reg.LocY = y
+					us.hMgr.UpdateRegion(reg, func(success bool, msg string) {
+						if success {
+							us.client.SignalSuccess(m.MessageID, msg)
+						} else {
+							us.client.SignalError(m.MessageID, msg)
+						}
+					})
+				}()
 
 			case "SetHost":
-				if !isAdmin {
-					us.client.SignalError(m.MessageID, "Permission Denied")
-					continue
-				}
-
-				regionID, err := m.ReadRegionID()
-				if err != nil {
-					us.client.SignalError(m.MessageID, "Invalid format")
-					continue
-				}
-				var region mgm.Region
-				found := false
-				for _, r := range us.mgm.GetRegions() {
-					if r.UUID == regionID {
-						region = r
-						found = true
+				go func() {
+					if !isAdmin {
+						us.client.SignalError(m.MessageID, "Permission Denied")
+						return
 					}
-				}
-				if !found {
-					us.client.SignalError(m.MessageID, "Region not found")
-					continue
-				}
+					//this can be assigning a region to a host, removing a region from a host, or both
 
-				hostID, err := m.ReadID()
-				if err != nil {
-					us.client.SignalError(m.MessageID, "Invalid format")
-					continue
-				}
-				var host mgm.Host
-				found = false
-				for _, h := range us.mgm.GetHosts() {
-					if h.ID == hostID {
-						host = h
-						found = true
+					regionID, err := m.ReadRegionID()
+					if err != nil {
+						us.client.SignalError(m.MessageID, "Invalid format")
+						return
 					}
-				}
-				if !found && hostID != 0 {
-					us.client.SignalError(m.MessageID, "Host not found")
-					continue
-				}
+					var region mgm.Region
+					found := false
+					for _, r := range us.mgm.GetRegions() {
+						if r.UUID == regionID {
+							region = r
+							found = true
+						}
+					}
+					if !found {
+						us.client.SignalError(m.MessageID, "Region not found")
+						return
+					}
 
-				us.mgm.MoveRegionToHost(region, host)
+					hostID, err := m.ReadID()
+					if err != nil {
+						us.client.SignalError(m.MessageID, "Invalid format")
+						return
+					}
 
-				us.client.SignalError(m.MessageID, "region flagged for new host")
+					if hostID == region.Host {
+						us.client.SignalError(m.MessageID, "Region is already on that host")
+						return
+					}
+
+					us.log.Info("SetHost for region %v to host %v", region.UUID, hostID)
+
+					abort := false
+					abortMsg := ""
+					var wg sync.WaitGroup
+
+					//remove region from host if necessary
+					us.log.Info("%v", region.Host)
+					if region.Host != 0 {
+						us.log.Info("Remove region from host should get called here")
+						wg.Add(1)
+						go func() {
+							us.log.Info("Removing region %v from host %v", region.UUID, region.Host)
+							for _, h := range us.mgm.GetHosts() {
+								if h.ID == region.Host {
+									us.hMgr.RemoveRegionFromHost(region, h, func(success bool, msg string) {
+										if success {
+											wg.Done()
+											return
+										}
+										abort = true
+										abortMsg = msg
+										wg.Done()
+										return
+									})
+								}
+							}
+						}()
+						wg.Wait()
+						if abort {
+							us.client.SignalError(m.MessageID, abortMsg)
+							return
+						}
+					}
+
+					//assign region to new host if necessary
+					if hostID != 0 {
+						var host mgm.Host
+						found = false
+						for _, h := range us.mgm.GetHosts() {
+							if h.ID == hostID {
+								host = h
+								found = true
+							}
+						}
+						if !found && hostID != 0 {
+							us.client.SignalError(m.MessageID, "Host not found")
+							return
+						}
+
+						us.hMgr.AddRegionToHost(region, host, func(success bool, msg string) {
+							if success {
+								us.client.SignalSuccess(m.MessageID, msg)
+							} else {
+								us.client.SignalError(m.MessageID, msg)
+							}
+						})
+					}
+
+				}()
 
 			case "SetEstate":
 				if !isAdmin {

@@ -5,21 +5,21 @@ import (
 	"net"
 
 	"github.com/m-o-s-e-s/mgm/core/logger"
-	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/mgm"
-	"github.com/satori/go.uuid"
 )
 
 type hostSession struct {
 	host    mgm.Host
 	Running bool
 	conn    net.Conn
-	mgm     persist.MGMDB
 	cmdMsgs chan Message
 	log     logger.Log
+
+	regions  []mgm.Region
+	rCmdChan chan regionCommand
 }
 
-func (ns hostSession) process(closing chan<- int64) {
+func (ns hostSession) process(closing chan<- int64, register chan<- registrationRequest, hStatChan chan<- mgm.HostStat, rStatChan chan<- mgm.RegionStat) {
 	readMsgs := make(chan Message, 32)
 	writeMsgs := make(chan Message, 32)
 	nc := Comms{
@@ -30,34 +30,20 @@ func (ns hostSession) process(closing chan<- int64) {
 	go nc.ReadConnection(readMsgs)
 	go nc.WriteConnection(writeMsgs)
 
+	var regions []mgm.Region
+
 	defer ns.conn.Close()
-
-	//place host online
-	ns.host.Running = true
-	ns.mgm.UpdateHost(ns.host)
-
-	//track latest region stats, so we can offline them if the node disconnects
-	regions := make(map[uuid.UUID]mgm.RegionStat)
 
 	//prepare for request tracking, so we might report results back to users
 	var requestNum uint
 	pendingRequests := make(map[uint]Message)
 
+Processing:
 	for {
 
 		select {
 		case <-nc.Closing:
 			ns.log.Info("disconnected")
-			//update host broadcasters
-			ns.host.Running = false
-			ns.mgm.UpdateHost(ns.host)
-			//update region broadcasters
-			for _, stat := range regions {
-				if stat.Running {
-					stat.Running = false
-					ns.mgm.UpdateRegionStat(stat)
-				}
-			}
 			//notify manager that we disconnected
 			closing <- ns.host.ID
 			return
@@ -77,42 +63,42 @@ func (ns hostSession) process(closing chan<- int64) {
 			pendingRequests[msg.ID] = msg
 			writeMsgs <- msg
 
+		case rCmd := <-ns.rCmdChan:
+			switch rCmd.cmd {
+			case "AddRegion":
+				for _, r := range regions {
+					if r.UUID == rCmd.region.UUID {
+						//go back to processing
+						break Processing
+					}
+				}
+				//add region to list
+				regions = append(regions, rCmd.region)
+				if ns.Running {
+					//tell the remote node about it too
+					writeMsgs <- Message{MessageType: "AddRegion", Region: rCmd.region}
+				}
+			}
 		case nmsg := <-readMsgs:
 			// Messages coming from the host
 			switch nmsg.MessageType {
+
 			case "Register":
 				reg := nmsg.Register
 				//update existing host
-				hosts := ns.mgm.GetHosts()
-				found := false
-				for _, h := range hosts {
-					ns.log.Info("searching hosts....%v", h)
-					if h.ExternalAddress == ns.host.ExternalAddress {
-						ns.log.Info("registering node with hostname %v and slots %v", reg.Name, reg.Slots)
-						h.Hostname = reg.Name
-						h.ExternalAddress = reg.ExternalAddress
-						h.Slots = reg.Slots
-						ns.mgm.UpdateHost(h)
-						found = true
-					}
-				}
-				//this host does not exist
-				if !found {
-					errMsg := fmt.Sprintf("Recieved registration for nonexistant host: %v", reg.ExternalAddress)
-					ns.log.Error(errMsg)
-				}
+				register <- registrationRequest{reg, ns.host}
+
 			case "HostStats":
 				hStats := nmsg.HStats
 				hStats.ID = ns.host.ID
-				ns.mgm.UpdateHostStat(hStats)
+				hStatChan <- hStats
 			case "RegionStats":
 				rStats := nmsg.RStats
 				//track stats value
-				regions[rStats.UUID] = rStats
-				ns.mgm.UpdateRegionStat(regions[rStats.UUID])
+				rStatChan <- rStats
 			case "GetRegions":
 				ns.log.Info("requesting regions list")
-				for _, r := range ns.mgm.GetRegions() {
+				for _, r := range ns.regions {
 					if r.Host == ns.host.ID {
 						writeMsgs <- Message{MessageType: "AddRegion", Region: r}
 					}

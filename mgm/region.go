@@ -19,7 +19,6 @@ type Region struct {
 	LocX         uint
 	LocY         uint
 	Host         int64
-	IsRunning    bool
 
 	frames chan int
 }
@@ -55,15 +54,14 @@ func (r *Region) countFrames() {
 // Serialize implements UserObject interface Serialize function
 func (r Region) Serialize() []byte {
 	type clientSafeRegion struct {
-		UUID      uuid.UUID
-		Name      string
-		Size      uint
-		LocX      uint
-		LocY      uint
-		Host      int64
-		IsRunning bool
+		UUID uuid.UUID
+		Name string
+		Size uint
+		LocX uint
+		LocY uint
+		Host int64
 	}
-	csr := clientSafeRegion{r.UUID, r.Name, r.Size, r.LocX, r.LocY, r.Host, r.IsRunning}
+	csr := clientSafeRegion{r.UUID, r.Name, r.Size, r.LocX, r.LocY, r.Host}
 	data, _ := json.Marshal(csr)
 	return data
 }

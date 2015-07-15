@@ -121,6 +121,7 @@ angular.module('mgmApp')
     };
 
     $scope.setHost = function() {
+      console.log('change host for ' + $scope.region.Name + ' from ' + $scope.region.Host + ' to ' + $scope.currentHost.ID);
       if ($scope.currentHost.ID !== $scope.region.Host) {
         mgm.request('SetHost', {
           'RegionUUID': region.UUID,
