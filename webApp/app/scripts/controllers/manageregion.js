@@ -66,9 +66,10 @@ angular.module('mgmApp')
         alertify.error('Y coordinate is invalid');
         return;
       }
+      $scope.currentX = parseInt($scope.currentX);
+      $scope.currentY = parseInt($scope.currentY);
       if ($scope.currentX !== $scope.region.LocX || $scope.currentY !== $scope.region.LocY) {
         //we have a valid location that has changed, make sure we are not stomping on another region
-        console.log(mgm.regions);
         for(var id in mgm.regions){
           if($scope.region.UUID == id){
             //do not compare the region to its-self

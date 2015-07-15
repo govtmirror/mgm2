@@ -318,6 +318,43 @@ func (us userSession) process() {
 			case "CloseConsole":
 				console.Close()
 
+			case "SetLocation":
+				if !isAdmin {
+					us.client.SignalError(m.MessageID, "Permission Denied")
+					continue
+				}
+
+				regionID, err := m.ReadRegionID()
+				if err != nil {
+					us.client.SignalError(m.MessageID, "Invalid id format")
+					continue
+				}
+				var region mgm.Region
+				found := false
+				for _, r := range us.mgm.GetRegions() {
+					if r.UUID == regionID {
+						found = true
+						region = r
+					}
+				}
+				if !found {
+					us.client.SignalError(m.MessageID, "Region not found")
+					continue
+				}
+
+				x, y, err := m.ReadCoordinates()
+				if err != nil {
+					us.client.SignalError(m.MessageID, "Invalid coordinate format")
+					continue
+				}
+
+				us.log.Info("Changing location for region %v to %v, %v", region.UUID, x, y)
+				region.LocX = x
+				region.LocY = y
+				us.mgm.UpdateRegion(region)
+
+				us.client.SignalError(m.MessageID, "Not implemented")
+
 			case "SetHost":
 				if !isAdmin {
 					us.client.SignalError(m.MessageID, "Permission Denied")

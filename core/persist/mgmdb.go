@@ -204,6 +204,11 @@ ProcessingPackets:
 				stat := req.object.(mgm.HostStat)
 				hostStats[stat.ID] = stat
 				m.notify.HostStat(stat)
+			case "UpdateRegion":
+				region := req.object.(mgm.Region)
+				regions[region.UUID] = region
+				go m.persistRegion(region)
+				m.notify.RegionUpdated(region)
 			case "UpdateRegionStat":
 				stat := req.object.(mgm.RegionStat)
 				regionStats[stat.UUID] = stat
