@@ -274,11 +274,17 @@ Processing:
 				}
 
 				nc.SR(true, "Region Added to Host")
+				nm.log.Info("Adding region %v to host %v Complete", nc.Region.UUID.String(), nc.Host.ID)
 
 			case "RemoveFromHost":
 				//remove a region from a host
 				//make sure region is on host in question, and not running
 				nm.log.Info("Removing region %v from host %v", nc.Region.UUID.String(), nc.Host.ID)
+				if nc.Region.Host == 0 {
+					nc.SR(false, "Error: The region is not on a host")
+					nm.log.Info("Removing region %v from host %v failed.  The region is not on a host.", nc.Region.UUID.String(), nc.Host.ID)
+					break Processing
+				}
 				for _, r := range nm.mgm.GetRegions() {
 					if r.UUID == nc.Region.UUID && r.Host != nc.Host.ID {
 						nc.SR(false, "Error: The region is not on that host")
@@ -308,6 +314,7 @@ Processing:
 				}
 
 				nc.SR(true, "Region removed from Host")
+				nm.log.Info("Removing region %v from host %v Complete", nc.Region.UUID.String(), nc.Host.ID)
 
 			case "RemoveHost":
 				if c, ok := conns[nc.Host.ID]; ok {

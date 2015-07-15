@@ -68,7 +68,7 @@ Processing:
 			case "AddRegion":
 				for _, r := range regions {
 					if r.UUID == rCmd.region.UUID {
-						//go back to processing
+						//region already on host
 						break Processing
 					}
 				}
@@ -78,6 +78,17 @@ Processing:
 					//tell the remote node about it too
 					writeMsgs <- Message{MessageType: "AddRegion", Region: rCmd.region}
 				}
+			case "RemoveRegion":
+				for i, r := range regions {
+					if r.UUID == rCmd.region.UUID {
+						regions = append(regions[:i], regions[i+1:]...)
+						if ns.Running {
+							//tell the remote node about it too
+							writeMsgs <- Message{MessageType: "RemoveRegion", Region: rCmd.region}
+						}
+					}
+				}
+
 			}
 		case nmsg := <-readMsgs:
 			// Messages coming from the host
