@@ -91,6 +91,7 @@ type mgmDB struct {
 func (m mgmDB) process() {
 	//populate regions
 	regions := make(map[uuid.UUID]mgm.Region)
+	regionStats := make(map[uuid.UUID]mgm.RegionStat)
 	for _, r := range m.queryRegions() {
 		regions[r.UUID] = r
 	}
@@ -203,6 +204,10 @@ ProcessingPackets:
 				stat := req.object.(mgm.HostStat)
 				hostStats[stat.ID] = stat
 				m.notify.HostStat(stat)
+			case "UpdateRegionStat":
+				stat := req.object.(mgm.RegionStat)
+				regionStats[stat.UUID] = stat
+				m.notify.RegionStat(stat)
 			case "RemoveHost":
 				host := req.object.(mgm.Host)
 				delete(hosts, host.ID)
