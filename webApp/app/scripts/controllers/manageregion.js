@@ -68,28 +68,34 @@ angular.module('mgmApp')
       }
       if ($scope.currentX !== $scope.region.LocX || $scope.currentY !== $scope.region.LocY) {
         alertify.log('Set x,y to: ' + $scope.currentX + ', ' + $scope.currentY);
+      } else {
+        console.log('Subbornly refusing to update XY coordinates that haven\'t changed');
       }
     };
 
     $scope.setEstate = function() {
-      if ($scope.currentEstate.Name !== region.Estate) {
+      if ($scope.currentEstate.Name !== $scope.region.Estate) {
         mgm.request('SetEstate', {
           'RegionUUID': region.UUID,
           'ID': $scope.currentEstate.ID
         }, function(success, msg) {
           alertify.log('' + success + ': ' + msg);
         });
+      } else {
+        console.log('Subbornly refusing to update Estate that hasn\'t changed');
       }
     };
 
     $scope.setHost = function() {
-      if ($scope.currentHost.ID !== region.Host) {
+      if ($scope.currentHost.ID !== $scope.region.Host) {
         mgm.request('SetHost', {
           'RegionUUID': region.UUID,
           'ID': $scope.currentHost.ID
         }, function(success, msg){
           alertify.log('' + success +': ' + msg);
         });
+      } else {
+        console.log('Subbornly refusing to update Host that hasn\'t changed');
       }
     };
 
