@@ -70,7 +70,7 @@ angular.module('mgmApp')
       $scope.currentY = parseInt($scope.currentY);
       if ($scope.currentX !== $scope.region.LocX || $scope.currentY !== $scope.region.LocY) {
         //we have a valid location that has changed, make sure we are not stomping on another region
-        for(var id in mgm.regions){
+        /*for(var id in mgm.regions){
           if($scope.region.UUID == id){
             //do not compare the region to its-self
             continue;
@@ -92,7 +92,7 @@ angular.module('mgmApp')
             alertify.error('Error: New location overlaps with region ' + target.Name);
             return
           }
-        }
+        }*/
 
         //make the mgm request
         mgm.request('SetLocation', {
