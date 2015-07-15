@@ -17,6 +17,8 @@ type Manager interface {
 	StartRegionOnHost(mgm.Region, mgm.Host, core.ServiceRequest)
 	KillRegionOnHost(mgm.Region, mgm.Host, core.ServiceRequest)
 	RemoveHost(mgm.Host, core.ServiceRequest)
+	RemoveRegionFromHost(mgm.Region, mgm.Host)
+	AddRegionToHost(mgm.Region, mgm.Host)
 }
 
 // NewManager constructs NodeManager instances
@@ -78,6 +80,14 @@ func (nm nm) RemoveHost(h mgm.Host, callback core.ServiceRequest) {
 	}
 }
 
+func (nm nm) RemoveRegionFromHost(mgm.Region, mgm.Host) {
+
+}
+
+func (nm nm) AddRegionToHost(mgm.Region, mgm.Host) {
+
+}
+
 func (nm nm) process(newConns <-chan hostSession) {
 	conns := make(map[int64]hostSession)
 
@@ -111,14 +121,6 @@ func (nm nm) process(newConns <-chan hostSession) {
 			if con, ok := conns[id]; ok {
 				con.Running = false
 			}
-		//case u := <-hostSub.GetReceive():
-		//	//host update from node, typically Running
-		//	h := u.(mgm.Host)
-		//	con, ok := conns[h.ID]
-		//	if ok {
-		//		con.host = h
-		//		conns[h.ID] = con
-		//	}
 		case nc := <-nm.requestChan:
 			switch nc.MessageType {
 			case "StartRegion":
