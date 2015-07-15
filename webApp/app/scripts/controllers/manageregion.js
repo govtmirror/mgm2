@@ -67,7 +67,40 @@ angular.module('mgmApp')
         return;
       }
       if ($scope.currentX !== $scope.region.LocX || $scope.currentY !== $scope.region.LocY) {
-        alertify.log('Set x,y to: ' + $scope.currentX + ', ' + $scope.currentY);
+        //we have a valid location that has changed, make sure we are not stomping on another region
+        console.log(mgm.regions);
+        for(var id in mgm.regions){
+          if($scope.region.UUID == id){
+            //do not compare the region to its-self
+            continue;
+          }
+          var target = mgm.regions[id];
+
+          //check for existing region origin within the bounds of the new location
+          var diffX = target.LocX - $scope.currentX;
+          var diffY = target.LocY - $scope.currentY;
+          if(diffX >= 0 && diffX < region.Size && diffY >= 0 && diffY < region.Size){
+            alertify.error('Error: New location overlaps with region ' + target.Name);
+            return
+          }
+
+          //check for new origin within the bounds of the existing region
+          diffX = $scope.currentX - target.LocX;
+          diffY = $scope.currentY - target.LocY;
+          if(diffX >= 0 && diffX < mgm.regions[id].Size && diffY >= 0 && diffY < target.Size){
+            alertify.error('Error: New location overlaps with region ' + target.Name);
+            return
+          }
+        }
+
+        //make the mgm request
+        mgm.request('SetLocation', {
+          'RegionUUID': region.UUID,
+          'X': $scope.currentX,
+          'Y': $scope.currentY
+        }, function(success, msg){
+          alertify.log('SetLocation: ' + success + ': ' + msg);
+        });
       } else {
         console.log('Subbornly refusing to update XY coordinates that haven\'t changed');
       }

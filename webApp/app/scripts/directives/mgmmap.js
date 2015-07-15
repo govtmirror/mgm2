@@ -196,12 +196,15 @@ angular.module('mgmApp')
         var canvas = document.getElementById('mosesMap');
         var map = new MosesMap(canvas, coordsToRegions, coordTiles);
         map.resize();
-        map.centerTile(1000, 1000);
+        map.centerTile(scope.centerx, scope.centery);
         map.redraw();
 
+        console.log('New MGM map centered at ' + scope.centerx + ', ' + scope.centery);
       },
       scope: {
-        regions: '='
+        regions: '=',
+        centerx: '=',
+        centery: '='
       }
     };
   });

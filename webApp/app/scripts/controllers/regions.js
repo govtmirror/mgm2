@@ -93,7 +93,6 @@ angular.module('mgmApp')
             }
           });
           modInst.result.then(function() {
-            console.log('modal closed');
             delete region.estate;
             delete region.host;
           });
