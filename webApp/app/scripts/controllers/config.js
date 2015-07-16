@@ -36,16 +36,18 @@ angular.module('mgmApp')
 
     var populateRegions = function () {
       var regions = [];
-      for (var i = 0; i < $scope.currentEstate.Regions.length; i++) {
-        regions.push(mgm.regions[$scope.currentEstate.Regions[i]]);
+      if( $scope.currentEstate !== undefined){
+        for (var i = 0; i < $scope.currentEstate.Regions.length; i++) {
+          regions.push(mgm.regions[$scope.currentEstate.Regions[i]]);
+        }
       }
       $scope.regions = regions;
     };
 
     var requestConfig = function (uuid) {
-      console.log('Requesting configs');
       $scope.config = {};
       if (uuid === '00000000-0000-0000-0000-000000000000') {
+        console.log('Requesting default configs');
         mgm.request('GetDefaultConfig', {}, function (success, message) {
           if (!success){
             console.log('Error getting default config: ' + message);
@@ -56,6 +58,7 @@ angular.module('mgmApp')
           });
         });
       } else {
+        console.log('Requesting region configs');
         mgm.request('GetConfig', {
           'RegionUUID': uuid
         }, function (success, message) {
@@ -87,8 +90,15 @@ angular.module('mgmApp')
     });
 
     $scope.displayConfig = function () {
-      console.log('/config/' + $scope.currentEstate.ID + '/' + $scope.currentRegion.UUID);
-      $location.url('/config/' + $scope.currentEstate.ID + '/' + $scope.currentRegion.UUID);
+      if($scope.currentEstate !== undefined){
+        if($scope.currentRegion !== undefined){
+          $location.url('/config/' + $scope.currentEstate.ID + '/' + $scope.currentRegion.UUID);
+        } else {
+          $location.url('/config/' + $scope.currentEstate.ID);
+        }
+      } else {
+        $location.url('/config');
+      }
     };
 
     //assign variables from url, where possible
@@ -98,7 +108,7 @@ angular.module('mgmApp')
     }
     if ($routeParams.region !== undefined) {
       $scope.currentRegion = mgm.regions[$routeParams.region];
-      requestConfig($scope.currentRegion.UUID);
+      requestConfig($routeParams.region);
     }
 
     var generateEditConfig = function () {

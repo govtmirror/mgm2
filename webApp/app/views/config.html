@@ -30,11 +30,11 @@
         <td>[{{section}}]</td>
       </tr>
       <tr ng-repeat="(key,data) in row" ng-class-odd="'odd'" ng-class-even="'even'">
-        <td ng-if="data.source=='region'">
+        <td ng-if="data.source==='region'">
           <button ng-click="config.modify(section, key, data.value)">Update</button>
           <button ng-click="config.default(section, key)">Default</button>
         </td>
-        <td ng-if="data.source=='default'">
+        <td ng-if="data.source==='default'">
           <button ng-click="config.modify(section, key, data.value)">Override</button>
         </td>
         <td>{{key}}</td>

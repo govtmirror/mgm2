@@ -361,6 +361,7 @@ ProcessingPackets:
 							close(req.result)
 							return
 						}
+						c.Region = region.UUID
 						req.result <- c
 					}
 					close(req.result)

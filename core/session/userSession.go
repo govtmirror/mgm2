@@ -635,29 +635,36 @@ func (us userSession) process() {
 					us.client.SignalError(m.MessageID, "Permission Denied")
 				}
 			case "GetConfig":
-				/*sm.log.Info("User %v requesting region configuration", us.GetGUID())
-				if us.GetAccessLevel() > 249 {
-					rid, err := m.ReadRegionID()
+				us.log.Info("Requesting region configuration")
+				if isAdmin {
+					regionID, err := m.ReadRegionID()
 					if err != nil {
-						sm.log.Error("Error reading region id for configs: ", err)
-						us.SignalError(m.MessageID, "Error loading region")
-					} else {
-						sm.log.Info("Serving Region Configs for %v.", rid)
-						cfgs, err := sm.regionMgr.GetConfigs(rid)
-						if err != nil {
-							sm.log.Error("Error getting configs: ", err)
-						} else {
-							for _, cfg := range cfgs {
-								us.Send(cfg)
-							}
-							us.SignalSuccess(m.MessageID, "Config Retrieved")
-							sm.log.Info("User %v config retrieved", us.GetGUID())
+						us.client.SignalError(m.MessageID, "Invalid format")
+						return
+					}
+					var region mgm.Region
+					found := false
+					for _, r := range us.mgm.GetRegions() {
+						if r.UUID == regionID {
+							region = r
+							found = true
 						}
 					}
+					if !found {
+						us.client.SignalError(m.MessageID, "Region not found")
+						return
+					}
+
+					cfgs := us.mgm.GetConfigs(region)
+					for _, cfg := range cfgs {
+						us.client.Send(cfg)
+					}
+					us.client.SignalSuccess(m.MessageID, "Region Config Retrieved")
+					us.log.Info("User %v default configuration served", uid)
 				} else {
-					sm.log.Info("User %v permission denied to configurations", us.GetGUID())
-					us.SignalError(m.MessageID, "Permission Denied")
-				}*/
+					us.log.Info("User %v permission denied to default configurations", uid)
+					us.client.SignalError(m.MessageID, "Permission Denied")
+				}
 			case "GetState":
 				us.log.Info("Requesting state sync")
 				for _, u := range us.mgm.GetUsers() {
