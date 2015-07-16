@@ -1,6 +1,7 @@
 package remote
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"time"
@@ -82,7 +83,8 @@ func (r region) communicate() {
 				exe = exec.Command(cmdName, cmdArgs...)
 				err := exe.Start()
 				if err != nil {
-					r.log.Error("Error starting process: %s", err.Error())
+					errMsg := fmt.Sprintf("Error starting process: %s", err.Error())
+					r.log.Error(errMsg)
 					continue
 				}
 				r.log.Info("Started Successfully")
@@ -98,11 +100,13 @@ func (r region) communicate() {
 			case "kill":
 				//if not running, exit
 				if exe == nil {
-					r.log.Error("Region is not running", r.UUID)
+					errMsg := fmt.Sprintf("Kill region %v failed, region is not running", r.UUID.String())
+					r.log.Error(errMsg)
 					continue
 				}
 				if err := exe.Process.Kill(); err != nil {
-					r.log.Error("Error killing process: %s", err.Error())
+					errMsg := fmt.Sprintf("Error killing process: %s", err.Error())
+					r.log.Error(errMsg)
 				}
 			default:
 				r.log.Info("Received unexpected command: %v", cmd.command)
@@ -118,14 +122,16 @@ func (r region) communicate() {
 
 			cpuPercent, err := proc.CPUPercent(0)
 			if err != nil {
-				r.log.Error("Error getting cpu for pid: %s", err.Error())
+				errMsg := fmt.Sprintf("Error getting cpu for pid: %s", err.Error())
+				r.log.Error(errMsg)
 			} else {
 				stat.CPUPercent = cpuPercent
 			}
 			//memory info from this module may not be correct....
 			memInfo, err := proc.MemoryInfo()
 			if err != nil {
-				r.log.Error("Error getting memory for pid: %s", err.Error())
+				errMsg := fmt.Sprintf("Error getting memory for pid: %s", err.Error())
+				r.log.Error(errMsg)
 			} else {
 				stat.MemKB = (float64(memInfo.RSS) / 1024.0)
 			}
