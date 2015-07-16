@@ -151,9 +151,8 @@ func (nm nm) process(newConns <-chan hostSession) {
 	//initialize internal structures
 	for _, h := range nm.mgm.GetHosts() {
 		s := hostSession{
-			host:     h,
-			log:      logger.Wrap(strconv.FormatInt(h.ID, 10), nm.log),
-			rCmdChan: make(chan regionCommand, 8),
+			host: h,
+			log:  logger.Wrap(strconv.FormatInt(h.ID, 10), nm.log),
 		}
 		conns[h.ID] = s
 	}
@@ -173,7 +172,11 @@ Processing:
 				//make sure the host is populated with its regions
 				for _, r := range nm.mgm.GetRegions() {
 					if r.Host == con.host.ID {
-						con.rCmdChan <- regionCommand{cmd: "AddRegion", region: r}
+						nc := Message{}
+						nc.MessageType = "AddRegion"
+						nc.Region = r
+						nc.SR = func(bool, string) {}
+						con.cmdMsgs <- nc
 					}
 				}
 
@@ -308,16 +311,22 @@ Processing:
 				nm.mgm.UpdateRegion(nc.Region)
 
 				// notify host if active
+				isRunning := false
 				for _, con := range conns {
 					if con.host.ID == nc.Host.ID {
 						if con.Running {
-							con.rCmdChan <- regionCommand{cmd: "AddRegion", region: nc.Region}
+							nc.MessageType = "AddRegion"
+							con.cmdMsgs <- nc
+							isRunning = true
 						}
 					}
 				}
 
-				nc.SR(true, "Region Added to Host")
-				nm.log.Info("Adding region %v to host %v Complete", nc.Region.UUID.String(), nc.Host.ID)
+				if !isRunning {
+					//host is down, handle callback now
+					nc.SR(true, "Region Added to Host")
+					nm.log.Info("Adding region %v to host %v Complete", nc.Region.UUID.String(), nc.Host.ID)
+				}
 
 			case "RemoveFromHost":
 				//remove a region from a host
@@ -348,16 +357,22 @@ Processing:
 				nm.mgm.UpdateRegion(nc.Region)
 
 				// notify host if active
+				isRunning := false
 				for _, con := range conns {
 					if con.host.ID == nc.Host.ID {
 						if con.Running {
-							con.rCmdChan <- regionCommand{cmd: "RemoveRegion", region: nc.Region}
+							nc.MessageType = "RemoveRegion"
+							con.cmdMsgs <- nc
+							isRunning = true
 						}
 					}
 				}
 
-				nc.SR(true, "Region removed from Host")
-				nm.log.Info("Removing region %v from host %v Complete", nc.Region.UUID.String(), nc.Host.ID)
+				if !isRunning {
+					//handle callback immediately
+					nc.SR(true, "Region removed from Host")
+					nm.log.Info("Removing region %v from host %v Complete", nc.Region.UUID.String(), nc.Host.ID)
+				}
 
 			case "RemoveHost":
 				if c, ok := conns[nc.Host.ID]; ok {

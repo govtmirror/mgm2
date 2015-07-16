@@ -15,8 +15,7 @@ type hostSession struct {
 	cmdMsgs chan Message
 	log     logger.Log
 
-	regions  []mgm.Region
-	rCmdChan chan regionCommand
+	regions []mgm.Region
 }
 
 func (ns hostSession) process(closing chan<- int64, register chan<- registrationRequest, hStatChan chan<- mgm.HostStat, rStatChan chan<- mgm.RegionStat) {
@@ -30,15 +29,12 @@ func (ns hostSession) process(closing chan<- int64, register chan<- registration
 	go nc.ReadConnection(readMsgs)
 	go nc.WriteConnection(writeMsgs)
 
-	var regions []mgm.Region
-
 	defer ns.conn.Close()
 
 	//prepare for request tracking, so we might report results back to users
 	var requestNum uint
 	pendingRequests := make(map[uint]Message)
 
-Processing:
 	for {
 
 		select {
@@ -63,33 +59,6 @@ Processing:
 			pendingRequests[msg.ID] = msg
 			writeMsgs <- msg
 
-		case rCmd := <-ns.rCmdChan:
-			switch rCmd.cmd {
-			case "AddRegion":
-				for _, r := range regions {
-					if r.UUID == rCmd.region.UUID {
-						//region already on host
-						break Processing
-					}
-				}
-				//add region to list
-				regions = append(regions, rCmd.region)
-				if ns.Running {
-					//tell the remote node about it too
-					writeMsgs <- Message{MessageType: "AddRegion", Region: rCmd.region}
-				}
-			case "RemoveRegion":
-				for i, r := range regions {
-					if r.UUID == rCmd.region.UUID {
-						regions = append(regions[:i], regions[i+1:]...)
-						if ns.Running {
-							//tell the remote node about it too
-							writeMsgs <- Message{MessageType: "RemoveRegion", Region: rCmd.region}
-						}
-					}
-				}
-
-			}
 		case nmsg := <-readMsgs:
 			// Messages coming from the host
 			switch nmsg.MessageType {

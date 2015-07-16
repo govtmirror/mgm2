@@ -18,7 +18,7 @@ import (
 type RegionManager interface {
 	Initialize() error
 	AddRegion(uuid.UUID) (Region, error)
-	RemoveRegion(mgm.Region) error
+	RemoveRegion(uuid.UUID) error
 }
 
 // NewRegionManager constructs a region manager for use
@@ -51,8 +51,8 @@ func (rm regMgr) AddRegion(rID uuid.UUID) (Region, error) {
 	return reg, nil
 }
 
-func (rm regMgr) RemoveRegion(r mgm.Region) error {
-	return errors.New("Not Implemented")
+func (rm regMgr) RemoveRegion(rID uuid.UUID) error {
+	return rm.purgeBinaries(rID.String())
 }
 
 func (rm regMgr) copyBinaries(name string) (string, error) {
@@ -88,6 +88,10 @@ func (rm regMgr) copyBinaries(name string) (string, error) {
 	return copyTo, err
 }
 
+func (rm regMgr) purgeBinaries(name string) error {
+	return os.RemoveAll(path.Join(rm.regionDir, name))
+}
+
 func (rm regMgr) Initialize() error {
 	//confirm binaries are present
 	if _, err := os.Stat(path.Join(rm.copyFrom, "OpenSim.exe")); os.IsNotExist(err) {
@@ -104,7 +108,7 @@ func (rm regMgr) Initialize() error {
 	}
 	rm.logger.Info("Purging %v old region record(s)", len(files))
 	for _, f := range files {
-		err = os.RemoveAll(path.Join(rm.regionDir, f.Name()))
+		err = rm.purgeBinaries(f.Name())
 		if err != nil {
 			return err
 		}
