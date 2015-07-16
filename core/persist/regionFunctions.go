@@ -77,6 +77,37 @@ func (m mgmDB) queryRegions() []mgm.Region {
 	return regions
 }
 
+func (m mgmDB) GetDefaultConfigs() []mgm.ConfigOption {
+	var configs []mgm.ConfigOption
+	r := mgmReq{}
+	r.request = "GetDefaultConfigs"
+	r.result = make(chan interface{}, 64)
+	m.reqs <- r
+	for {
+		h, ok := <-r.result
+		if !ok {
+			return configs
+		}
+		configs = append(configs, h.(mgm.ConfigOption))
+	}
+}
+
+func (m mgmDB) GetConfigs(region mgm.Region) []mgm.ConfigOption {
+	var configs []mgm.ConfigOption
+	r := mgmReq{}
+	r.request = "GetConfigs"
+	r.object = region
+	r.result = make(chan interface{}, 64)
+	m.reqs <- r
+	for {
+		h, ok := <-r.result
+		if !ok {
+			return configs
+		}
+		configs = append(configs, h.(mgm.ConfigOption))
+	}
+}
+
 func (m mgmDB) GetRegions() []mgm.Region {
 	var regions []mgm.Region
 	r := mgmReq{}

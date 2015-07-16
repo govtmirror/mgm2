@@ -41,6 +41,8 @@ type MGMDB interface {
 	RemoveRegion(mgm.Region)
 	MoveRegionToEstate(mgm.Region, mgm.Estate)
 	MoveRegionToHost(mgm.Region, mgm.Host)
+	GetDefaultConfigs() []mgm.ConfigOption
+	GetConfigs(mgm.Region) []mgm.ConfigOption
 	//job functions
 	GetJobs() []mgm.Job
 	UpdateJob(mgm.Job)
@@ -52,7 +54,7 @@ type MGMDB interface {
 	GetPendingUsers() []mgm.PendingUser
 	//Estate functions
 	GetEstates() []mgm.Estate
-	//Gropu functions
+	//Group functions
 	GetGroups() []mgm.Group
 }
 
@@ -288,6 +290,81 @@ ProcessingPackets:
 				req.result <- true
 				req.result <- "estate updated"
 				close(req.result)
+			case "GetDefaultConfigs":
+				go func() {
+					con, err := m.db.GetConnection()
+					if err != nil {
+						errMsg := fmt.Sprintf("Error loading default configs: %v", err.Error())
+						m.log.Error(errMsg)
+						close(req.result)
+						return
+					}
+					defer con.Close()
+
+					rows, err := con.Query("SELECT section, item, content FROM iniConfig WHERE region IS NULL")
+					if err != nil {
+						errMsg := fmt.Sprintf("Error loading default configs: %v", err.Error())
+						m.log.Error(errMsg)
+						close(req.result)
+						return
+					}
+					defer rows.Close()
+
+					for rows.Next() {
+						c := mgm.ConfigOption{}
+						err = rows.Scan(
+							&c.Section,
+							&c.Item,
+							&c.Content,
+						)
+						if err != nil {
+							errMsg := fmt.Sprintf("Error loading default configs: %v", err.Error())
+							m.log.Error(errMsg)
+							close(req.result)
+							return
+						}
+						req.result <- c
+					}
+					close(req.result)
+				}()
+			case "GetConfigs":
+				go func() {
+					region := req.object.(mgm.Region)
+					con, err := m.db.GetConnection()
+					if err != nil {
+						errMsg := fmt.Sprintf("Error loading default configs: %v", err.Error())
+						m.log.Error(errMsg)
+						close(req.result)
+						return
+					}
+					defer con.Close()
+
+					rows, err := con.Query("SELECT section, item, content FROM iniConfig WHERE region=?", region.UUID.String())
+					if err != nil {
+						errMsg := fmt.Sprintf("Error loading default configs: %v", err.Error())
+						m.log.Error(errMsg)
+						close(req.result)
+						return
+					}
+					defer rows.Close()
+
+					for rows.Next() {
+						c := mgm.ConfigOption{}
+						err = rows.Scan(
+							&c.Section,
+							&c.Item,
+							&c.Content,
+						)
+						if err != nil {
+							errMsg := fmt.Sprintf("Error loading default configs: %v", err.Error())
+							m.log.Error(errMsg)
+							close(req.result)
+							return
+						}
+						req.result <- c
+					}
+					close(req.result)
+				}()
 			default:
 				errMsg := fmt.Sprintf("Unexpected command: %v", req.request)
 				m.log.Error(errMsg)

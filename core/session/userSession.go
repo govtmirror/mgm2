@@ -622,22 +622,18 @@ func (us userSession) process() {
 				us.log.Info("Password changed")
 
 			case "GetDefaultConfig":
-				/*us.log.Info("Requesting default configuration")
-				if us.GetAccessLevel() > 249 {
-					cfgs, err := sm.regionMgr.GetDefaultConfigs()
-					if err != nil {
-						sm.log.Error("Error getting default configs: ", err)
-					} else {
-						for _, cfg := range cfgs {
-							us.Send(cfg)
-						}
-						us.SignalSuccess(m.MessageID, "Default Config Retrieved")
-						sm.log.Info("User %v default configuration served", us.GetGUID())
+				us.log.Info("Requesting default configuration")
+				if isAdmin {
+					cfgs := us.mgm.GetDefaultConfigs()
+					for _, cfg := range cfgs {
+						us.client.Send(cfg)
 					}
+					us.client.SignalSuccess(m.MessageID, "Default Config Retrieved")
+					us.log.Info("User %v default configuration served", uid)
 				} else {
-					sm.log.Info("User %v permission denied to default configurations", us.GetGUID())
-					us.SignalError(m.MessageID, "Permission Denied")
-				}*/
+					us.log.Info("User %v permission denied to default configurations", uid)
+					us.client.SignalError(m.MessageID, "Permission Denied")
+				}
 			case "GetConfig":
 				/*sm.log.Info("User %v requesting region configuration", us.GetGUID())
 				if us.GetAccessLevel() > 249 {

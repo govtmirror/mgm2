@@ -109,7 +109,7 @@ func main() {
 
 	//Hook up core processing...
 	jMgr := job.NewManager(config.MGM.LocalFileStorage, pers, logger)
-	rMgr := region.NewManager(config.MGM.MgmURL, config.MGM.SimianURL, db, osdb, logger)
+	rMgr := region.NewManager(config.MGM.MgmURL, config.MGM.SimianURL, pers, osdb, logger)
 	hMgr, err := host.NewManager(config.MGM.NodePort, rMgr, pers, logger)
 	if err != nil {
 		logger.Error("Error instantiating host manager: ", err)

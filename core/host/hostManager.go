@@ -230,11 +230,7 @@ Processing:
 						continue
 					}
 					//trigger region to record config files
-					cfgs, err := nm.regionMgr.ServeConfigs(nc.Region, nc.Host)
-					if err != nil {
-						nc.SR(false, "Error getting region configs")
-						continue
-					}
+					cfgs := nm.regionMgr.ServeConfigs(nc.Region, nc.Host)
 					nc.Configs = cfgs
 					c.cmdMsgs <- nc
 				} else {

@@ -6,24 +6,23 @@ import (
 	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/mgm"
-	"github.com/satori/go.uuid"
 )
 
 // Manager controls and notifies on region / estate changes and permissions
 type Manager interface {
-	GetRegionByID(id uuid.UUID) (mgm.Region, bool, error)
-	GetDefaultConfigs() ([]mgm.ConfigOption, error)
-	GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error)
-	ServeConfigs(mgm.Region, mgm.Host) ([]mgm.ConfigOption, error)
+	//GetRegionByID(id uuid.UUID) (mgm.Region, bool, error)
+	//GetDefaultConfigs() ([]mgm.ConfigOption, error)
+	//GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error)
+	ServeConfigs(mgm.Region, mgm.Host) []mgm.ConfigOption
 }
 
 // NewManager constructs a RegionManager for use
-func NewManager(mgmURL string, simianURL string, db persist.Database, osdb persist.Database, log logger.Log) Manager {
+func NewManager(mgmURL string, simianURL string, pers persist.MGMDB, osdb persist.Database, log logger.Log) Manager {
 	rMgr := regionMgr{}
 	rMgr.simianURL = simianURL
 	rMgr.mgmURL = mgmURL
-	rMgr.db = regionDatabase{db}
-	rMgr.osdb = simDatabase{osdb}
+	rMgr.mgm = pers
+	rMgr.osdb = osdb
 	rMgr.log = logger.Wrap("REGION", log)
 	return rMgr
 }
@@ -31,34 +30,28 @@ func NewManager(mgmURL string, simianURL string, db persist.Database, osdb persi
 type regionMgr struct {
 	simianURL string
 	mgmURL    string
-	db        regionDatabase
-	osdb      simDatabase
+	osdb      persist.Database
+	mgm       persist.MGMDB
 	log       logger.Log
 }
 
-func (rm regionMgr) GetRegionByID(id uuid.UUID) (mgm.Region, bool, error) {
-	return rm.db.GetRegionByID(id)
-}
+//func (rm regionMgr) GetRegionByID(id uuid.UUID) (mgm.Region, bool, error) {
+//	return rm.db.GetRegionByID(id)
+//}
 
-func (rm regionMgr) GetDefaultConfigs() ([]mgm.ConfigOption, error) {
-	return rm.db.GetDefaultConfigs()
-}
+//func (rm regionMgr) GetDefaultConfigs() ([]mgm.ConfigOption, error) {
+//	return rm.db.GetDefaultConfigs()
+//}
 
-func (rm regionMgr) GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error) {
-	return rm.db.GetConfigs(regionID)
-}
+//func (rm regionMgr) GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error) {
+//	return rm.db.GetConfigs(regionID)
+//}
 
-func (rm regionMgr) ServeConfigs(region mgm.Region, host mgm.Host) ([]mgm.ConfigOption, error) {
+func (rm regionMgr) ServeConfigs(region mgm.Region, host mgm.Host) []mgm.ConfigOption {
 	var result []mgm.ConfigOption
 
-	defaultConfigs, err := rm.GetDefaultConfigs()
-	if err != nil {
-		return result, err
-	}
-	regionConfigs, err := rm.GetConfigs(region.UUID)
-	if err != nil {
-		return result, err
-	}
+	defaultConfigs := rm.mgm.GetDefaultConfigs()
+	regionConfigs := rm.mgm.GetConfigs(region)
 
 	configs := make(map[string]map[string]string)
 
@@ -140,5 +133,5 @@ func (rm regionMgr) ServeConfigs(region mgm.Region, host mgm.Host) ([]mgm.Config
 		}
 	}
 
-	return result, nil
+	return result
 }
