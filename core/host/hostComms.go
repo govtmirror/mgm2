@@ -29,6 +29,7 @@ type Message struct {
 	RStats      mgm.RegionStat      `json:",omitempty"`
 	Configs     []mgm.ConfigOption  `json:",omitempty"`
 	Host        mgm.Host            `json:"-"`
+	Estate      mgm.Estate          `json:"-"`
 	SR          core.ServiceRequest `json:"-"`
 }
 

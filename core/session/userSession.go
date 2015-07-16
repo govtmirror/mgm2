@@ -186,54 +186,55 @@ func (us userSession) process() {
 				}()
 
 			case "StartRegion":
-				/*regionID, err := m.ReadRegionID()
+				regionID, err := m.ReadRegionID()
 				if err != nil {
-					us.SignalError(m.MessageID, "Invalid format")
+					us.client.SignalError(m.MessageID, "Invalid format")
 					continue
 				}
-				sm.log.Info("User %v requesting start region %v", us.GetGUID(), regionID)
-				user, exists, err := sm.userConn.GetUserByID(us.GetGUID())
-				if err != nil {
-					us.SignalError(m.MessageID, "Error looking up user")
-					errMsg := fmt.Sprintf("start region %v failed, error finding requesting user", regionID)
-					sm.log.Error(errMsg)
-					continue
-				}
-				if !exists {
-					us.SignalError(m.MessageID, "Invalid requesting user")
-					errMsg := fmt.Sprintf("start region %v failed, requesting user does not exist", regionID)
-					sm.log.Error(errMsg)
-					continue
-				}
-				r, exists, err := sm.regionMgr.GetRegionByID(regionID)
-				if err != nil {
-					us.SignalError(m.MessageID, fmt.Sprintf("Error locating region: %v", err.Error()))
-					errMsg := fmt.Sprintf("start region %v failed", regionID)
-					sm.log.Error(errMsg)
-					continue
-				}
-				if !exists {
-					us.SignalError(m.MessageID, fmt.Sprintf("Region does not exist"))
-					errMsg := fmt.Sprintf("start region %v failed, region not found", regionID)
-					sm.log.Error(errMsg)
-					continue
-				}
+				us.log.Info("User %v requesting start region %v", uid, regionID)
 
-				h, err := sm.userMgr.RequestControlPermission(r, user)
-				if err != nil {
-					us.SignalError(m.MessageID, fmt.Sprintf("Error: %v", err.Error()))
-					errMsg := fmt.Sprintf("start region %v failed: %v", regionID, err.Error())
-					sm.log.Error(errMsg)
-					continue
-				}
-
-				sm.hostMgr.StartRegionOnHost(r, h, func(success bool, message string) {
-					if success {
-						us.SignalSuccess(m.MessageID, message)
-					} else {
-						us.SignalError(m.MessageID, message)
+				if !isAdmin {
+					//check whitelist for control
+					if !regionsWhitelist[regionID] {
+						us.client.SignalError(m.MessageID, "Permission denied over region")
+						continue
 					}
-				})*/
+				}
+				//we can start the region
+				var region mgm.Region
+				found := false
+				for _, r := range us.mgm.GetRegions() {
+					if r.UUID == regionID {
+						found = true
+						region = r
+					}
+				}
+				if !found {
+					us.client.SignalError(m.MessageID, "Region not found")
+					continue
+				}
+
+				var host mgm.Host
+				found = false
+				for _, h := range us.mgm.GetHosts() {
+					if h.ID == region.Host {
+						found = true
+						host = h
+					}
+				}
+				if !found {
+					us.client.SignalError(m.MessageID, "Host not found")
+					continue
+				}
+
+				us.hMgr.StartRegionOnHost(region, host, func(success bool, msg string) {
+					if success {
+						us.client.SignalSuccess(m.MessageID, msg)
+					} else {
+						us.client.SignalError(m.MessageID, msg)
+					}
+				})
+
 			case "KillRegion":
 				/*regionID, err := m.ReadRegionID()
 				if err != nil {
@@ -473,88 +474,91 @@ func (us userSession) process() {
 				}()
 
 			case "SetEstate":
-				if !isAdmin {
-					us.client.SignalError(m.MessageID, "Permission Denied")
-					continue
-				}
-
-				estateID, err := m.ReadID()
-				if err != nil {
-					us.client.SignalError(m.MessageID, "Invalid format")
-					continue
-				}
-				regionID, err := m.ReadRegionID()
-				if err != nil {
-					us.client.SignalError(m.MessageID, "Invalid format")
-					continue
-				}
-
-				us.log.Info("Requesting add region %v to estate %v", regionID, estateID)
-
-				//Must be admin to mod region estates
-				if !isAdmin {
-					us.client.SignalError(m.MessageID, "Permission Denied")
-					us.log.Error("Add region to estate failed, permission denied")
-					continue
-				}
-
-				var region mgm.Region
-				regionFound := false
-				var estate mgm.Estate
-				estateFound := false
-				for _, r := range us.mgm.GetRegions() {
-					if r.UUID == regionID {
-						regionFound = true
-						region = r
+				go func() {
+					if !isAdmin {
+						us.client.SignalError(m.MessageID, "Permission Denied")
+						return
 					}
-				}
-				if !regionFound {
-					us.client.SignalError(m.MessageID, "Region does not exist")
-					us.log.Error("Add region to estate failed, region not found")
-					continue
-				}
-				for _, e := range us.mgm.GetEstates() {
-					if e.ID == estateID {
-						estateFound = true
-						estate = e
-					}
-				}
-				if !estateFound {
-					us.client.SignalError(m.MessageID, "Estate does not exist")
-					us.log.Error("Add region to estate failed, estate not found")
-					continue
-				}
 
-				go us.mgm.MoveRegionToEstate(region, estate)
-				us.client.SignalSuccess(m.MessageID, "Region Flagged for new estate")
+					estateID, err := m.ReadID()
+					if err != nil {
+						us.client.SignalError(m.MessageID, "Invalid format")
+						return
+					}
+					regionID, err := m.ReadRegionID()
+					if err != nil {
+						us.client.SignalError(m.MessageID, "Invalid format")
+						return
+					}
+
+					us.log.Info("Requesting add region %v to estate %v", regionID, estateID)
+
+					var region mgm.Region
+					regionFound := false
+					var estate mgm.Estate
+					estateFound := false
+					for _, r := range us.mgm.GetRegions() {
+						if r.UUID == regionID {
+							regionFound = true
+							region = r
+						}
+					}
+					if !regionFound {
+						us.client.SignalError(m.MessageID, "Region does not exist")
+						us.log.Error("Add region to estate failed, region not found")
+						return
+					}
+					for _, e := range us.mgm.GetEstates() {
+						if e.ID == estateID {
+							estateFound = true
+							estate = e
+						}
+					}
+					if !estateFound {
+						us.client.SignalError(m.MessageID, "Estate does not exist")
+						us.log.Error("Add region to estate failed, estate not found")
+						return
+					}
+
+					us.hMgr.SetRegionEstate(region, estate, func(success bool, msg string) {
+						if success {
+							us.client.SignalSuccess(m.MessageID, msg)
+						} else {
+							us.client.SignalError(m.MessageID, msg)
+						}
+					})
+
+				}()
 
 			case "DeleteJob":
-				us.log.Info("Requesting delete job")
-				id, err := m.ReadID()
-				if err != nil {
-					us.client.SignalError(m.MessageID, "Invalid format")
-					continue
-				}
-				var j mgm.Job
-				exists := false
-				for _, job := range us.mgm.GetJobs() {
-					if job.ID == id {
-						exists = true
-						j = job
+				go func() {
+					us.log.Info("Requesting delete job")
+					id, err := m.ReadID()
+					if err != nil {
+						us.client.SignalError(m.MessageID, "Invalid format")
+						return
 					}
-				}
-				if !exists {
-					us.client.SignalError(m.MessageID, "Job does not exist")
-					continue
-				}
-				if j.ID != id {
-					us.client.SignalError(m.MessageID, "Job not found")
-					continue
-				}
-				us.mgm.RemoveJob(j)
-				//TODO some jobs may need files cleaned up... should we delete them here
-				// or leave them and create a cleanup coroutine?
-				us.client.SignalSuccess(m.MessageID, "Job Deleted")
+					var j mgm.Job
+					exists := false
+					for _, job := range us.mgm.GetJobs() {
+						if job.ID == id {
+							exists = true
+							j = job
+						}
+					}
+					if !exists {
+						us.client.SignalError(m.MessageID, "Job does not exist")
+						return
+					}
+					if j.ID != id {
+						us.client.SignalError(m.MessageID, "Job not found")
+						return
+					}
+					us.mgm.RemoveJob(j)
+					//TODO some jobs may need files cleaned up... should we delete them here
+					// or leave them and create a cleanup coroutine?
+					us.client.SignalSuccess(m.MessageID, "Job Deleted")
+				}()
 			case "IarUpload":
 				/*us.log.Info("Requesting iar upload")
 				userID, password, err := m.ReadPassword()

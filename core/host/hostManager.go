@@ -21,6 +21,7 @@ type Manager interface {
 	RemoveRegionFromHost(mgm.Region, mgm.Host, core.ServiceRequest)
 	AddRegionToHost(mgm.Region, mgm.Host, core.ServiceRequest)
 	UpdateRegion(mgm.Region, core.ServiceRequest)
+	SetRegionEstate(mgm.Region, mgm.Estate, core.ServiceRequest)
 	AddHost(mgm.Host, core.ServiceRequest)
 }
 
@@ -124,6 +125,15 @@ func (nm nm) UpdateRegion(r mgm.Region, callback core.ServiceRequest) {
 		MessageType: "UpdateRegion",
 		Region:      r,
 		SR:          callback,
+	}
+}
+
+func (nm nm) SetRegionEstate(r mgm.Region, e mgm.Estate, c core.ServiceRequest) {
+	nm.requestChan <- Message{
+		MessageType: "SetEstate",
+		Region:      r,
+		Estate:      e,
+		SR:          c,
 	}
 }
 
@@ -241,6 +251,39 @@ Processing:
 				}
 			case "UpdateRegion":
 				//regions can only be modified when they are halted
+				go func() {
+					for _, stat := range regionStats {
+						if stat.UUID == nc.Region.UUID {
+							if stat.Running {
+								nc.SR(false, "Region cannot be updated while running")
+								return
+							}
+						}
+					}
+
+					nm.mgm.UpdateRegion(nc.Region)
+
+					nc.SR(true, "Region updated")
+
+				}()
+
+			case "SetEstate":
+				//region-estate relationships can only be modified when the region is halted
+				go func() {
+					for _, stat := range regionStats {
+						if stat.UUID == nc.Region.UUID {
+							if stat.Running {
+								nc.SR(false, "Region cannot be updated while running")
+								return
+							}
+						}
+					}
+
+					nm.mgm.MoveRegionToEstate(nc.Region, nc.Estate)
+
+					nc.SR(true, "Region updated")
+
+				}()
 
 			case "AssignToHost":
 				//add a region to a host
