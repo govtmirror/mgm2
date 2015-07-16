@@ -200,7 +200,7 @@ func main() {
 						}
 						r.Start()
 						m.MessageType = "Success"
-						m.Message = "Region flagged for start"
+						m.Message = "Region started"
 						sendChan <- m
 					}
 				case "KillRegion":

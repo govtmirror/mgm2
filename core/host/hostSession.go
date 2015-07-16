@@ -88,11 +88,13 @@ func (ns hostSession) process(closing chan<- int64, register chan<- registration
 				//an MGM request has succeeded
 				if req, ok := pendingRequests[nmsg.ID]; ok {
 					req.SR(true, nmsg.Message)
+					delete(pendingRequests, nmsg.ID)
 				}
 			case "Failure":
 				//an MGM request has failed
 				if req, ok := pendingRequests[nmsg.ID]; ok {
 					req.SR(false, nmsg.Message)
+					delete(pendingRequests, nmsg.ID)
 				}
 			default:
 				ns.log.Info("Received invalid message: %s", nmsg.MessageType)
