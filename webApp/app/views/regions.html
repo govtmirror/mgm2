@@ -20,7 +20,7 @@
     </tr>
     <tr ng-repeat="r in e.regions | orderBy: 'Name'" ng-class-odd="'odd'" ng-class-even="'even'" >
       <td>{{r.Name}}</td>
-      <td ng-if="r.Status.Running"> {{r.Status.CPUPercent.toFixed(2)}}% CPU</td>
+      <td ng-if="r.Status.Running === true"> {{r.Status.CPUPercent.toFixed(2)}}% CPU</td>
       <td ng-if="r.Status.Running"> {{r.Status.MemKB}} KB</td>
       <td ng-if="r.Status.Running">Up {{humanReadableUptime(r.Status.Uptime)}}</td>
       <td ng-if="r.Status.Running">{{r.Status.simStats.RootAg}} Users</td>

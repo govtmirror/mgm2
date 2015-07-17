@@ -156,18 +156,15 @@ angular.module('mgmApp')
     });
     $scope.$on('RegionUpdate', estateifyRegion);
     $scope.$on('RegionStatusUpdate', function(event, status) {
-      for(var i = 0; i < $scope.estates.length; i++){
-        for( var j = 0; j < $scope.estates[i].Regions.Length; j++){
-          if ( status.UUID == $scope.estates[i].Regions[j].UUID){
-            $scope.estates[i].Regions[j].Status = status;
+      for(var e in $scope.estates){
+        for( var j = 0; j < $scope.estates[e].Regions.length; j++){
+          if ( status.UUID === $scope.estates[e].Regions[j].UUID){
+            $timeout(function(){
+              $scope.estates[e].Regions[j].Status = status;
+            });
+            return;
           }
         }
-
-        //if (status.UUID in $scope.regions) {
-        //  $timeout(function() {
-        //    $scope.estates[$scope.regions[status.UUID].EstateName][status.UUID].Status = status;
-        //  });
-        //}
       }
     });
 
