@@ -1,6 +1,7 @@
 package region
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/m-o-s-e-s/mgm/core/logger"
@@ -35,34 +36,43 @@ type regionMgr struct {
 	log       logger.Log
 }
 
-//func (rm regionMgr) GetRegionByID(id uuid.UUID) (mgm.Region, bool, error) {
-//	return rm.db.GetRegionByID(id)
-//}
-
-//func (rm regionMgr) GetDefaultConfigs() ([]mgm.ConfigOption, error) {
-//	return rm.db.GetDefaultConfigs()
-//}
-
-//func (rm regionMgr) GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error) {
-//	return rm.db.GetConfigs(regionID)
-//}
-
 func (rm regionMgr) ServeConfigs(region mgm.Region, host mgm.Host) []mgm.ConfigOption {
 	var result []mgm.ConfigOption
+
+	gridURL := fmt.Sprintf("http://%v/Grid/", rm.simianURL)
 
 	defaultConfigs := rm.mgm.GetDefaultConfigs()
 	regionConfigs := rm.mgm.GetConfigs(region)
 
 	configs := make(map[string]map[string]string)
 
-	//insert initial values that may be overridden
-	configs["Const"] = make(map[string]string)
+	// initialize sections, so we dont wipe them out when we force values below
+	//configs["Const"] = make(map[string]string)
 	configs["Startup"] = make(map[string]string)
+	configs["Permissions"] = make(map[string]string)
 	configs["Network"] = make(map[string]string)
 	configs["ClientStack.LindenCaps"] = make(map[string]string)
+	configs["Messaging"] = make(map[string]string)
+	configs["Groups"] = make(map[string]string)
+	configs["Terrain"] = make(map[string]string)
+	configs["Architecture"] = make(map[string]string)
 	configs["DatabaseService"] = make(map[string]string)
+	configs["Modules"] = make(map[string]string)
+	configs["AssetService"] = make(map[string]string)
+	configs["InventoryService"] = make(map[string]string)
+	configs["GridInfo"] = make(map[string]string)
+	configs["GridService"] = make(map[string]string)
+	configs["AvatarService"] = make(map[string]string)
+	configs["PresenceService"] = make(map[string]string)
+	configs["UserAccountService"] = make(map[string]string)
+	configs["AuthenticationService"] = make(map[string]string)
+	configs["FriendsService"] = make(map[string]string)
+	configs["MapImageService"] = make(map[string]string)
+	configs["OSSL"] = make(map[string]string)
+	configs["SimianGrid"] = make(map[string]string)
+	configs["GridUserService"] = make(map[string]string)
 
-	//map configs to eliminate duplicates, and so we can override values below
+	//map configs to eliminate duplicates
 	for _, cfg := range defaultConfigs {
 		if _, ok := configs[cfg.Section]; !ok {
 			configs[cfg.Section] = make(map[string]string)
@@ -77,47 +87,108 @@ func (rm regionMgr) ServeConfigs(region mgm.Region, host mgm.Host) []mgm.ConfigO
 	}
 
 	//override fields with installation-static options
-	configs["Const"]["SimianURL"] = "http://" + rm.simianURL + "/Grid/"
-	configs["Const"]["MGMURL"] = "http://" + rm.mgmURL
+	//configs["Const"]["SimianURL"] = "http://" + rm.simianURL + "/Grid/"
+	//configs["Const"]["MGMURL"] = "http://" + rm.mgmURL
+	/*
+			[Const]
+		    ;# {BaseURL} {} {BaseURL} {"http://example.com","http://127.0.0.1"} "http://127.0.0.1"
+		    BaseURL = http://127.0.0.1
 
-	configs["Startup"]["region_info_source"] = "filesystem"
-	configs["Startup"]["allow_regionless"] = "false"
+		    ;# {PublicPort} {} {PublicPort} {8002} "8002"
+		    PublicPort = "8002"
+
+		    ;# {PrivatePort} {} {PrivatePort} {8003} "8003"
+		    PrivatePort = "8003"
+	*/
+
 	configs["Startup"]["Stats_URI"] = "jsonSimStats"
-	configs["Startup"]["OutboundDisallowForUserScripts"] = "0.0.0.0/8|10.0.0.0/8|100.64.0.0/10|127.0.0.0/8|169.254.0.0/16|172.16.0.0/12|192.0.0.0/24|192.0.2.0/24|192.88.99.0/24|192.168.0.0/16|198.18.0.0/15|198.51.100.0/24|203.0.113.0/24|224.0.0.0/4|240.0.0.0/4|255.255.255.255/32"
+
+	configs["Permissions"]["allow_grid_gods"] = "true"
 
 	configs["Network"]["ConsoleUser"] = region.ConsoleUname.String()
 	configs["Network"]["ConsolePass"] = region.ConsolePass.String()
 	configs["Network"]["console_port"] = strconv.Itoa(region.ConsolePort)
 	configs["Network"]["http_listener_port"] = strconv.Itoa(region.HTTPPort)
 	configs["Network"]["ExternalHostNameForLSL"] = host.ExternalAddress
+	configs["Network"]["shard"] = "OpenSim"
 
-	configs["ClientStack.LindenCaps"]["Cap_CopyInventoryFromNotecard"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_EnvironmentSettings"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_EventQueueGet"] = "localhost"
-	configs["ClientStack.LindenCaps"]["ObjectMedia"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_ObjectMediaNavigate"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_GetDisplayNames"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_GetTexture"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_GetMesh"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_MapLayer"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_MapLayerGod"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_NewFileAgentInventory"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_NewFileAgentInventoryVariablePrice"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_ObjectAdd"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_ParcelPropertiesUpdate"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_RemoteParcelRequest"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_UpdateNotecardAgentInventory"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_UpdateScriptAgent"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_UpdateNotecardTaskInventory"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_UpdateScriptTask"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_UploadBakedTexture"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_UploadObjectAsset"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_GetTexture"] = fmt.Sprintf("http://%v/GridPublic/GetTexture/", rm.simianURL)
+	configs["ClientStack.LindenCaps"]["Cap_GetMesh"] = fmt.Sprintf("http://%v/GridPublic/GetMesh", rm.simianURL)
 	configs["ClientStack.LindenCaps"]["Cap_AvatarPickerSearch"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_FetchInventoryDescendents2"] = "localhost"
-	configs["ClientStack.LindenCaps"]["Cap_FetchInventory2"] = "localhost"
+	configs["ClientStack.LindenCaps"]["Cap_GetDisplayNames"] = "localhost"
+
+	/*
+						[Messaging]
+						  ; OfflineMessageModule = OfflineMessageModule
+						  ; OfflineMessageModule = "Offline Message Module V2"
+
+						  ; OfflineMessageURL = ${Const|BaseURL}/Offline.php
+					    ; OfflineMessageURL = ${Const|BaseURL}:${Const|PrivatePort}
+
+						  ; StorageProvider = OpenSim.Data.MySQL.dll
+						  ; MuteListModule = MuteListModule
+						  ; MuteListURL = http://yourserver/Mute.php
+						  ; ForwardOfflineGroupMessages = true
+
+						[FreeSwitchVoice]
+			    		; Enabled = false
+			    		; LocalServiceModule = OpenSim.Services.Connectors.dll:RemoteFreeswitchConnector
+		    			; FreeswitchServiceURL = http://my.grid.server:8004/fsapi
+
+	*/
+
+	configs["Groups"]["LevelGroupCreate"] = "0"
+	configs["Groups"]["Module"] = "GroupsModule"
+	configs["Groups"]["StorageProvider"] = "OpenSim.Data.MySQL.dll"
+	configs["Groups"]["ServicesConnectorModule"] = "SimianGroupsServiceConnector"
+	configs["Groups"]["GroupsServerURI"] = gridURL
+	configs["Groups"]["MessagingModule"] = "GroupsMessagingModule"
+
+	configs["Terrain"]["InitialTerrain"] = "flat"
+
+	/*
+			[UserProfiles]
+		  ;; ProfileServiceURL = ${Const|BaseURL}:${Const|PublicPort}
+	*/
+
+	configs["Architecture"]["Include-Architecture"] = "config-include/SimianGrid.ini"
 
 	configs["DatabaseService"]["StorageProvider"] = "OpenSim.Data.MySQL.dll"
 	configs["DatabaseService"]["ConnectionString"] = rm.osdb.GetConnectionString()
+
+	configs["Modules"]["AssetCaching"] = "FlotsamAssetCache"
+	configs["Modules"]["Include-FlotsamCache"] = "config-include/FlotsamCache.ini"
+
+	configs["AssetService"]["DefaultAssetLoader"] = "OpenSim.Framework.AssetLoader.Filesystem.dll"
+	configs["AssetService"]["AssetLoaderArgs"] = "assets/AssetSets.xml"
+	configs["AssetService"]["AssetServerURI"] = gridURL
+
+	configs["InventoryService"]["InventoryServerURI"] = gridURL
+
+	configs["GridInfo"]["GridInfoURI"] = rm.mgmURL
+
+	configs["GridService"]["GridServerURI"] = gridURL
+
+	//configs["EstateDataStore"]["LocalServiceModule"] = "OpenSim.Services.Connectors.dll:EstateDataRemoteConnector"
+	//configs["EstateService"]["EstateServerURI"] = "${Const|BaseURL}:${Const|PrivatePort}"
+
+	configs["AvatarService"]["AvatarServerURI"] = gridURL
+
+	configs["PresenceService"]["PresenceServerURI"] = gridURL
+
+	configs["UserAccountService"]["UserAccountServerURI"] = gridURL
+
+	configs["GridUserService"]["GridUserServerURI"] = gridURL
+
+	configs["AuthenticationService"]["AuthenticationServerURI"] = gridURL
+
+	configs["FriendsService"]["FriendsServerURI"] = gridURL
+
+	configs["MapImageService"]["MapImageServerURI"] = gridURL
+
+	configs["OSSL"]["Include-osslEnable"] = "config-include/osslEnable.ini"
+
+	configs["SimianGrid"]["SimianServiceURL"] = gridURL
 
 	//convert map into a single slice of ConfigOption
 	for section, m := range configs {

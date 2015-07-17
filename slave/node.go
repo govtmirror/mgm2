@@ -185,7 +185,7 @@ func main() {
 							errMsg := fmt.Sprintf("Error writing region ini: %v", err.Error())
 							n.logger.Error(errMsg)
 							m.MessageType = "Failure"
-							m.Message = err.Error()
+							m.Message = errMsg
 							sendChan <- m
 							continue
 						}
@@ -194,7 +194,7 @@ func main() {
 							errMsg := fmt.Sprintf("Error writing opensim ini: %v", err.Error())
 							n.logger.Error(errMsg)
 							m.MessageType = "Failure"
-							m.Message = err.Error()
+							m.Message = errMsg
 							sendChan <- m
 							continue
 						}
