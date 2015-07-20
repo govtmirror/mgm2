@@ -107,25 +107,31 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
         $rootScope.$broadcast('HostUpdate', message.Message);
         break;
       case 'HostStat':
-        if( message.Message.ID in self.hosts){
+        if (message.Message.ID in self.hosts) {
           self.hosts[message.Message.ID].Status = message.Message;
           $rootScope.$broadcast('HostStatusUpdate', message.Message);
         }
         break;
       case 'RegionStat':
-        if(message.Message.UUID in self.regions){
+        if (message.Message.UUID in self.regions) {
           self.regions[message.Message.UUID].Status = message.Message;
           $rootScope.$broadcast('RegionStatusUpdate', message.Message);
         }
         break;
+      case 'RegionConsole':
+        if (message.Message.UUID in self.regions) {
+          $rootScope.$broadcast('ConsoleUpdate', message.Message);
+        }
       case 'Success':
         var msgID = message.MessageID;
         if (msgID in requestMap) {
           requestMap[msgID].Callback(true, message.Message);
           delete requestMap[msgID];
         } else {
-          console.log('Invalid success for nonexistant request: ' + msgID);
-          console.log(message.Message);
+          if(msgID !== 0){
+            console.log('Invalid success for nonexistant request: ' + msgID);
+            console.log(message.Message);
+          }
         }
         break;
       case 'Error':
@@ -155,7 +161,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
   };
 
   /* Request tracking */
-  var requestNum = 0;
+  var requestNum = 1;
   var requestMap = {};
   self.request = function (requestType, reqObject, callback) {
     var msgId = requestNum;
@@ -190,22 +196,22 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
             'Content-Type': undefined
           }
         })
-        .success(function (/*data, status, headers, config*/) {
+        .success(function ( /*data, status, headers, config*/ ) {
           resolve();
         })
-        .error(function (data, status /*, headers, config*/) {
+        .error(function (data, status /*, headers, config*/ ) {
           reject(status);
         });
     });
   };
 
   /* utility functions */
-  self.deleteJob = function(job){
+  self.deleteJob = function (job) {
     return $q(function (resolve, reject) {
-      self.request('DeleteJob',{
+      self.request('DeleteJob', {
         ID: job.ID
-      }, function(success, message){
-        if(success){
+      }, function (success, message) {
+        if (success) {
           delete self.jobs[job.ID];
           resolve();
         } else {

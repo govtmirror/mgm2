@@ -83,6 +83,7 @@ angular.module('mgmApp')
                 backdrop: 'static',
                 keyboard: false,
                 controller: 'RegionconsoleCtrl',
+                windowClass: 'console-modal-window',
                 resolve: {
                   region: function() {
                     return region;

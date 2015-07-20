@@ -18,7 +18,8 @@ angular
     'ngSanitize',
     'ngTouch',
     'pageslide-directive',
-    'ui.bootstrap'
+    'ui.bootstrap',
+    'ngScrollGlue'
   ])
   .config(function ($routeProvider) {
     $routeProvider

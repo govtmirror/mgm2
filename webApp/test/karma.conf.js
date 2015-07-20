@@ -34,6 +34,7 @@ module.exports = function(config) {
       'bower_components/angular-pageslide-directive/dist/angular-pageslide-directive.js',
       'bower_components/alertify.js/lib/alertify.js',
       'bower_components/angular-bootstrap/ui-bootstrap-tpls.js',
+      'bower_components/ng-scroll-glue/dist/scrollglue.js',
       'bower_components/angular-mocks/angular-mocks.js',
       // endbower
       'webapp/scripts/**/*.js',

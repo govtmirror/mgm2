@@ -18,7 +18,7 @@
         <h3>{{e.Name}}</h3>
       </td>
     </tr>
-    <tr ng-repeat="r in e.regions | orderBy: 'Name'" ng-class-odd="'odd'" ng-class-even="'even'" >
+    <tr ng-repeat="r in e.regions | orderBy: 'Name'" ng-class-odd="'odd'" ng-class-even="'even'">
       <td>{{r.Name}}</td>
       <td ng-if="r.Status.Running === true"> {{r.Status.CPUPercent.toFixed(2)}}% CPU</td>
       <td ng-if="r.Status.Running"> {{r.Status.MemKB}} KB</td>
@@ -41,14 +41,24 @@
   <div class="modal-header">
     <table width="560px">
       <tr>
-        <td><h3 class="modal-title">{{region.Name}}</h3></td>
+        <td>
+          <h3 class="modal-title">{{region.Name}}</h3>
+        </td>
       </tr>
     </table>
   </div>
   <div class="modal-body">
+    <div class="console-window" scroll-glue-bottom>
+      <ul>
+        <li ng-repeat="line in lines">
+          {{line}}
+        </li>
+      </ul>
+    </div>
   </div>
   <div class="modal-footer">
-    <button class="btn btn-warning" ng-click="close()">Close</button>
+    <span>></span><input class="console-input" style="float:left" />
+    <button class="btn btn-warning" ng-click="close()" style="float:right">Close</button>
   </div>
 </script>
 
@@ -56,8 +66,12 @@
   <div class="modal-header">
     <table width="560px">
       <tr>
-        <td><button class="btn btn-danger" ng-click="region.remove(r)">Delete</button></td>
-        <td><h3 class="modal-title">{{region.Name}}</h3></td>
+        <td>
+          <button class="btn btn-danger" ng-click="region.remove(r)">Delete</button>
+        </td>
+        <td>
+          <h3 class="modal-title">{{region.Name}}</h3>
+        </td>
       </tr>
     </table>
   </div>
@@ -65,20 +79,36 @@
     <table width="600px">
       <tr>
         <td>Change Estate</td>
-        <td colspan="2"><select ng-model="currentEstate" ng-options="est.Name for est in estates | orderBy: 'Name'"></select></td>
-        <td><button ng-click="setEstate()" class="btn btn-xs btn-default" ng-class="{disabled: currentEstate.Name===region.Estate}">Set</button></td>
+        <td colspan="2">
+          <select ng-model="currentEstate" ng-options="est.Name for est in estates | orderBy: 'Name'"></select>
+        </td>
+        <td>
+          <button ng-click="setEstate()" class="btn btn-xs btn-default" ng-class="{disabled: currentEstate.Name===region.Estate}">Set</button>
+        </td>
       </tr>
       <tr>
         <td>Change Host</td>
-        <td colspan="2"><select ng-model="currentHost" ng-options="h.Hostname for (id, h) in hosts"></select></td>
-        <td><button ng-click="setHost()" class="btn btn-xs btn-default" ng-class="{disabled: currentHost.ID===region.Host}">Set</button></td>
+        <td colspan="2">
+          <select ng-model="currentHost" ng-options="h.Hostname for (id, h) in hosts"></select>
+        </td>
+        <td>
+          <button ng-click="setHost()" class="btn btn-xs btn-default" ng-class="{disabled: currentHost.ID===region.Host}">Set</button>
+        </td>
       </tr>
       <tr>
         <form>
-        <td>Change Position</td>
-        <td><label>X</label><input ng-model="currentX" type="text" min="0" step="1" size="12" pattern='[0-9]{1,5}' required/></td>
-        <td><label>Y</label><input ng-model="currentY" type="text" min="0" step="1" size="12" pattern='[0-9]{1,5}' required/></td>
-        <td><button type="submit" ng-click="setXY()" class="btn btn-xs btn-default" ng-class="{disabled: currentX===region.LocX && currentY===region.LocY}">Set</button></td>
+          <td>Change Position</td>
+          <td>
+            <label>X</label>
+            <input ng-model="currentX" type="text" min="0" step="1" size="12" pattern='[0-9]{1,5}' required/>
+          </td>
+          <td>
+            <label>Y</label>
+            <input ng-model="currentY" type="text" min="0" step="1" size="12" pattern='[0-9]{1,5}' required/>
+          </td>
+          <td>
+            <button type="submit" ng-click="setXY()" class="btn btn-xs btn-default" ng-class="{disabled: currentX===region.LocX && currentY===region.LocY}">Set</button>
+          </td>
         </form>
       </tr>
     </table>

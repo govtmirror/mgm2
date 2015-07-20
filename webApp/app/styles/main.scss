@@ -6,6 +6,7 @@ $icon-font-path: "../bower_components/bootstrap-sass-official/assets/fonts/boots
 @import "../bower_components/alertify.js/themes/alertify.core.css";
 @import "../bower_components/alertify.js/themes/alertify.bootstrap.css";
 // endalertify
+
 .browsehappy {
   margin: 0.2em 0;
   background: #ccc;
@@ -102,15 +103,6 @@ body {
 .odd {
   background-color: #EEE;
 }
-/* mgm charting rules */
 
-.axis {
-  font: 10px sans-serif;
-}
-
-.axis path,
-.axis line {
-  fill: none;
-  stroke: #000;
-  shape-rendering: crispEdges;
-}
+@import "console";
+@import "chart";
