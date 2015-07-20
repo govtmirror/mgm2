@@ -135,9 +135,17 @@ func (c console) writeProcess() {
 	}
 }
 
+func (c *console) doClose() {
+	if c.closing != nil {
+		http.PostForm(c.url+"CloseSession/", url.Values{"ID": {c.sessionID.String()}})
+		close(c.closing)
+		c.closing = nil
+	}
+}
+
 func (c console) Close() {
-	http.PostForm(c.url+"CloseSession/", url.Values{"ID": {c.sessionID.String()}})
-	close(c.closing)
+	//call internal method, as we need to check and assign the channel
+	c.doClose()
 }
 
 func (c console) Read() <-chan string {
