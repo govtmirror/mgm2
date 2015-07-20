@@ -236,54 +236,56 @@ func (us userSession) process() {
 				})
 
 			case "KillRegion":
-				/*regionID, err := m.ReadRegionID()
+				regionID, err := m.ReadRegionID()
 				if err != nil {
-					us.SignalError(m.MessageID, "Invalid format")
+					us.client.SignalError(m.MessageID, "Invalid format")
 					continue
 				}
-				sm.log.Info("User %v requesting kill region %v", us.GetGUID(), regionID)
-				user, exists, err := sm.userConn.GetUserByID(us.GetGUID())
-				if err != nil {
-					us.SignalError(m.MessageID, "Error looking up user")
-					errMsg := fmt.Sprintf("kill region %v failed, error finding requesting user", regionID)
-					sm.log.Error(errMsg)
-					continue
-				}
-				if !exists {
-					us.SignalError(m.MessageID, "Invalid requesting user")
-					errMsg := fmt.Sprintf("kill region %v failed, requesting user does not exist", regionID)
-					sm.log.Error(errMsg)
-					continue
-				}
-				r, exists, err := sm.regionMgr.GetRegionByID(regionID)
-				if err != nil {
-					us.SignalError(m.MessageID, fmt.Sprintf("Error locating region: %v", err.Error()))
-					errMsg := fmt.Sprintf("kill region %v failed: %v", regionID, err.Error())
-					sm.log.Error(errMsg)
-					continue
-				}
-				if !exists {
-					us.SignalError(m.MessageID, fmt.Sprintf("Region does not exist"))
-					errMsg := fmt.Sprintf("kill region %v failed, region does not exist", regionID)
-					sm.log.Error(errMsg)
-					continue
-				}
-
-				h, err := sm.userMgr.RequestControlPermission(r, user)
-				if err != nil {
-					us.SignalError(m.MessageID, fmt.Sprintf("Error requesting permission: %v", err.Error()))
-					errMsg := fmt.Sprintf("kill region %v failed: %v", regionID, err.Error())
-					sm.log.Error(errMsg)
-					continue
-				}
-
-				sm.hostMgr.KillRegionOnHost(r, h, func(success bool, message string) {
-					if success {
-						us.SignalSuccess(m.MessageID, message)
-					} else {
-						us.SignalError(m.MessageID, message)
+				//locate region
+				var region mgm.Region
+				found := false
+				for _, r := range us.mgm.GetRegions() {
+					if r.UUID == regionID {
+						found = true
+						region = r
 					}
-				})*/
+				}
+				if !found {
+					us.client.SignalError(m.MessageID, "Region does not exist")
+					continue
+				}
+				us.log.Info("User %v requesting kill region %v", uid, regionID)
+				if !isAdmin {
+					//check if user has permission over this region
+					if !regionsWhitelist[regionID] {
+						us.client.SignalError(m.MessageID, "Permission Denied")
+						us.log.Info("User %v requesting kill region %v failed, permission denied", uid, regionID)
+						continue
+					}
+				}
+
+				//lookup host record
+				found = false
+				var host mgm.Host
+				for _, h := range us.mgm.GetHosts() {
+					if h.ID == region.Host {
+						found = true
+						host = h
+					}
+				}
+				if !found || region.Host == 0 {
+					us.client.SignalError(m.MessageID, "Could not locate host, or region is not assigned to a host")
+					us.log.Info("User %v requesting kill region %v failed, host not found", uid, regionID)
+					continue
+				}
+
+				us.hMgr.KillRegionOnHost(region, host, func(success bool, message string) {
+					if success {
+						us.client.SignalSuccess(m.MessageID, message)
+					} else {
+						us.client.SignalError(m.MessageID, message)
+					}
+				})
 			case "OpenConsole":
 				/*regionID, err := m.ReadRegionID()
 				if err != nil {

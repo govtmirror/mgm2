@@ -211,7 +211,7 @@ func main() {
 						m.ID = msg.ID
 						r.Kill()
 						m.MessageType = "Success"
-						m.Message = "Region flagged for kill"
+						m.Message = "Region killed"
 						sendChan <- m
 					}
 				case "RemoveHost":
