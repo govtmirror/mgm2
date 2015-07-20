@@ -10,6 +10,9 @@
 angular.module('mgmApp')
   .controller('RegionsCtrl', function($scope, $location, $timeout, $modal, mgm) {
 
+    //keep a map of regions displayed so that we can update them quickly
+    var regions = {};
+
     if ($scope.auth === undefined || $scope.auth === {}) {
       mgm.pushLocation($location.url());
       $location.url('/loading');
@@ -22,13 +25,14 @@ angular.module('mgmApp')
     };
 
     function regionsList(IDs){
-      var regions = [];
+      var regs = [];
       for(var i = 0; i < IDs.length; i++){
         if( IDs[i] in mgm.regions && mgm.regions[IDs[i]].Name.includes($scope.search.regionName)){
-          regions.push(mgm.regions[IDs[i]]);
+          regs.push(mgm.regions[IDs[i]]);
+          regions[IDs[i]] = mgm.regions[IDs[i]];
         }
       }
-      return regions;
+      return regs;
     }
 
     var eMap = {};
@@ -156,15 +160,10 @@ angular.module('mgmApp')
     });
     $scope.$on('RegionUpdate', estateifyRegion);
     $scope.$on('RegionStatusUpdate', function(event, status) {
-      for(var e in $scope.estates){
-        for( var j = 0; j < $scope.estates[e].Regions.length; j++){
-          if ( status.UUID === $scope.estates[e].Regions[j].UUID){
-            $timeout(function(){
-              $scope.estates[e].Regions[j].Status = status;
-            });
-            return;
-          }
-        }
+      if(status.UUID in regions){
+        $timeout(function(){
+          regions[status.UUID].Status = status;
+        });
       }
     });
 
