@@ -72,12 +72,26 @@ angular.module('mgmApp')
         alertify.error('content not implemented js: ' + region.Name);
       },
       manage: function(region) {
-        if (region.Running) {
+        if (region.Status.Running) {
           mgm.request('OpenConsole', {
             RegionUUID: region.UUID
           }, function(success, msg) {
             if (success) {
-              alertify.success(msg);
+              var modInst = $modal.open({
+                animation: false,
+                templateUrl: 'regionConsoleModal.html',
+                backdrop: 'static',
+                keyboard: false,
+                controller: 'RegionconsoleCtrl',
+                resolve: {
+                  region: function() {
+                    return region;
+                  }
+                }
+              });
+              modInst.result.then(function() {
+                mgm.request('CloseConsole');
+              });
             } else {
               alertify.error(msg);
             }
