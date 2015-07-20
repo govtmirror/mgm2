@@ -252,6 +252,7 @@ func (us userSession) process() {
 				}
 				if !found {
 					us.client.SignalError(m.MessageID, "Region does not exist")
+					us.log.Info("User %v requesting kill region %v failed, region not found", uid, regionID)
 					continue
 				}
 				us.log.Info("User %v requesting kill region %v", uid, regionID)
@@ -287,50 +288,73 @@ func (us userSession) process() {
 					}
 				})
 			case "OpenConsole":
-				/*regionID, err := m.ReadRegionID()
+				regionID, err := m.ReadRegionID()
 				if err != nil {
-					us.SignalError(m.MessageID, "Invalid format")
+					us.client.SignalError(m.MessageID, "Invalid format")
 					continue
 				}
-				sm.log.Info("User %v requesting region console %v", us.GetGUID(), regionID)
-				user, exists, err := sm.userConn.GetUserByID(us.GetGUID())
-				if err != nil {
-					us.SignalError(m.MessageID, "Error looking up user")
-					errMsg := fmt.Sprintf("region console %v failed, error finding requesting user", regionID)
-					sm.log.Error(errMsg)
+				us.log.Info("User %v requesting region console %v", uid, regionID)
+
+				var r mgm.Region
+				found := false
+				for _, reg := range us.mgm.GetRegions() {
+					if reg.UUID == regionID {
+						found = true
+						r = reg
+					}
+				}
+
+				if !found {
+					us.client.SignalError(m.MessageID, "Region does not exist")
+					us.log.Info("User %v requesting kill region %v failed, region not found", uid, regionID)
 					continue
 				}
-				if !exists {
-					us.SignalError(m.MessageID, "Invalid requesting user")
-					errMsg := fmt.Sprintf("region console %v failed, requesting user does not exist", regionID)
-					sm.log.Error(errMsg)
-					continue
+				if !isAdmin {
+					if !regionsWhitelist[regionID] {
+						us.client.SignalError(m.MessageID, "Permission Denied")
+						us.log.Info("User %v requesting kill region %v failed, permission denied", uid, regionID)
+						continue
+					}
 				}
-				r, exists, err := sm.regionMgr.GetRegionByID(regionID)
-				if err != nil {
-					us.SignalError(m.MessageID, fmt.Sprintf("Error locating region: %v", err.Error()))
-					errMsg := fmt.Sprintf("region console %v failed: %v", regionID, err.Error())
-					sm.log.Error(errMsg)
-					continue
+
+				found = false
+				var host mgm.Host
+				for _, h := range us.mgm.GetHosts() {
+					if h.ID == r.Host {
+						found = true
+						host = h
+					}
 				}
-				if !exists {
-					us.SignalError(m.MessageID, fmt.Sprintf("Region does not exist"))
-					errMsg := fmt.Sprintf("region console %v failed, region does not exist", regionID)
-					sm.log.Error(errMsg)
+
+				if !found {
+					us.client.SignalError(m.MessageID, "Host does not exist, or region is not assigned to a host")
+					us.log.Info("User %v requesting kill region %v failed, region not found", uid, regionID)
 					continue
 				}
 
-				h, err := sm.userMgr.RequestControlPermission(r, user)
-				if err != nil {
-					us.SignalError(m.MessageID, fmt.Sprintf("Error requesting permission: %v", err.Error()))
-					errMsg := fmt.Sprintf("region console %v failed: %v", regionID, err.Error())
-					sm.log.Error(errMsg)
-					continue
-				}
+				console, err = region.NewRestConsole(r, host)
 
-				console = region.NewRestConsole(r, h)
-				us.SignalSuccess(m.MessageID, "Console opened")*/
+				go func() {
+					for {
+						select {
+						case line, ok := <-console.Read():
+							if !ok {
+								return
+							}
+							us.client.Send(mgm.RegionConsole{regionID, line})
+						}
+					}
+				}()
+
+				us.log.Info("User %v open console complete, and in process", uid)
+
+				if err != nil {
+					us.client.SignalError(m.MessageID, fmt.Sprintf("Error opening console: %v", err.Error()))
+				} else {
+					us.client.SignalSuccess(m.MessageID, "Console opened")
+				}
 			case "CloseConsole":
+				us.log.Info("User %v requesting close console", uid)
 				go func() {
 					console.Close()
 				}()
@@ -716,7 +740,7 @@ func (us userSession) process() {
 			}
 		case <-us.client.GetClosingSignal():
 			//the client connection has closed
-			us.closing <- us.client.GetGUID()
+			us.closing <- uid
 			return
 		}
 

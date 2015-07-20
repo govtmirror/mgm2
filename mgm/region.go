@@ -106,3 +106,20 @@ func (rs RegionDeleted) Serialize() []byte {
 func (rs RegionDeleted) ObjectType() string {
 	return "RegionDeleted"
 }
+
+// RegionConsole holds console feedback
+type RegionConsole struct {
+	UUID uuid.UUID
+	Line string
+}
+
+// Serialize implements UserObject interface Serialize function
+func (rc RegionConsole) Serialize() []byte {
+	data, _ := json.Marshal(rc)
+	return data
+}
+
+// ObjectType implements UserObject
+func (rc RegionConsole) ObjectType() string {
+	return "RegionConsole"
+}
