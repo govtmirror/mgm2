@@ -74,6 +74,19 @@ func (ur UserMessage) ReadAddress() (string, error) {
 	return p.Address, nil
 }
 
+// ReadMessage parses {Message: string} from the message body
+func (ur UserMessage) ReadMessage() (string, error) {
+	type pw struct {
+		Message string
+	}
+	p := pw{}
+	err := json.Unmarshal(ur.Message, &p)
+	if err != nil {
+		return "", err
+	}
+	return p.Message, nil
+}
+
 // ReadCoordinates parses { X: int, Y: int} from the message body
 func (ur UserMessage) ReadCoordinates() (uint, uint, error) {
 	type coord struct {

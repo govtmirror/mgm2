@@ -153,5 +153,7 @@ func (c console) Read() <-chan string {
 }
 
 func (c console) Write(cmd string) {
-	c.write <- cmd
+	if c.closing != nil {
+		c.write <- cmd
+	}
 }

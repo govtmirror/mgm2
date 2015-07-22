@@ -353,6 +353,19 @@ func (us userSession) process() {
 				} else {
 					us.client.SignalSuccess(m.MessageID, "Console opened")
 				}
+
+			case "ConsoleCommand":
+				msg, err := m.ReadMessage()
+				if err != nil {
+					us.client.SignalError(m.MessageID, "Invalid message format")
+					return
+				}
+				us.log.Info("User %v sent console command %v", uid, msg)
+
+				console.Write(msg)
+
+				us.client.SignalSuccess(m.MessageID, "Message forwarded to console")
+
 			case "CloseConsole":
 				us.log.Info("User %v requesting close console", uid)
 				go func() {
