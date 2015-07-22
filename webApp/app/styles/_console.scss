@@ -1,21 +1,18 @@
 
 .console-window {
   background-color: #000;
-  height: 300px;
+  height: 600px;
   width: 750px;
   overflow-y: scroll;
   overflow-x: hidden;
 
   font-family: courier, monospace;
+  font-size:small;
   color:#fff;
 }
 
 .console-window ul {
-  list-style-type: none;
   list-style-position: outside;
-}
-.console-window li {
-  display: inline-block;
 }
 
 .console-modal-window .modal-dialog {
@@ -25,6 +22,7 @@
 .console-prompt {
   background-color: #000;
   font-family: courier, monospace;
+  font-size:small;
   color:#fff;
   float: left;
   width: 20px;
@@ -34,6 +32,7 @@
 .console-input {
   background-color: #000;
   font-family: courier, monospace;
+  font-size:small;
   height: 24px;
   width: 715px;
   color:#fff;

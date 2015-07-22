@@ -13,14 +13,14 @@ angular.module('mgmApp')
     $scope.region = region;
     $scope.lines = []
 
-    $scope.close = function() {
+    $scope.close = function () {
       $modalInstance.close();
     };
 
-    $scope.$on('ConsoleInput', function(event, line){
+    $scope.$on('ConsoleInput', function (event, line) {
       mgm.request('ConsoleCommand', {
         Message: line
-      }, function(success, msg) {
+      }, function (success, msg) {
         if (success) {
           //alertify.success(msg);
         } else {
@@ -29,11 +29,26 @@ angular.module('mgmApp')
       });
     });
 
-    $scope.$on('ConsoleUpdate', function(event, status){
-      if( status.UUID == region.UUID){
-        $timeout(function(){
-          $scope.lines.push(status.Line);
-        })
+    $scope.$on('ConsoleUpdate', function (event, status) {
+      if (status.UUID == region.UUID) {
+        var parts = status.Line.split(':')
+        var number = parts.shift();
+        var level = parts.shift();
+        var line = parts.join(':');
+        if (line.startsWith('+++Region ') || line === '' ) {
+          //skip the faux prompts
+          return;
+        }
+        parts = line.split('\n');
+        $timeout(function () {
+          for (var i = 0; i < parts.length; i++) {
+            $scope.lines.push({
+              Number: number,
+              Level: level,
+              Message: parts[i]
+            });
+          }
+        });
       }
     });
 

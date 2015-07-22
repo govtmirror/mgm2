@@ -332,6 +332,11 @@ func (us userSession) process() {
 					continue
 				}
 
+				if console != nil {
+					us.log.Info("User %v closing existing console session", uid)
+					console.Close()
+				}
+
 				console, err = region.NewRestConsole(r, host)
 
 				go func() {
@@ -358,9 +363,15 @@ func (us userSession) process() {
 				msg, err := m.ReadMessage()
 				if err != nil {
 					us.client.SignalError(m.MessageID, "Invalid message format")
-					return
+					continue
 				}
 				us.log.Info("User %v sent console command %v", uid, msg)
+
+				if console == nil {
+					us.log.Info("User %v sending command with no active console", uid)
+					us.client.SignalError(m.MessageID, "No active console")
+					continue
+				}
 
 				console.Write(msg)
 
@@ -369,7 +380,9 @@ func (us userSession) process() {
 			case "CloseConsole":
 				us.log.Info("User %v requesting close console", uid)
 				go func() {
-					console.Close()
+					if console != nil {
+						console.Close()
+					}
 				}()
 
 			case "SetLocation":

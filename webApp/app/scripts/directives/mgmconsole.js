@@ -62,7 +62,7 @@ angular.module('mgmApp')
       template: '<div ng-keyup="keyUp($event)">' +
         '  <div class="console-window" scroll-glue-bottom>' +
         '    <ul>' +
-        '      <li ng-repeat="line in lines">{{line}}</li>' +
+        '      <li ng-repeat="line in lines track by $index">{{line.Message}}</li>' +
         '    </ul>' +
         '  </div>' +
         '  <div class="console-prompt"> $> </div>' +

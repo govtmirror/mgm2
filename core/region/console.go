@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
@@ -36,15 +37,18 @@ func NewRestConsole(r mgm.Region, h mgm.Host) (RestConsole, error) {
 	go c.readProcess()
 	go c.writeProcess()
 
+	c.initialized = true
+
 	return c, nil
 }
 
 type console struct {
-	url       string
-	sessionID uuid.UUID
-	read      chan string
-	write     chan string
-	closing   chan bool
+	url         string
+	sessionID   uuid.UUID
+	read        chan string
+	write       chan string
+	closing     chan bool
+	initialized bool
 }
 
 func (c *console) connect(uname string, pass string) error {
@@ -128,6 +132,9 @@ func (c console) writeProcess() {
 					"COMMAND": {cmd},
 				},
 			)
+			timestamp := time.Now()
+			h, m, s := timestamp.Clock()
+			c.read <- fmt.Sprintf("0:normal:%v:%v:%v - %v", h, m, s, cmd)
 			if err != nil {
 				c.read <- "Error writing to console"
 			}
@@ -136,10 +143,10 @@ func (c console) writeProcess() {
 }
 
 func (c *console) doClose() {
-	if c.closing != nil {
+	if c.initialized {
 		http.PostForm(c.url+"CloseSession/", url.Values{"ID": {c.sessionID.String()}})
 		close(c.closing)
-		c.closing = nil
+		c.initialized = false
 	}
 }
 
@@ -153,7 +160,7 @@ func (c console) Read() <-chan string {
 }
 
 func (c console) Write(cmd string) {
-	if c.closing != nil {
+	if c.initialized {
 		c.write <- cmd
 	}
 }
