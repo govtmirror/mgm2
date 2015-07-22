@@ -140,15 +140,23 @@ func main() {
 					n.logger.Info("AddRegion: %v", r.UUID.String())
 					m := host.Message{}
 
-					reg, err := rMgr.AddRegion(r.UUID)
-					regions[r.UUID] = reg
-					if err != nil {
-						n.logger.Error("Error adding region: ", err.Error())
-						m.MessageType = "Failure"
-						m.Message = err.Error()
-					} else {
+					_, ok := regions[r.UUID]
+					if ok {
+						//region is already on this node
 						m.MessageType = "Success"
 						m.Message = "Region added"
+					} else {
+						//new-to-us region
+						reg, err := rMgr.AddRegion(r.UUID)
+						regions[r.UUID] = reg
+						if err != nil {
+							n.logger.Error("Error adding region: ", err.Error())
+							m.MessageType = "Failure"
+							m.Message = err.Error()
+						} else {
+							m.MessageType = "Success"
+							m.Message = "Region added"
+						}
 					}
 					sendChan <- m
 					n.logger.Info("AddRegion: %v Complete", r.UUID.String())
