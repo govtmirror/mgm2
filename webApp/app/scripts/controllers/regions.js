@@ -57,6 +57,18 @@ angular.module('mgmApp')
           }
         });
       },
+      stop: function(region) {
+        console.log('Requesting stop region: ' + region.Name);
+        mgm.request('StopRegion', {
+          RegionUUID: region.UUID
+        }, function(success, msg) {
+          if (success) {
+            alertify.success(msg);
+          } else {
+            alertify.error(msg);
+          }
+        });
+      },
       kill: function(region) {
         mgm.request('KillRegion', {
           RegionUUID: region.UUID
@@ -72,7 +84,7 @@ angular.module('mgmApp')
         alertify.error('content not implemented js: ' + region.Name);
       },
       manage: function(region) {
-        if (region.Status.Running) {
+        if (region.Status && region.Status.Running) {
           mgm.request('OpenConsole', {
             RegionUUID: region.UUID
           }, function(success, msg) {

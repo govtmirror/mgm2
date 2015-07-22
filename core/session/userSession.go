@@ -240,6 +240,63 @@ func (us userSession) process() {
 					}
 				})
 
+			case "StopRegion":
+				regionID, err := m.ReadRegionID()
+				if err != nil {
+					us.client.SignalError(m.MessageID, "Invalid format")
+					continue
+				}
+				//locate region
+				var r mgm.Region
+				found := false
+				for _, reg := range us.mgm.GetRegions() {
+					if reg.UUID == regionID {
+						found = true
+						r = reg
+					}
+				}
+				if !found {
+					us.client.SignalError(m.MessageID, "Region does not exist")
+					us.log.Info("User %v requesting stop region %v failed, region not found", uid, regionID)
+					continue
+				}
+				us.log.Info("User %v requesting stop region %v", uid, regionID)
+				if !isAdmin {
+					//check if user has permission over this region
+					if !regionsWhitelist[regionID] {
+						us.client.SignalError(m.MessageID, "Permission Denied")
+						us.log.Info("User %v requesting stop region %v failed, permission denied", uid, regionID)
+						continue
+					}
+				}
+
+				//lookup host record
+				found = false
+				var host mgm.Host
+				for _, h := range us.mgm.GetHosts() {
+					if h.ID == r.Host {
+						found = true
+						host = h
+					}
+				}
+				if !found || r.Host == 0 {
+					us.client.SignalError(m.MessageID, "Could not locate host, or region is not assigned to a host")
+					us.log.Info("User %v requesting stop region %v failed, host not found", uid, regionID)
+					continue
+				}
+
+				go func() {
+					c, err := region.NewRestConsole(r, host)
+					if err != nil {
+						us.client.SignalError(m.MessageID, "Could not connect via console")
+						us.log.Info("User %v requesting stop region %v failed, host not found", uid, regionID)
+						return
+					}
+					c.Write("quit")
+					c.Close()
+					us.client.SignalSuccess(m.MessageID, "Region told to quit")
+				}()
+
 			case "KillRegion":
 				regionID, err := m.ReadRegionID()
 				if err != nil {

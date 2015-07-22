@@ -29,7 +29,7 @@ func (m mgmDB) insertHost(host mgm.Host) (int64, error) {
 }
 
 func (m mgmDB) persistHost(host mgm.Host) {
-	m.log.Info("persisting host %v", host.ID)
+	m.log.Info("persisting host %v, running: %v", host.ID, host.Running)
 	con, err := m.db.GetConnection()
 	if err == nil {
 		_, err = con.Exec("UPDATE hosts SET externalAddress=?, name=?, slots=? WHERE id=?",
