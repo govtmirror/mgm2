@@ -8,7 +8,7 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('RegionconsoleCtrl', function ($scope, $modalInstance, $timeout, region) {
+  .controller('RegionconsoleCtrl', function ($scope, $modalInstance, $timeout, mgm, region) {
 
     $scope.region = region;
     $scope.lines = []
@@ -16,6 +16,18 @@ angular.module('mgmApp')
     $scope.close = function() {
       $modalInstance.close();
     };
+
+    $scope.$on('ConsoleInput', function(event, line){
+      mgm.request('ConsoleCommand', {
+        Message: line
+      }, function(success, msg) {
+        if (success) {
+          //alertify.success(msg);
+        } else {
+          alertify.error(msg);
+        }
+      });
+    });
 
     $scope.$on('ConsoleUpdate', function(event, status){
       if( status.UUID == region.UUID){

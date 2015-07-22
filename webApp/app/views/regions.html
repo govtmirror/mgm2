@@ -48,16 +48,9 @@
     </table>
   </div>
   <div class="modal-body">
-    <div class="console-window" scroll-glue-bottom>
-      <ul>
-        <li ng-repeat="line in lines">
-          {{line}}
-        </li>
-      </ul>
-    </div>
+    <div mgm-console lines="lines"></div>
   </div>
   <div class="modal-footer">
-    <span>></span><input class="console-input" style="float:left" />
     <button class="btn btn-warning" ng-click="close()" style="float:right">Close</button>
   </div>
 </script>
