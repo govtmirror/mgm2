@@ -227,6 +227,11 @@ func (us userSession) process() {
 					continue
 				}
 
+				if !host.Running {
+					us.client.SignalError(m.MessageID, "Host is not running")
+					continue
+				}
+
 				us.hMgr.StartRegionOnHost(region, host, func(success bool, msg string) {
 					if success {
 						us.client.SignalSuccess(m.MessageID, msg)

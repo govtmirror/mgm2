@@ -46,6 +46,11 @@ func (ns hostSession) process(closing chan<- int64, register chan<- registration
 
 		case msg := <-ns.cmdMsgs:
 			// Messages coming from MGM
+			if !ns.Running {
+				msg.SR(false, "Operation ignored, host is offline")
+				ns.log.Info("Ignoring request of type %v, host is not connected", msg.MessageType)
+				continue
+			}
 			// confirm we are not pending on an identical request
 			for _, req := range pendingRequests {
 				if req.MessageType == msg.MessageType && req.Region.UUID == msg.Region.UUID {
