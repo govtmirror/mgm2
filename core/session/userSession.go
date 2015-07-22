@@ -743,13 +743,26 @@ func (us userSession) process() {
 						us.client.Send(r)
 					}
 
+					for _, s := range us.mgm.GetRegionStats() {
+						us.client.Send(s)
+					}
+
 					for _, h := range us.mgm.GetHosts() {
 						us.client.Send(h)
+					}
+
+					for _, s := range us.mgm.GetHostStats() {
+						us.client.Send(s)
 					}
 
 				} else {
 					//non admin, utilize whitelists
 					for _, r := range us.mgm.GetRegions() {
+						if regionsWhitelist[r.UUID] {
+							us.client.Send(r)
+						}
+					}
+					for _, r := range us.mgm.GetRegionStats() {
 						if regionsWhitelist[r.UUID] {
 							us.client.Send(r)
 						}

@@ -151,6 +151,11 @@ ProcessingPackets:
 					req.result <- r
 				}
 				close(req.result)
+			case "GetRegionStats":
+				for _, r := range regionStats {
+					req.result <- r
+				}
+				close(req.result)
 			case "GetHosts":
 				for _, h := range hosts {
 					req.result <- h
