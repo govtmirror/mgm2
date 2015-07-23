@@ -19,7 +19,8 @@ angular
     'ngTouch',
     'pageslide-directive',
     'ui.bootstrap',
-    'ngScrollGlue'
+    'ngScrollGlue',
+    'angularFileUpload'
   ])
   .config(function ($routeProvider) {
     $routeProvider
