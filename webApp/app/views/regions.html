@@ -66,17 +66,25 @@
     </table>
   </div>
   <div class="modal-body">
+    <p>Uploading an OAR file....</p>
     <form ng-submit="uploadOar()">
       <div class="input-group">
         <span class="input-group-btn">
           <span class="btn btn-primary btn-file">
-            Select OAR&hellip; <input type="file" nv-file-select uploader="uploader" accept=".oar" />
+            Browse&hellip; <input type="file" nv-file-select uploader="uploader" accept=".oar" />
           </span>
         </span>
-        <input type="text" class="btn btn-default" ng-model="oar.filename" readonly>
+        <input type="text" class="btn btn-default" ng-model="oar.filename" style="width: 485px;" readonly>
         <button class="btn btn-danger" ng-disabled="oar.uploadFilePresent===false" type="submit">Upload</button>
       </div>
-
+    </form>
+    <p>Downloading an oar file</p>
+    <form ng-submit="saveOar()">
+      <button class="btn btn-danger" type="submit">Schedule</button>
+    </form>
+    <p>Erasing a region</p>
+    <form ng-submit="eraseContent()">
+        <button class="btn btn-danger" type="submit">Erase</button>
     </form>
   </div>
   <div class="modal-footer">
