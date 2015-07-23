@@ -33,7 +33,7 @@ angular.module('mgmApp')
             item.upload();
           });
         }
-      })
+      });
     }
 
     $scope.onFileSelect = function ($files) {
@@ -63,33 +63,9 @@ angular.module('mgmApp')
     $scope.uploader.onAfterAddingAll = function (addedFileItems) {
       $scope.oar.uploadFilePresent = true;
       $scope.oar.filename = addedFileItems[0].file.name;
-      console.log(addedFileItems[0]);
     };
 
-    $scope.uploader.onBeforeUploadItem = function (item) {
-      console.info('onBeforeUploadItem', item);
-    };
-    $scope.uploader.onProgressItem = function (fileItem, progress) {
-      console.info('onProgressItem', fileItem, progress);
-    };
-    $scope.uploader.onProgressAll = function (progress) {
-      console.info('onProgressAll', progress);
-    };
-    $scope.uploader.onSuccessItem = function (fileItem, response, status, headers) {
-      console.info('onSuccessItem', fileItem, response, status, headers);
-    };
-    $scope.uploader.onErrorItem = function (fileItem, response, status, headers) {
-      console.info('onErrorItem', fileItem, response, status, headers);
-    };
-    $scope.uploader.onCancelItem = function (fileItem, response, status, headers) {
-      console.info('onCancelItem', fileItem, response, status, headers);
-    };
-    $scope.uploader.onCompleteItem = function (fileItem, response, status, headers) {
-      console.info('onCompleteItem', fileItem, response, status, headers);
-    };
     $scope.uploader.onCompleteAll = function () {
-      console.info('onCompleteAll');
+      alertify.success('Oar file uploaded to MGM, load into region now pending.')
     };
-
-    //console.info('uploader', $scope.uploader);
   });

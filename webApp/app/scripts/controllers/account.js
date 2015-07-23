@@ -8,7 +8,7 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('AccountCtrl', function ($scope, $location, $timeout, mgm) {
+  .controller('AccountCtrl', function ($scope, $location, $timeout, FileUploader, mgm) {
 
     if ($scope.auth === undefined || $scope.auth === {}) {
       $location.url('/loading');
@@ -29,30 +29,7 @@ angular.module('mgmApp')
       confirm: ''
     };
 
-    $scope.nav = {
-      state: '',
-      toggleLoad: function () {
-        if ($scope.nav.state === 'load') {
-          $scope.nav.state = '';
-        } else {
-          $scope.nav.state = 'load';
-        }
-      },
-      toggleSave: function () {
-        if ($scope.nav.state === 'save') {
-          $scope.nav.state = '';
-        } else {
-          $scope.nav.state = 'save';
-        }
-      },
-      togglePass: function () {
-        if ($scope.nav.state === 'pass') {
-          $scope.nav.state = '';
-        } else {
-          $scope.nav.state = 'pass';
-        }
-      }
-    };
+    $scope.iarName = '';
 
     for (var uuid in mgm.activeUsers) {
       if (uuid === $scope.auth.UUID) {
@@ -108,12 +85,18 @@ angular.module('mgmApp')
       file: undefined,
       message: '',
       upload: function () {
-        if ($scope.iar.file === undefined) {
-          console.log('invalid file selection');
-          console.log($scope.iar.file);
-          return;
-        }
-        $scope.iar.message = 'Uploading...';
+        /*
+        alertify.confirm('Are you sure you wish to upload this oar file?  It will overwrite all content currently in the region.', function(e){
+          if(e){
+            $scope.uploader.queue.forEach(function(item){
+              console.log(item);
+              item.url = 'upload/12345';
+              item.removeAfterUpload = true;
+              item.upload();
+            });
+          }
+        });
+        */
         //request iar upload from mgm
         mgm.request('IarUpload', {
           UserID: $scope.auth.UUID,
@@ -139,6 +122,30 @@ angular.module('mgmApp')
           });
         });
       }
+    };
+
+    $scope.uploader = new FileUploader({
+      url: 'upload',
+    });
+
+    $scope.uploader.filters.push({
+      name: 'oarFilter',
+      fn: function (item, options) {
+        var fileExt = item.name.slice(item.name.lastIndexOf('.')+1);
+        return fileExt === 'iar';
+      }
+    });
+
+    $scope.uploader.onWhenAddingFileFailed = function (item, filter, options) {
+      alertify.error('File ' + item.name + ' does not appear to be an iar file');
+    };
+    $scope.uploader.onAfterAddingAll = function (addedFileItems) {
+      $scope.oar.uploadFilePresent = true;
+      $scope.oar.filename = addedFileItems[0].file.name;
+    };
+
+    $scope.uploader.onCompleteAll = function () {
+      alertify.success('Iar file uploaded to MGM, load into user account now pending.')
     };
 
   });
