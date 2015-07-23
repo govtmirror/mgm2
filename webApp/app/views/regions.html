@@ -66,26 +66,80 @@
     </table>
   </div>
   <div class="modal-body">
-    <p>Uploading an OAR file....</p>
+    <h3>Upload OAR</h3>
     <form ng-submit="uploadOar()">
-      <div class="input-group">
-        <span class="input-group-btn">
-          <span class="btn btn-primary btn-file">
-            Browse&hellip; <input type="file" nv-file-select uploader="uploader" accept=".oar" />
+      <div class="alertify-message">
+        <p>Upload an oar file to a running region. This replaces all of the content in the region with the contents of the oar file, subject to region size limitations</p>
+
+        <div ng-show="region.Size > 1">
+          <p>This is a Var region, here are advanced options for loading displaced oars into larger regions This oar file may cause problems if you load it onto a normal region, or onto a smaller var region.</p>
+          <table>
+            <tr>
+              <td>
+                <input type="checkbox" ng-model="merge">Merge instead of overwrite content</input>
+              </td>
+              <td>
+                <div class="input-group" style="padding-left:20px">
+                  <span class="input-group-addon">X:</span>
+                  <input type="number" class="btn btn-default" ng-model="x" ng-init="x=0" step="256" min="0" max="{{(region.Size-1)*256}}" />
+                </div>
+              </td>
+              <td>
+                <div class="input-group" style="padding-left:20px">
+                  <span class="input-group-addon">Y:</span>
+                  <input type="number" class="btn btn-default" ng-model="y" ng-init="y=0" step="256" min="0" max="{{(region.Size-1)*256}}" />
+                </div>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div class="input-group">
+          <span class="input-group-btn">
+            <span class="btn btn-primary btn-file">
+              Browse&hellip;
+              <input type="file" nv-file-select uploader="uploader" accept=".oar" />
+            </span>
           </span>
-        </span>
-        <input type="text" class="btn btn-default" ng-model="oar.filename" style="width: 485px;" readonly>
-        <button class="btn btn-danger" ng-disabled="oar.uploadFilePresent===false" type="submit">Upload</button>
+          <input type="text" class="form-control" ng-model="oar.filename" readonly>
+          <span class="input-group-btn">
+            <button class="btn btn-danger" ng-disabled="oar.uploadFilePresent===false" type="submit">Upload</button>
+          </span>
+        </div>
+
       </div>
     </form>
-    <p>Downloading an oar file</p>
-    <form ng-submit="saveOar()">
-      <button class="btn btn-danger" type="submit">Schedule</button>
-    </form>
-    <p>Erasing a region</p>
+    <h3>Download OAR</h3>
+    <div class="alertify-message">
+      <form ng-submit="saveOar()">
+        <table>
+          <tr>
+            <td>
+              <button class="btn btn-danger" type="submit" style="margin-right: 20px">Schedule</button>
+            </td>
+            <td>
+              <p>Download an oar file from this region. Oar files are complete and mobile archives that can be used for backing up a region, as well as restoring a region to any compatible Opensim.exe process, regardless of grid.</p>
+            </td>
+          </tr>
+        </table>
+      </form>
+    </div>
+    <h3>Erase region content</h3>
+
+    <div class="alertify-message">
     <form ng-submit="eraseContent()">
-        <button class="btn btn-danger" type="submit">Erase</button>
+      <table>
+        <tr>
+          <td>
+            <button class="btn btn-danger" type="submit" style="margin-right: 20px">Erase</button>
+          </td>
+          <td>
+            <p>Erase all content in a region. This functions by loading a blank oar over your existing content.</p>
+          </td>
+        </tr>
+      </table>
     </form>
+    </div>
   </div>
   <div class="modal-footer">
     <button class="btn btn-warning" ng-click="close()" style="float:right">Close</button>

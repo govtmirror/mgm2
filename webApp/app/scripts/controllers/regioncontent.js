@@ -15,6 +15,14 @@ angular.module('mgmApp')
       $modalInstance.close();
     };
 
+    $scope.saveOar = function(){
+      alertify.error('save oar is not implemented');
+    }
+
+    $scope.eraseContent = function(){
+      alertify.error('erase content is not implemented');
+    }
+
     $scope.uploadOar = function () {
       alertify.confirm('Are you sure you wish to upload this oar file?  It will overwrite all content currently in the region.', function(e){
         if(e){
