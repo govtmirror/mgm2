@@ -1,13 +1,13 @@
 <table style="width: 100%">
   <tr>
     <td>
-      <button ng-click="region.showAdd()">AddNewRegion</button>
+      <button class="btn btn-primary" ng-click="region.showAdd()">AddNewRegion</button>
     </td>
     <td>
-      <select ng-model="search.estate" ng-options="e.Name for e in estates | orderBy: 'Name'" />
+      <select class="btn btn-default" ng-model="search.estate" ng-options="e.Name for e in estates | orderBy: 'Name'" />
     </td>
     <td>
-      <input placeholder="Name Search" type="search" ng-model="search.regionName" style="width: 10em">
+      <input class="btn btn-default" placeholder="Name Search" type="search" ng-model="search.regionName" style="width: 10em">
     </td>
   </tr>
 </table>

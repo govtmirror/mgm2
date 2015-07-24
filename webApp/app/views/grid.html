@@ -13,7 +13,7 @@
   <table style="width: 100%;">
     <tr>
       <th>
-        <button style="float: left;" ng-click="estate.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-secondary btn-xs">Add A New Estate</button>
+        <button style="float: left;" ng-click="estate.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-primary btn-xs">Add A New Estate</button>
       </th>
       <th>Name</th>
       <th>Regions</th>
@@ -22,7 +22,7 @@
     </tr>
     <tr ng-repeat="est in estates | orderBy:'Name'" ng-class-odd="'odd'" ng-class-even="'even'">
       <td>
-        <button ng-click="estate.remove(est)" style="float: right;">Remove</button>
+        <button class="btn btn-xs btn-danger" ng-click="estate.remove(est)" style="float: left;">Remove</button>
       </td>
       <td>{{est.Name}}</td>
       <td>{{est.Regions.length}}</td>
@@ -35,7 +35,7 @@
   <table style="width: 100%;">
     <tr>
       <th>
-        <button style="float: left;" ng-click="group.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-secondary btn-xs">Add A New Group</button>
+        <button style="float: left;" ng-click="group.showAddModal()" ng-if="auth.AccessLevel > 249" class="btn btn-primary btn-xs">Add A New Group</button>
       </th>
       <th>Name</th>
       <th>Founder</th>
@@ -44,7 +44,7 @@
     </tr>
     <tr ng-repeat="grp in groups | orderBy:'Name'" ng-class-odd="'odd'" ng-class-even="'even'">
       <td>
-        <button ng-click="estate.remove(est)">Remove</button>
+        <button class="btn btn-xs btn-danger" ng-click="estate.remove(est)">Remove</button>
       </td>
       <td>{{grp.Name}}</td>
       <td>{{getUserNameFromID(grp.Founder)}}</td>

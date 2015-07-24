@@ -55,6 +55,14 @@ func (c client) SignalSuccess(req int, message string) {
 	}
 }
 
+func (c client) SignalProgress(req int, message string) {
+	resp := clientResponse{req, "Progress", message}
+	data, err := json.Marshal(resp)
+	if err == nil {
+		c.writeData(data)
+	}
+}
+
 func (c client) SignalError(req int, message string) {
 	resp := clientResponse{req, "Error", message}
 	data, err := json.Marshal(resp)

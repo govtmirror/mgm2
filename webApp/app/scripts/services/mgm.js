@@ -134,7 +134,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
           }
         }
         break;
-      case 'Step': //progress on a request
+      case 'Progress': //progress on a request
         var msgID = message.MessageID;
         if(msgID in requestMap) {
           requestMap[msgID].Callback(true, message.Message);

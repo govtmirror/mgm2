@@ -8,6 +8,7 @@ type UserSession interface {
 	Send(UserObject)
 	SignalSuccess(int, string)
 	SignalError(int, string)
+	SignalProgress(int, string)
 	Read(chan<- []byte)
 
 	GetGUID() uuid.UUID
