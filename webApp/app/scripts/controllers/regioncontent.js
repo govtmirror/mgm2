@@ -8,7 +8,7 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('RegioncontentCtrl', function ($scope, $modalInstance, FileUploader, region) {
+  .controller('RegioncontentCtrl', function ($scope, $modalInstance, $timeout, FileUploader, mgm, region) {
     $scope.region = region;
 
     $scope.close = function () {
@@ -26,11 +26,21 @@ angular.module('mgmApp')
     $scope.uploadOar = function () {
       alertify.confirm('Are you sure you wish to upload this oar file?  It will overwrite all content currently in the region.', function(e){
         if(e){
-          $scope.uploader.queue.forEach(function(item){
-            console.log(item);
-            item.url = 'upload/12345';
-            item.removeAfterUpload = true;
-            item.upload();
+          mgm.request('OarUpload', {
+            RegionID: region.UUID,
+          }, function (success, message) {
+            $timeout(function () {
+              if (success === true) {
+                $scope.uploader.queue.forEach(function (item) {
+                  console.log(item);
+                  item.url = 'upload/' + message;
+                  item.removeAfterUpload = true;
+                  item.upload();
+                });
+              } else {
+                alertify.error(message);
+              }
+            });
           });
         }
       });

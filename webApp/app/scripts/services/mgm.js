@@ -134,6 +134,12 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
           }
         }
         break;
+      case 'Step': //progress on a request
+        var msgID = message.MessageID;
+        if(msgID in requestMap) {
+          requestMap[msgID].Callback(true, message.Message);
+          //do not delete, this is not a final message
+        }
       case 'Error':
         msgID = message.MessageID;
         if (msgID in requestMap) {
@@ -184,25 +190,6 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
   };
   self.popLocation = function () {
     return locationStack.pop();
-  };
-
-  self.upload = function (url, file) {
-    return $q(function (resolve, reject) {
-      var form = new FormData();
-      form.append('file', file);
-      $http.post(url, form, {
-          transformRequest: angular.identity,
-          headers: {
-            'Content-Type': undefined
-          }
-        })
-        .success(function ( /*data, status, headers, config*/ ) {
-          resolve();
-        })
-        .error(function (data, status /*, headers, config*/ ) {
-          reject(status);
-        });
-    });
   };
 
   /* utility functions */

@@ -673,7 +673,10 @@ func (us userSession) process() {
 					// or leave them and create a cleanup coroutine?
 					us.client.SignalSuccess(m.MessageID, "Job Deleted")
 				}()
+			case "OarUpload":
+				us.client.SignalError(m.MessageID, "Not Implemented")
 			case "IarUpload":
+				us.client.SignalError(m.MessageID, "Not Implemented")
 				/*us.log.Info("Requesting iar upload")
 				userID, password, err := m.ReadPassword()
 				if err != nil {

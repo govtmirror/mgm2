@@ -39,7 +39,7 @@ angular.module('mgmApp')
 
     $scope.$on('UserUpdate', function (event, user) {
       if (user.UserID === $scope.auth.UUID && user !== $scope.auth) {
-        $timeout(function(){
+        $timeout(function () {
           angular.copy(user, $scope.account);
         });
       }
@@ -64,7 +64,7 @@ angular.module('mgmApp')
         UserID: $scope.auth.UUID,
         Password: $scope.password.password
       }, function (success, message) {
-        $timeout(function(){
+        $timeout(function () {
           if (success === true) {
             $scope.password.passwordResult = 'password updated successfuly';
             $scope.password.password = '';
@@ -85,41 +85,27 @@ angular.module('mgmApp')
       file: undefined,
       message: '',
       upload: function () {
-        /*
-        alertify.confirm('Are you sure you wish to upload this oar file?  It will overwrite all content currently in the region.', function(e){
-          if(e){
-            $scope.uploader.queue.forEach(function(item){
-              console.log(item);
-              item.url = 'upload/12345';
-              item.removeAfterUpload = true;
-              item.upload();
+        console.log('iar upload happens here');
+
+        alertify.confirm('You are scheduling an IAR upload.  It may not happen immediately, but you do not need to be logged in for it to succeed.', function (e) {
+          if (e) {
+            mgm.request('IarUpload', {
+              UserID: $scope.auth.UUID,
+            }, function (success, message) {
+              $timeout(function () {
+                if (success === true) {
+                  $scope.uploader.queue.forEach(function (item) {
+                    console.log(item);
+                    item.url = 'upload/' + message;
+                    item.removeAfterUpload = true;
+                    item.upload();
+                  });
+                } else {
+                  alertify.error(message);
+                }
+              });
             });
           }
-        });
-        */
-        //request iar upload from mgm
-        mgm.request('IarUpload', {
-          UserID: $scope.auth.UUID,
-          Password: $scope.iar.password
-        }, function (success, message) {
-          $timeout(function(){
-            if (success === true) {
-              mgm.upload('/upload/' + message, $scope.iar.file[0]).then(
-                function () {
-                  //success
-                  $scope.iar.password = '';
-                  $scope.iar.message = '';
-                },
-                function (msg) {
-                  //error
-                  console.log(msg);
-                  $scope.iar.message = 'Error: ' + msg;
-                }
-              );
-            } else {
-              $scope.iar.message = message;
-            }
-          });
         });
       }
     };
@@ -131,7 +117,7 @@ angular.module('mgmApp')
     $scope.uploader.filters.push({
       name: 'oarFilter',
       fn: function (item, options) {
-        var fileExt = item.name.slice(item.name.lastIndexOf('.')+1);
+        var fileExt = item.name.slice(item.name.lastIndexOf('.') + 1);
         return fileExt === 'iar';
       }
     });
@@ -140,8 +126,7 @@ angular.module('mgmApp')
       alertify.error('File ' + item.name + ' does not appear to be an iar file');
     };
     $scope.uploader.onAfterAddingAll = function (addedFileItems) {
-      $scope.oar.uploadFilePresent = true;
-      $scope.oar.filename = addedFileItems[0].file.name;
+      $scope.iarName = addedFileItems[0].file.name;
     };
 
     $scope.uploader.onCompleteAll = function () {
