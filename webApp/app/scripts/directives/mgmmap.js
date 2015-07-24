@@ -18,7 +18,7 @@ function MosesMap(canvas, regions, tiles) {
   self.offsetX = (port.width / 2) - (256 / 2);
   self.offsetY = (port.height / 2) + (256 / 2);
 
-  self.redraw = function () {
+  var renderingLoop = function () {
     ctx.fillStyle = '#1D475F';
     ctx.fillRect(0, 0, port.width, port.height);
     self.drawGrid();
@@ -59,7 +59,7 @@ function MosesMap(canvas, regions, tiles) {
           img.setAttribute('src', tiles[coordstring]);
           ctx.drawImage(img, x, y - 256);
           if (!img.complete) {
-            img.onload = self.redraw;
+            img.onload = QueueNewFrame();
           }
         }
       }
@@ -104,10 +104,8 @@ function MosesMap(canvas, regions, tiles) {
     self.zoomLevel += delta;
     if (self.zoomLevel < self.zoomMin) {
       self.zoomLevel = self.zoomMin;
-      return;
     } else if (self.zoomLevel > self.zoomMax) {
       self.zoomLevel = self.zoomMax;
-      return;
     }
     //locate tile under mouse
     var parentOffset = canvas.getBoundingClientRect();
@@ -126,15 +124,15 @@ function MosesMap(canvas, regions, tiles) {
     mouse.down = true;
     mouse.x = e.pageX;
     mouse.y = e.pageY;
-    self.redraw();
+    QueueNewFrame();
   };
   canvas.onmouseup = function () {
     mouse.down = false;
-    self.redraw();
+    QueueNewFrame();
   };
   canvas.onmouseleave = function () {
     mouse.down = false;
-    self.redraw();
+    QueueNewFrame();
   };
   canvas.onmousemove = function (e) {
     if (mouse.down) {
@@ -145,21 +143,44 @@ function MosesMap(canvas, regions, tiles) {
       mouse.y = e.pageY;
       self.offsetX += dx;
       self.offsetY += dy;
-      self.redraw();
+      QueueNewFrame();
     }
   };
   canvas.onmousewheel = function (e) {
     var delta = Math.max(-1, Math.min(1, (e.wheelDelta || -e.detail)));
     self.changeZoom(delta, e.pageX, e.pageY);
-    self.redraw();
+    QueueNewFrame();
   };
 
   self.resize = function () {
     canvas.width = port.width;
     canvas.height = port.height;
-    self.redraw();
+    QueueNewFrame();
   };
+
+  /* tie into web browser refresh mechanisms */
+  var intervalID = -1;
+  var QueueNewFrame = function () {
+      if (window.requestAnimationFrame)
+          window.requestAnimationFrame(renderingLoop);
+      else if (window.msRequestAnimationFrame)
+          window.msRequestAnimationFrame(renderingLoop);
+      else if (window.webkitRequestAnimationFrame)
+          window.webkitRequestAnimationFrame(renderingLoop);
+      else if (window.mozRequestAnimationFrame)
+          window.mozRequestAnimationFrame(renderingLoop);
+      else if (window.oRequestAnimationFrame)
+          window.oRequestAnimationFrame(renderingLoop);
+      else {
+          QueueNewFrame = function () {
+          };
+          intervalID = window.setInterval(renderingLoop, 16.7);
+      }
+  };
+
+  QueueNewFrame();
 }
+
 
 
 /**
@@ -173,9 +194,8 @@ angular.module('mgmApp')
 
 
     return {
-      template: '<canvas id="mosesMap" style="width: 100%; height: 100%"></div>',
       restrict: 'A',
-      link: function postLink(scope) {
+      link: function postLink(scope, element) {
 
         var coordTiles = {};
         //map coordinates to regions for name display
@@ -193,11 +213,9 @@ angular.module('mgmApp')
           }
         }
 
-        var canvas = document.getElementById('mosesMap');
-        var map = new MosesMap(canvas, coordsToRegions, coordTiles);
+        var map = new MosesMap(element[0], coordsToRegions, coordTiles);
         map.resize();
         map.centerTile(scope.centerx, scope.centery);
-        map.redraw();
 
         console.log('New MGM map centered at ' + scope.centerx + ', ' + scope.centery);
       },

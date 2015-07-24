@@ -85,7 +85,7 @@ module.exports = function (grunt) {
         },
 	{
 	  context: '/maps',
-	  host: 'localhost',
+	  host: '10.10.11.1',
 	  port: '80'
 	},
 	{
