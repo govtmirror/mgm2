@@ -124,11 +124,14 @@ func (m mgmDB) UpdateHost(host mgm.Host) {
 	m.reqs <- r
 }
 
-func (m mgmDB) AddHost(host mgm.Host) {
+func (m mgmDB) AddHost(host mgm.Host) mgm.Host {
 	r := mgmReq{}
 	r.request = "AddHost"
+	r.result = make(chan interface{}, 2)
 	r.object = host
 	m.reqs <- r
+	resp := <-r.result
+	return resp.(mgm.Host)
 }
 
 func (m mgmDB) UpdateHostStat(stat mgm.HostStat) {

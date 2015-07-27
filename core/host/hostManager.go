@@ -384,10 +384,20 @@ Processing:
 				for _, h := range conns {
 					if h.host.Address == nc.Host.Address {
 						nc.SR(false, "Error, Host address already present")
+						continue Processing
 					}
 				}
 
-				nm.mgm.AddHost(nc.Host)
+				h := nm.mgm.AddHost(nc.Host)
+				if h.ID == 0 {
+					nc.SR(false, "Error, Host address already present")
+					continue Processing
+				}
+				s := hostSession{
+					host: h,
+					log:  logger.Wrap(strconv.FormatInt(h.ID, 10), nm.log),
+				}
+				conns[h.ID] = s
 
 				nc.SR(true, "Host Added")
 

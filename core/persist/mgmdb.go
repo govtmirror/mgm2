@@ -29,7 +29,7 @@ type MGMDB interface {
 	//host functions
 	GetHosts() []mgm.Host
 	GetHostStats() []mgm.HostStat
-	AddHost(mgm.Host)
+	AddHost(mgm.Host) mgm.Host
 	UpdateHost(mgm.Host)
 	UpdateHostStat(mgm.HostStat)
 	RemoveHost(mgm.Host)
@@ -198,10 +198,14 @@ ProcessingPackets:
 				if err != nil {
 					errMsg := fmt.Sprintf("Error adding host: %v", err.Error())
 					m.log.Error(errMsg)
+					req.result <- mgm.Host{}
+					close(req.result)
 					continue
 				}
 				hosts[host.ID] = host
 				m.notify.HostUpdated(host)
+				req.result <- host
+				close(req.result)
 			case "UpdateHost":
 				host := req.object.(mgm.Host)
 				hosts[host.ID] = host
