@@ -18,32 +18,14 @@ function MosesMap(canvas, regions, tiles) {
   self.offsetX = (port.width / 2) - (256 / 2);
   self.offsetY = (port.height / 2) + (256 / 2);
 
+  var loadedTiles = {}
+
   var renderingLoop = function () {
+    //fill background
     ctx.fillStyle = '#1D475F';
     ctx.fillRect(0, 0, port.width, port.height);
-    self.drawGrid();
-  };
 
-  self.pixelToTile = function (x, y) {
-    return {
-      'x': Math.floor(-(self.offsetX - x) / (256 / self.scalar)),
-      'y': Math.floor((self.offsetY - y) / (256 / self.scalar))
-    };
-  };
-
-  self.centerTile = function (x, y) {
-    self.centered = true;
-    self.goToTile(x, y);
-    self.offsetX += (port.width / 2) - (256 / 2);
-    self.offsetY += (port.height / 2) + (256 / 2);
-  };
-
-  self.goToTile = function (x, y) {
-    self.offsetX = -x * 256 / self.scalar;
-    self.offsetY = y * 256 / self.scalar;
-  };
-
-  self.drawGrid = function () {
+    //draw tile textures
     var offYMod = self.offsetY % 256;
     var offXMod = self.offsetX % 256;
     var width = port.width + 256 * 2;
@@ -55,15 +37,23 @@ function MosesMap(canvas, regions, tiles) {
         coords = self.pixelToTile(x, y);
         coordstring = (self.zoomMax - self.zoomLevel + 1) + '-' + coords.x + '-' + coords.y;
         if (coordstring in tiles) {
-          var img = new Image();
-          img.setAttribute('src', tiles[coordstring]);
-          ctx.drawImage(img, x, y - 256);
-          if (!img.complete) {
-            img.onload = QueueNewFrame();
+          if (coordstring in loadedTiles){
+            ctx.drawImage(loadedTiles[coordstring], x, y - 256);
+          } else {
+            var img = new Image();
+            img.src = tiles[coordstring];
+            img.onload = function(image, url, coordstring){
+              loadedTiles[coordstring] = img;
+              return function(){
+                QueueNewFrame();
+              }
+            }(img, tiles[coordstring], coordstring);
           }
         }
       }
     }
+
+    //draw names, coordinates, and grid if we are dragging
     if (mouse.down && self.zoomLevel > 5) {
       //draw grid
       ctx.beginPath();
@@ -94,6 +84,25 @@ function MosesMap(canvas, regions, tiles) {
         }
       }
     }
+  };
+
+  self.pixelToTile = function (x, y) {
+    return {
+      'x': Math.floor(-(self.offsetX - x) / (256 / self.scalar)),
+      'y': Math.floor((self.offsetY - y) / (256 / self.scalar))
+    };
+  };
+
+  self.centerTile = function (x, y) {
+    self.centered = true;
+    self.goToTile(x, y);
+    self.offsetX += (port.width / 2) - (256 / 2);
+    self.offsetY += (port.height / 2) + (256 / 2);
+  };
+
+  self.goToTile = function (x, y) {
+    self.offsetX = -x * 256 / self.scalar;
+    self.offsetY = y * 256 / self.scalar;
   };
 
   self.scalar = 1;
