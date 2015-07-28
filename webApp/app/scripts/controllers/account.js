@@ -81,11 +81,9 @@ angular.module('mgmApp')
     };
 
     $scope.iar = {
-      password: '',
       file: undefined,
       message: '',
       upload: function () {
-        console.log('iar upload happens here');
 
         alertify.confirm('You are scheduling an IAR upload.  It may not happen immediately, but you do not need to be logged in for it to succeed.', function (e) {
           if (e) {
