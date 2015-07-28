@@ -15,7 +15,7 @@
         Previous&hellip;
       </button>
     </span>
-    <span type="text" class="form-control" ng-init="currentPage=0; maxPage=Math.ceil(activeUsers.length/25) || 1;">Page {{currentPage+1}} of {{maxPage}}</span>
+    <span type="text" style="text-align: center" class="form-control" ng-init="currentPage=0; maxPage=Math.ceil(activeUsers.length/25) || 1;">Page {{currentPage+1}} of {{maxPage}}</span>
     <span class="input-group-btn">
       <button class="btn btn-default" ng-click="currentPage = currentPage >= maxPage-1 ? maxPage-1 : currentPage + 1">Next</button>
     </span>
@@ -44,7 +44,7 @@
         Previous&hellip;
       </button>
     </span>
-    <span type="text" class="form-control" ng-init="currentPage=0; maxPage=Math.ceil(suspendedUsers.length/25) || 1;">Page {{currentPage+1}} of {{maxPage}}</span>
+    <span type="text" style="text-align: center" class="form-control" ng-init="currentPage=0; maxPage=Math.ceil(suspendedUsers.length/25) || 1;">Page {{currentPage+1}} of {{maxPage}}</span>
     <span class="input-group-btn">
       <button class="btn btn-default" ng-click="currentPage = currentPage >= maxPage-1 ? maxPage-1 : currentPage + 1">Next</button>
     </span>
@@ -73,7 +73,7 @@
         Previous&hellip;
       </button>
     </span>
-    <span type="text" class="form-control" ng-init="currentPage=0; maxPage=Math.ceil(pendingUsers.length/25) || 1;">Page {{currentPage+1}} of {{maxPage}}</span>
+    <span type="text" style="text-align: center" class="form-control" ng-init="currentPage=0; maxPage=Math.ceil(pendingUsers.length/25) || 1;">Page {{currentPage+1}} of {{maxPage}}</span>
     <span class="input-group-btn">
       <button class="btn btn-default" ng-click="currentPage = currentPage >= maxPage-1 ? maxPage-1 : currentPage + 1">Next</button>
     </span>
