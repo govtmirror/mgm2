@@ -29,7 +29,7 @@
         <button ng-if="!r.Status.Running" ng-click="region.start(r)" class="btn btn-xs btn-default">Start</button>
         <button ng-if="r.Status.Running" ng-click="region.stop(r)" class="btn btn-xs btn-default">Quit</button>
         <button ng-if="r.Status.Running" ng-click="region.kill(r)" class="btn btn-xs btn-danger">Halt</button>
-        <button ng-click="region.content(r)" ng-if="r.Status.Running" class="btn btn-xs btn-default">Content</button>
+        <button ng-if="r.Status.Running" ng-click="region.content(r)" class="btn btn-xs btn-default">Content</button>
         <button ng-click="region.manage(r)" ng-if="auth.AccessLevel > 249" class="btn btn-xs btn-default">Manage</button>
         <button ng-click="region.log(r)" class="btn btn-xs btn-default">log</button>
       </td>

@@ -10,17 +10,22 @@
 </div>
 <table ng-if="isActive('active')">
   <tr>
+    <td colspan="3">
+      <button ng-click="currentPage = currentPage <= 0? 0 : currentPage - 1">previous</button>
+      Page <span ng-init="currentPage=0">{{currentPage+1}}</span> of <span ng-init="maxPage=Math.ceil(activeUsers.length/25)">{{maxPage}}</span>
+      <button ng-click="currentPage = currentPage >= maxPage-1 ? maxPage-1 : currentPage + 1">next</button>
+    </td>
+  </tr>
+  <tr>
     <th>Name</th>
     <th>Email</th>
   </tr>
-  <tr ng-repeat="usr in activeUsers | orderBy:'Name'">
-    <td>{{usr.Name}}</td>
-    <td>{{usr.Email}}</td>
-    <td>
-      <button ng-if="auth.AccessLevel > 249" style="float:right" ng-click="user.showGroups(u)">Groups</button>
-    </td>
-    <td>
-      <button ng-if="auth.AccessLevel > 249" style="float:right" ng-click="user.showManage(u)">Manage</button>
+  <tr ng-repeat="u in activeUsers | orderBy: 'Name' | limitTo: 25: currentPage*25">
+    <td>{{u.Name}}</td>
+    <td>{{u.Email}}</td>
+    <td ng-if="auth.AccessLevel > 249">
+      <button style="float:right" ng-click="user.showGroups(u)">Groups</button>
+      <button style="float:right" ng-click="user.showManage(u)">Manage</button>
     </td>
   </tr>
 </table>

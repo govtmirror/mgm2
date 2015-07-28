@@ -24,20 +24,40 @@ angular.module('mgmApp')
       return this.section === section;
     };
 
-    $scope.activeUsers = mgm.activeUsers;
-    $scope.suspendedUsers = mgm.suspendedUsers;
+    var users = {}
+
+    $scope.Math = window.Math;
+
+    $scope.activeUsers = [];
+    for (var id in mgm.activeUsers) {
+      var user = mgm.activeUsers[id];
+      $scope.activeUsers.push(user);
+      users[id] = user;
+    }
+
+    $scope.suspendedUsers = [];
+    for( var id in mgm.suspendedUsers){
+      var user = mgm.suspendedUsers[id];
+      $scope.suspendedUsers.push(user);
+      users[id] = user;
+    }
     $scope.$on('UserUpdate', function (event, user) {
-      if (user.Suspended) {
-        console.log(user);
-      }
-      if (!(user.UserID in $scope.users)) {
-        $scope.users[user.UserID] = user;
-      } else {
-        angular.copy(user, $scope.users[user.UserID]);
-      }
+      //if (user.Suspended) {
+      //  console.log(user);
+      //}
+      //if (!(user.UserID in $scope.users)) {
+      //  $scope.users[user.UserID] = user;
+      //} else {
+      //  angular.copy(user, $scope.users[user.UserID]);
+      //}
     });
 
-    $scope.pendingUsers = mgm.pendingUsers;
+    $scope.pendingUsers = [];
+    for( var id in mgm.pendingUsers){
+      var user = mgm.pendingUsers[id];
+      $scope.pendingUsers.push(user);
+      users[id] = user;
+    }
     $scope.$on('UserUpdate', function (event, user) {
       if (user.Suspended) {
         if (user.UserID in $scope.activeUsers) {
