@@ -104,6 +104,14 @@ func (m mgmDB) process() {
 		hosts[h.ID] = h
 		hostStats[h.ID] = mgm.HostStat{}
 	}
+	for _, r := range regions {
+		h, ok := hosts[r.Host]
+		if ok {
+			h.Regions = append(h.Regions, r.UUID)
+			hosts[h.ID] = h
+		}
+	}
+
 	//populate users
 	users := make(map[uuid.UUID]mgm.User)
 	simUsers, err := m.sim.GetUsers()
@@ -217,6 +225,37 @@ ProcessingPackets:
 				m.notify.HostStat(stat)
 			case "UpdateRegion":
 				region := req.object.(mgm.Region)
+				r, ok := regions[region.UUID]
+				if !ok {
+					errMsg := fmt.Sprintf("Error updating region: %v, Region does not exist", region.UUID)
+					m.log.Error(errMsg)
+				}
+				if region.Host != r.Host {
+					//host has been updated, update relevant host records
+					//remove region from host r
+					if r.Host != 0 {
+						h, ok := hosts[r.Host]
+						if ok {
+							//remove record
+							for i, id := range h.Regions {
+								if id == r.UUID {
+									h.Regions = append(h.Regions[:i], h.Regions[i+1:]...)
+									hosts[h.ID] = h
+									m.notify.HostUpdated(h)
+								}
+							}
+						}
+					}
+					//add region to host region
+					if region.Host != 0 {
+						h, ok := hosts[region.Host]
+						if ok {
+							h.Regions = append(h.Regions, region.UUID)
+							hosts[h.ID] = h
+							m.notify.HostUpdated(h)
+						}
+					}
+				}
 				regions[region.UUID] = region
 				go m.persistRegion(region)
 				m.notify.RegionUpdated(region)
