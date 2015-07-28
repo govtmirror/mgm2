@@ -5,8 +5,11 @@
   OpensimPort = 8000
   WebPort = 8080
   NodePort = 3000
-  PublicHostname = publicsite.com
-  LocalFileStorage = /opt/mgm/files
+
+[Web]
+  Root = /path/to/mgm/web/dist
+  Hostname = publicsite.com
+  FileStorage = /opt/mgm/files
 
 [MySQL]
   Username = mgm

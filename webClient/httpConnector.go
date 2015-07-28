@@ -31,6 +31,7 @@ type HTTPConnector interface {
 	LogoutHandler(w http.ResponseWriter, r *http.Request)
 	LoginHandler(w http.ResponseWriter, r *http.Request)
 	UploadHandler(w http.ResponseWriter, r *http.Request)
+	DownloadHandler(w http.ResponseWriter, r *http.Request)
 	GetStore() *sessions.CookieStore
 }
 

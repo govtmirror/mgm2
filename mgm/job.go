@@ -16,6 +16,20 @@ type Job struct {
 	Data      string
 }
 
+// JobData is an unfortunate struct for encoding job parts into a singel database field
+type JobData struct {
+	Status string
+	File   string
+	Name   string
+}
+
+// ReadData retrieves the JobData struct form our extra data field
+func (j Job) ReadData() JobData {
+	jd := JobData{}
+	json.Unmarshal([]byte(j.Data), &jd)
+	return jd
+}
+
 // Serialize implements UserObject interface Serialize function
 func (j Job) Serialize() []byte {
 	data, _ := json.Marshal(j)

@@ -25,14 +25,19 @@ import (
 
 type mgmConfig struct {
 	MGM struct {
-		MgmURL           string
-		SimianURL        string
-		SessionSecret    string
-		OpensimPort      string
-		WebPort          int
-		NodePort         int
-		PublicHostname   string
-		LocalFileStorage string
+		MgmURL        string
+		SimianURL     string
+		SessionSecret string
+		OpensimPort   string
+		WebPort       int
+		NodePort      int
+	}
+
+	Web struct {
+		Root        string
+		Debug       bool
+		Hostname    string
+		FileStorage string
 	}
 
 	MySQL struct {
@@ -69,7 +74,7 @@ func main() {
 	}
 
 	//instantiate our email module
-	mailer := email.NewClientMailer(config.Email, config.MGM.PublicHostname)
+	mailer := email.NewClientMailer(config.Email, config.Web.Hostname)
 
 	//create our database connector
 	db := persist.NewDatabase(
@@ -108,7 +113,7 @@ func main() {
 	pers := persist.NewMGMDB(db, osdb, sim, logger, notify)
 
 	//Hook up core processing...
-	jMgr := job.NewManager(config.MGM.LocalFileStorage, pers, logger)
+	jMgr := job.NewManager(config.Web.FileStorage, pers, logger)
 	rMgr := region.NewManager(config.MGM.MgmURL, config.MGM.SimianURL, pers, osdb, logger)
 	hMgr, err := host.NewManager(config.MGM.NodePort, rMgr, pers, logger)
 	if err != nil {
@@ -132,6 +137,9 @@ func main() {
 	r.HandleFunc("/auth/passwordToken", httpCon.PasswordTokenHandler)
 	r.HandleFunc("/auth/passwordReset", httpCon.PasswordResetHandler)
 	r.HandleFunc("/upload/{id}", httpCon.UploadHandler)
+	r.HandleFunc("/download/{id}", httpCon.DownloadHandler)
+
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir(config.Web.Root)))
 
 	http.Handle("/", r)
 	logger.Info("Listening for clients on :%d", config.MGM.WebPort)
