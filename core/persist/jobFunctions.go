@@ -7,6 +7,27 @@ import (
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
+// hosts are created by clients inserting an ip address, that is all we can insert
+func (m mgmDB) insertJob(job mgm.Job) (int64, error) {
+	con, err := m.db.GetConnection()
+	var id int64
+	if err != nil {
+		return 0, err
+	}
+	defer con.Close()
+
+	res, err := con.Exec("INSERT INTO jobs (type, user, data) VALUES (?,?,?)",
+		job.Type, job.User.String(), job.Data)
+	if err != nil {
+		return 0, err
+	}
+	id, err = res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	return id, nil
+}
+
 func (m mgmDB) queryJobs() []mgm.Job {
 	var jobs []mgm.Job
 	con, err := m.db.GetConnection()
@@ -55,6 +76,17 @@ func (m mgmDB) GetJobs() []mgm.Job {
 		}
 		jobs = append(jobs, h.(mgm.Job))
 	}
+}
+
+func (m mgmDB) AddJob(j mgm.Job) int64 {
+	r := mgmReq{}
+	r.request = "AddJob"
+	r.object = j
+	r.result = make(chan interface{}, 2)
+	m.reqs <- r
+	obj := <-r.result
+	job := obj.(mgm.Job)
+	return job.ID
 }
 
 func (m mgmDB) UpdateJob(j mgm.Job) {

@@ -89,6 +89,11 @@ func (sm sessionMgr) process() {
 				for _, note := range userMap {
 					note.EstateDeleted(e)
 				}
+			case j := <-sm.notifier.jUp:
+				note, ok := userMap[j.User]
+				if ok {
+					note.JobUpdated(j)
+				}
 
 			// SESSION FUNCTIONS
 			case s := <-sm.sessionListener:
@@ -100,6 +105,7 @@ func (sm sessionMgr) process() {
 					log:      logger.Wrap(s.GetGUID().String(), sm.log),
 					mgm:      sm.mgm,
 					hMgr:     sm.hostMgr,
+					jMgr:     sm.jobMgr,
 					notifier: NewNotifier(),
 				}
 				userMap[s.GetGUID()] = us.notifier

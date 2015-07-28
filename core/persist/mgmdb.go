@@ -2,6 +2,7 @@ package persist
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/mgm"
@@ -20,6 +21,7 @@ type Notifier interface {
 	RegionStat(mgm.RegionStat)
 	EstateUpdated(mgm.Estate)
 	EstateDeleted(mgm.Estate)
+	JobUpdated(mgm.Job)
 }
 
 //MGMDB interfaces with mysql, caches values for performance, and notifies subscribers of object updates
@@ -45,6 +47,7 @@ type MGMDB interface {
 	GetConfigs(mgm.Region) []mgm.ConfigOption
 	//job functions
 	GetJobs() []mgm.Job
+	AddJob(j mgm.Job) int64
 	UpdateJob(mgm.Job)
 	RemoveJob(mgm.Job)
 	//user functions
@@ -198,6 +201,22 @@ ProcessingPackets:
 				for _, g := range groups {
 					req.result <- g
 				}
+				close(req.result)
+			case "AddJob":
+				job := req.object.(mgm.Job)
+				job.Timestamp = time.Now()
+				id, err := m.insertJob(job)
+				if err != nil {
+					errMsg := fmt.Sprintf("Error adding job: %v", err.Error())
+					m.log.Error(errMsg)
+					req.result <- mgm.Job{}
+					close(req.result)
+					continue
+				}
+				job.ID = id
+				jobs[id] = job
+				m.notify.JobUpdated(job)
+				req.result <- job
 				close(req.result)
 			case "AddHost":
 				host := req.object.(mgm.Host)

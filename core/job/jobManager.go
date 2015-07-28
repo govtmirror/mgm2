@@ -1,6 +1,7 @@
 package job
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/m-o-s-e-s/mgm/core/logger"
@@ -14,7 +15,7 @@ type Manager interface {
 	FileUploaded(int, uuid.UUID, []byte)
 	GetJobByID(int64) (mgm.Job, bool)
 	DeleteJob(mgm.Job)
-	CreateLoadIarJob(mgm.User, string)
+	CreateLoadIarJob(mgm.User, string) int64
 	GetJobsForUser(mgm.User) []mgm.Job
 }
 
@@ -79,13 +80,20 @@ func (jm jobMgr) GetJobsForUser(user mgm.User) []mgm.Job {
 	return userJobs
 }
 
-func (jm jobMgr) CreateLoadIarJob(owner mgm.User, inventoryPath string) {
+func (jm jobMgr) CreateLoadIarJob(owner mgm.User, inventoryPath string) int64 {
 	j := mgm.Job{}
 	j.Type = "load_iar"
 	j.Timestamp = time.Now()
 	j.User = owner.UserID
-	j.Data = inventoryPath
-	jm.mgm.UpdateJob(j)
+
+	jd := LoadIarJob{}
+	jd.InventoryPath = inventoryPath
+	jd.Status = "Created"
+
+	encDat, _ := json.Marshal(jd)
+	j.Data = string(encDat)
+
+	return jm.mgm.AddJob(j)
 }
 
 func (jm jobMgr) process() {

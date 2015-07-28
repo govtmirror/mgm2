@@ -6,6 +6,7 @@ import (
 
 	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/host"
+	"github.com/m-o-s-e-s/mgm/core/job"
 	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/core/region"
@@ -19,6 +20,7 @@ type userSession struct {
 	mgm      persist.MGMDB
 	log      logger.Log
 	hMgr     host.Manager
+	jMgr     job.Manager
 	notifier Notifier
 }
 
@@ -116,6 +118,9 @@ func (us userSession) process() {
 		case e := <-us.notifier.eDel:
 			us.client.Send(mgm.EstateDeleted{e.ID})
 			estatesWhitelist[e.ID] = false
+
+		case j := <-us.notifier.jUp:
+			us.client.Send(j)
 
 		// COMMANDS FROM THE CLIENT
 		case msg := <-clientMsg:
@@ -676,39 +681,28 @@ func (us userSession) process() {
 			case "OarUpload":
 				us.client.SignalError(m.MessageID, "Not Implemented")
 			case "IarUpload":
-				us.client.SignalError(m.MessageID, "Not Implemented")
-				/*us.log.Info("Requesting iar upload")
-				userID, password, err := m.ReadPassword()
-				if err != nil {
-					us.log.Error("Error reading iar upload request")
-					continue
-				}
-				//isValid, err := sm.userConn.ValidatePassword(userID, password)
-				//if err != nil {
-				//	us.SignalError(m.MessageID, err.Error())
-				//} else {
-				//	if isValid {
-				//password is valid, create the upload job
+				us.log.Info("Requesting iar upload")
 				users := us.mgm.GetUsers()
 				exists := false
 				var user mgm.User
 				for _, u := range users {
-					if u.UserID == userID {
+					if u.UserID == uid {
 						exists = true
 						user = u
 					}
 				}
 				if !exists {
-					errMsg := fmt.Sprintf("Cannot creat job for load_iar: nonexistant user %v", userID)
+					errMsg := fmt.Sprintf("Cannot create job for load_iar: nonexistant user %v", uid)
 					us.log.Error(errMsg)
 					us.client.SignalError(m.MessageID, "User does not exist")
 				}
-				us.mgm.CreateLoadIarJob(user, "/")
-				us.client.SignalSuccess(m.MessageID, "Job created")
-				//	} else {
-				//		us.SignalError(m.MessageID, "Invalid Password")
-				//	}
-				//}*/
+
+				id := us.jMgr.CreateLoadIarJob(user, "")
+				if id == 0 {
+					us.client.SignalError(m.MessageID, "An error occurred, we could not create the job")
+				} else {
+					us.client.SignalSuccess(m.MessageID, fmt.Sprintf("%v", id))
+				}
 			case "SetPassword":
 				us.log.Info("Requesting password change")
 				userID, password, err := m.ReadPassword()
