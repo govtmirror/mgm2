@@ -10,7 +10,6 @@ import (
 	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/core/region"
 	"github.com/m-o-s-e-s/mgm/mgm"
-	"github.com/satori/go.uuid"
 )
 
 // Manager is the interface to mgmNodes
@@ -146,8 +145,6 @@ func (nm nm) process(newConns <-chan hostSession) {
 	hStatChan := make(chan mgm.HostStat, 32)
 	rStatChan := make(chan mgm.RegionStat, 64)
 
-	regionStats := make(map[uuid.UUID]mgm.RegionStat)
-
 	//initialize internal structures
 	for _, h := range nm.mgm.GetHosts() {
 		s := hostSession{
@@ -183,13 +180,18 @@ Processing:
 				//place host online
 				c.host.Running = true
 				nm.mgm.UpdateHost(c.host)
+				for id, st := range nm.mgm.GetHostStats() {
+					if int64(id) == c.host.ID {
+						st.Running = true
+						nm.mgm.UpdateHostStat(st)
+					}
+				}
 			} else {
 				conns[c.host.ID] = c
 			}
 		case stat := <-hStatChan:
 			nm.mgm.UpdateHostStat(stat)
 		case stat := <-rStatChan:
-			regionStats[stat.UUID] = stat
 			nm.mgm.UpdateRegionStat(stat)
 		case id := <-haltedHost:
 			//a connection went offline
@@ -198,13 +200,21 @@ Processing:
 				con.host.Running = false
 				nm.mgm.UpdateHost(con.host)
 
+				//offline the hsot
+				for id, st := range nm.mgm.GetHostStats() {
+					if int64(id) == con.host.ID {
+						st.Running = false
+						nm.mgm.UpdateHostStat(st)
+					}
+				}
+
 				//offline regions on the disconnected host
 				for _, reg := range nm.mgm.GetRegions() {
 					if reg.Host == con.host.ID {
-						if stat, ok := regionStats[reg.UUID]; ok {
-							if stat.Running {
-								stat.Running = false
-								nm.mgm.UpdateRegionStat(stat)
+						for _, st := range nm.mgm.GetRegionStats() {
+							if st.UUID == reg.UUID {
+								st.Running = false
+								nm.mgm.UpdateRegionStat(st)
 							}
 						}
 					}
@@ -251,7 +261,7 @@ Processing:
 			case "UpdateRegion":
 				//regions can only be modified when they are halted
 				go func() {
-					for _, stat := range regionStats {
+					for _, stat := range nm.mgm.GetRegionStats() {
 						if stat.UUID == nc.Region.UUID {
 							if stat.Running {
 								nc.SR(false, "Region cannot be updated while running")
@@ -269,7 +279,7 @@ Processing:
 			case "SetEstate":
 				//region-estate relationships can only be modified when the region is halted
 				go func() {
-					for _, stat := range regionStats {
+					for _, stat := range nm.mgm.GetRegionStats() {
 						if stat.UUID == nc.Region.UUID {
 							if stat.Running {
 								nc.SR(false, "Region cannot be updated while running")
@@ -295,8 +305,8 @@ Processing:
 						break Processing
 					}
 				}
-				if stat, ok := regionStats[nc.Region.UUID]; ok {
-					if stat.Running {
+				for _, stat := range nm.mgm.GetRegionStats() {
+					if stat.UUID == nc.Region.UUID && stat.Running {
 						nc.SR(false, "Error: The region is running")
 						break Processing
 					}
@@ -340,8 +350,8 @@ Processing:
 						break Processing
 					}
 				}
-				if stat, ok := regionStats[nc.Region.UUID]; ok {
-					if stat.Running {
+				for _, stat := range nm.mgm.GetRegionStats() {
+					if stat.UUID == nc.Region.UUID && stat.Running {
 						nc.SR(false, "Error: The region is running")
 						nm.log.Info("Removing region %v from host %v failed.  The region is currently running", nc.Region.UUID.String(), nc.Host.ID)
 						break Processing

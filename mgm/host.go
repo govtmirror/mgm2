@@ -53,6 +53,7 @@ type HostStat struct {
 	MEMPercent float64
 	NetSent    uint64
 	NetRecv    uint64
+	Running    bool
 }
 
 // Serialize implements UserObject interface Serialize function

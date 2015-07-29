@@ -14,6 +14,7 @@ import (
 	"github.com/m-o-s-e-s/mgm/email"
 	"github.com/m-o-s-e-s/mgm/simian"
 	"github.com/m-o-s-e-s/mgm/webClient"
+	"github.com/satori/go.uuid"
 
 	//"github.com/m-o-s-e-s/mgm/opensim"
 	"flag"
@@ -31,6 +32,7 @@ type mgmConfig struct {
 		OpensimPort   string
 		WebPort       int
 		NodePort      int
+		HubRegionUUID uuid.UUID
 	}
 
 	Web struct {
@@ -113,7 +115,7 @@ func main() {
 	pers := persist.NewMGMDB(db, osdb, sim, logger, notify)
 
 	//Hook up core processing...
-	jMgr := job.NewManager(config.Web.FileStorage, pers, logger)
+	jMgr := job.NewManager(config.Web.FileStorage, config.MGM.HubRegionUUID, pers, logger)
 	rMgr := region.NewManager(config.MGM.MgmURL, config.MGM.SimianURL, pers, osdb, logger)
 	hMgr, err := host.NewManager(config.MGM.NodePort, rMgr, pers, logger)
 	if err != nil {

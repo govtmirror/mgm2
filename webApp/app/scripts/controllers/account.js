@@ -93,7 +93,7 @@ angular.module('mgmApp')
               $timeout(function () {
                 if (success === true) {
                   $scope.uploader.queue.forEach(function (item) {
-                    console.log(item);
+                    console.log('Uploading Iar file');
                     item.url = 'upload/' + message;
                     item.removeAfterUpload = true;
                     item.upload();

@@ -100,13 +100,14 @@ func (m mgmDB) process() {
 	regionStats := make(map[uuid.UUID]mgm.RegionStat)
 	for _, r := range m.queryRegions() {
 		regions[r.UUID] = r
+		regionStats[r.UUID] = mgm.RegionStat{UUID: r.UUID}
 	}
 	//populate hosts
 	hosts := make(map[int64]mgm.Host)
 	hostStats := make(map[int64]mgm.HostStat)
 	for _, h := range m.queryHosts() {
 		hosts[h.ID] = h
-		hostStats[h.ID] = mgm.HostStat{}
+		hostStats[h.ID] = mgm.HostStat{ID: h.ID}
 	}
 	for _, r := range regions {
 		h, ok := hosts[r.Host]
@@ -219,6 +220,11 @@ ProcessingPackets:
 				m.notify.JobUpdated(job)
 				req.result <- job
 				close(req.result)
+			case "UpdateJob":
+				job := req.object.(mgm.Job)
+				jobs[job.ID] = job
+				go m.persistJob(job)
+				m.notify.JobUpdated(job)
 			case "RemoveJob":
 				job := req.object.(mgm.Job)
 				_, ok := jobs[job.ID]

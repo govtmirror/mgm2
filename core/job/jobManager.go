@@ -2,6 +2,10 @@ package job
 
 import (
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
 	"time"
 
 	"github.com/m-o-s-e-s/mgm/core"
@@ -17,23 +21,34 @@ type Manager interface {
 	GetJobByID(int64) (mgm.Job, bool)
 	DeleteJob(mgm.Job, core.ServiceRequest)
 	CreateLoadIarJob(mgm.User, string) int64
-	GetJobsForUser(mgm.User) []mgm.Job
 }
 
 type fileUpload struct {
-	JobID int
+	JobID int64
 	User  uuid.UUID
 	File  []byte
 }
 
+type regionCommand struct {
+}
+
+func (jm jobMgr) newRegionCommand() regionCommand {
+	rc := regionCommand{}
+
+	return rc
+}
+
 // NewManager constructs a jobManager for use
-func NewManager(filePath string, pers persist.MGMDB, log logger.Log) Manager {
+func NewManager(filePath string, hubRegion uuid.UUID, pers persist.MGMDB, log logger.Log) Manager {
 
 	j := jobMgr{}
 	j.fileUp = make(chan fileUpload, 32)
 	j.localPath = filePath
 	j.log = logger.Wrap("JOB", log)
 	j.mgm = pers
+	j.hub = hubRegion
+
+	j.regionWorkers = make(map[uuid.UUID]chan regionCommand, 8)
 
 	go j.process()
 
@@ -44,16 +59,19 @@ type jobMgr struct {
 	fileUp      chan fileUpload
 	subscribe   chan chan<- mgm.Job
 	unsubscribe chan chan<- mgm.Job
-	broadcast   chan mgm.Job
 	mgm         persist.MGMDB
+	hub         uuid.UUID
 
 	log logger.Log
+
+	regionWorkers map[uuid.UUID]chan regionCommand
 
 	localPath string
 }
 
 func (jm jobMgr) FileUploaded(id int, user uuid.UUID, data []byte) {
-	jm.fileUp <- fileUpload{id, user, data}
+	jm.log.Info("Received file upload for job %v", id)
+	jm.fileUp <- fileUpload{int64(id), user, data}
 }
 
 func (jm jobMgr) GetJobByID(id int64) (mgm.Job, bool) {
@@ -68,6 +86,25 @@ func (jm jobMgr) GetJobByID(id int64) (mgm.Job, bool) {
 
 func (jm jobMgr) DeleteJob(j mgm.Job, sr core.ServiceRequest) {
 	//perform any file level maintenance, etc...
+	for _, job := range jm.mgm.GetJobs() {
+		if job.ID == j.ID {
+			j = job
+		}
+	}
+
+	type file struct {
+		FileName string
+	}
+
+	var f file
+	json.Unmarshal([]byte(j.Data), &f)
+	if f.FileName != "" {
+		//delete files from disk
+		err := os.Remove(f.FileName)
+		if err != nil {
+			jm.log.Error(fmt.Sprintf("Error deleting file %v from job %v: %v", f.FileName, j.ID, err.Error()))
+		}
+	}
 
 	jm.mgm.RemoveJob(j)
 	sr(true, "Job deleted")
@@ -102,53 +139,77 @@ func (jm jobMgr) CreateLoadIarJob(owner mgm.User, inventoryPath string) int64 {
 
 func (jm jobMgr) process() {
 
-	/*go func() {
-		for {
-			select {
+	for {
+		select {
 
-			case s := <-jm.fileUp:
-				jm.log.Info("File Upload Received for task %v", s.JobID)
-				// look up job
-				j, err := jm.db.GetJobByID(s.JobID)
+		case s := <-jm.fileUp:
+			jm.log.Info("Processing File upload for job %v", s.JobID)
+			// look up job
+			j, found := jm.GetJobByID(s.JobID)
+			if !found {
+				//anything could have happened, but the job doesn't seem to exist, drop file
+				jm.log.Error(fmt.Sprintf("Error on job file upload, job %v does not exist", s.JobID))
+				continue
+			}
+
+			//make sure uploader owns the job in question
+			if s.User != j.User {
+				jm.log.Info("Attempted upload to job %v by %v, owned by %v", j.ID, s.User, j.User)
+				continue
+			}
+
+			jm.log.Info("Job %v parsed, examining type: %v", s.JobID, j.Type)
+
+			switch j.Type {
+			case "load_iar":
+				jm.log.Info("Job %v is of type load_iar", s.JobID)
+				iarJob := LoadIarJob{}
+				err := json.Unmarshal([]byte(j.Data), &iarJob)
 				if err != nil {
-					//anything could have happened, but the job doesn't seem to exist, drop file
+					jm.log.Info("Error parsing Load Iar job: %v", err.Error())
 					continue
 				}
 
-				//make sure uploader owns the job in question
-				if s.User != j.User {
-					jm.log.Info("Attempted upload to job %v by %v, owned by %v", j.ID, s.User, j.User)
-					continue
-				}
+				iarJob.Filename = path.Join(jm.localPath, uuid.NewV4().String())
+				iarJob.InventoryPath = "/"
 
-				jm.log.Info("Retrieved job %v for %v", j.Type, j.User)
+				jm.log.Info("Job %v given filename: %v", s.JobID, iarJob.Filename)
 
-				switch j.Type {
-				case "load_iar":
-					iarJob := LoadIarJob{}
-					err := json.Unmarshal([]byte(j.Data), &iarJob)
-					if err != nil {
-						jm.log.Info("Error parsing Load Iar job: %v", err.Error())
-					}
-
-					iarJob.Filename = uuid.NewV4()
-
-					err = ioutil.WriteFile(path.Join(jm.localPath, iarJob.Filename.String()), s.File, 0644)
-					if err != nil {
-						jm.log.Error("Error writing file: ", err)
-					}
-
-					iarJob.Status = "Iar upload to MGM"
-
+				err = ioutil.WriteFile(iarJob.Filename, s.File, 0644)
+				if err != nil {
+					jm.log.Error("Error writing file: ", err)
+					iarJob.Status = "Error writing file"
 					data, _ := json.Marshal(iarJob)
 					j.Data = string(data)
-
-					jm.db.UpdateJob(j)
-
-					jm.broadcast <- j
+					jm.mgm.UpdateJob(j)
+					continue
 				}
+
+				jm.log.Info("Job %v file %v written", s.JobID, iarJob.Filename)
+
+				iarJob.Status = "Iar uploaded to MGM"
+
+				data, _ := json.Marshal(iarJob)
+				j.Data = string(data)
+				jm.mgm.UpdateJob(j)
+
+				ch, ok := jm.regionWorkers[jm.hub]
+				if !ok {
+					jm.log.Error("No worker for region found")
+					iarJob.Status = "No worker present"
+					data, _ := json.Marshal(iarJob)
+					j.Data = string(data)
+					jm.mgm.UpdateJob(j)
+					continue
+				}
+
+				//dispatch task
+				jm.log.Info("Dispatching load_iar to worker")
+				go jm.loadIarTask(j, iarJob, ch)
+			default:
+				jm.log.Error(fmt.Sprintf("Invalid upload for type %v", j.Type))
 			}
 		}
-	}()*/
+	}
 
 }

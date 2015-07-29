@@ -5,6 +5,7 @@
   OpensimPort = 8000
   WebPort = 8080
   NodePort = 3000
+  HubRegionUUID = 00000000-0000-0000-0000-000000000000
 
 [Web]
   Root = /path/to/mgm/web/dist

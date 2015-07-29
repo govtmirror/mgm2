@@ -48,8 +48,6 @@ func (hc httpConn) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hc.logger.Info("Read %v bytes from %v", len(data), id)
-
 	hc.jMgr.FileUploaded(id, s.Values["guid"].(uuid.UUID), data)
 
 	w.Write([]byte("OK"))
