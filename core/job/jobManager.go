@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/mgm"
@@ -14,7 +15,7 @@ import (
 type Manager interface {
 	FileUploaded(int, uuid.UUID, []byte)
 	GetJobByID(int64) (mgm.Job, bool)
-	DeleteJob(mgm.Job)
+	DeleteJob(mgm.Job, core.ServiceRequest)
 	CreateLoadIarJob(mgm.User, string) int64
 	GetJobsForUser(mgm.User) []mgm.Job
 }
@@ -65,8 +66,11 @@ func (jm jobMgr) GetJobByID(id int64) (mgm.Job, bool) {
 	return mgm.Job{}, false
 }
 
-func (jm jobMgr) DeleteJob(j mgm.Job) {
+func (jm jobMgr) DeleteJob(j mgm.Job, sr core.ServiceRequest) {
+	//perform any file level maintenance, etc...
+
 	jm.mgm.RemoveJob(j)
+	sr(true, "Job deleted")
 }
 
 func (jm jobMgr) GetJobsForUser(user mgm.User) []mgm.Job {

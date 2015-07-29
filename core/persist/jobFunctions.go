@@ -28,6 +28,17 @@ func (m mgmDB) insertJob(job mgm.Job) (int64, error) {
 	return id, nil
 }
 
+func (m mgmDB) purgeJob(job mgm.Job) {
+	con, err := m.db.GetConnection()
+	if err == nil {
+		_, err = con.Exec("DELETE FROM jobs WHERE id=?", job.ID)
+	}
+	if err != nil {
+		errMsg := fmt.Sprintf("Error purging host record: %v", err.Error())
+		m.log.Error(errMsg)
+	}
+}
+
 func (m mgmDB) queryJobs() []mgm.Job {
 	var jobs []mgm.Job
 	con, err := m.db.GetConnection()

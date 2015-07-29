@@ -22,6 +22,7 @@ type Notifier interface {
 	EstateUpdated(mgm.Estate)
 	EstateDeleted(mgm.Estate)
 	JobUpdated(mgm.Job)
+	JobDeleted(j mgm.Job)
 }
 
 //MGMDB interfaces with mysql, caches values for performance, and notifies subscribers of object updates
@@ -218,6 +219,14 @@ ProcessingPackets:
 				m.notify.JobUpdated(job)
 				req.result <- job
 				close(req.result)
+			case "RemoveJob":
+				job := req.object.(mgm.Job)
+				_, ok := jobs[job.ID]
+				if ok {
+					delete(jobs, job.ID)
+					go m.purgeJob(job)
+					m.notify.JobDeleted(job)
+				}
 			case "AddHost":
 				host := req.object.(mgm.Host)
 				//inserts are not asynchronous, as we need the insert ID to populate ourselves

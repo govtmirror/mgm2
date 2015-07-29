@@ -13,6 +13,7 @@ type Notifier struct {
 	eUp   chan mgm.Estate
 	eDel  chan mgm.Estate
 	jUp   chan mgm.Job
+	jDel  chan mgm.Job
 }
 
 //NewNotifier constructs a Notifier, initializing all internal data structures
@@ -27,6 +28,7 @@ func NewNotifier() Notifier {
 		eUp:   make(chan mgm.Estate, 32),
 		eDel:  make(chan mgm.Estate, 32),
 		jUp:   make(chan mgm.Job, 32),
+		jDel:  make(chan mgm.Job, 32),
 	}
 }
 
@@ -73,4 +75,9 @@ func (n Notifier) EstateDeleted(e mgm.Estate) {
 //JobUpdated notifies that a job record has been created/updated
 func (n Notifier) JobUpdated(j mgm.Job) {
 	n.jUp <- j
+}
+
+//JobDeleted notifies that a job record has been removed
+func (n Notifier) JobDeleted(j mgm.Job) {
+	n.jDel <- j
 }

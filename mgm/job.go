@@ -40,3 +40,19 @@ func (j Job) Serialize() []byte {
 func (j Job) ObjectType() string {
 	return "Job"
 }
+
+// JobDeleted is an MGM server record
+type JobDeleted struct {
+	ID int64
+}
+
+// Serialize implements UserObject interface Serialize function
+func (h JobDeleted) Serialize() []byte {
+	data, _ := json.Marshal(h)
+	return data
+}
+
+// ObjectType implements UserObject
+func (h JobDeleted) ObjectType() string {
+	return "JobDeleted"
+}

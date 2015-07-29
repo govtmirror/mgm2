@@ -94,7 +94,11 @@ func (sm sessionMgr) process() {
 				if ok {
 					note.JobUpdated(j)
 				}
-
+			case j := <-sm.notifier.jDel:
+				note, ok := userMap[j.User]
+				if ok {
+					note.JobDeleted(j)
+				}
 			// SESSION FUNCTIONS
 			case s := <-sm.sessionListener:
 				//new user session

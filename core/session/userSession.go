@@ -121,6 +121,8 @@ func (us userSession) process() {
 
 		case j := <-us.notifier.jUp:
 			us.client.Send(j)
+		case j := <-us.notifier.jDel:
+			us.client.Send(mgm.JobDeleted{j.ID})
 
 		// COMMANDS FROM THE CLIENT
 		case msg := <-clientMsg:
@@ -673,10 +675,13 @@ func (us userSession) process() {
 						us.client.SignalError(m.MessageID, "Job not found")
 						return
 					}
-					us.mgm.RemoveJob(j)
-					//TODO some jobs may need files cleaned up... should we delete them here
-					// or leave them and create a cleanup coroutine?
-					us.client.SignalSuccess(m.MessageID, "Job Deleted")
+					us.jMgr.DeleteJob(j, func(success bool, msg string) {
+						if success {
+							us.client.SignalSuccess(m.MessageID, msg)
+						} else {
+							us.client.SignalError(m.MessageID, msg)
+						}
+					})
 				}()
 			case "OarUpload":
 				us.client.SignalError(m.MessageID, "Not Implemented")

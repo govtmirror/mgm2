@@ -44,9 +44,6 @@ angular.module('mgmApp').controller('NavCtrl', function ($scope, $location, $tim
       mgm.deleteJob(job).then(
         function(){
           //success
-          $timeout(function(){
-            delete $scope.task.jobs[job.ID];
-          });
         },
         function(msg){
           console.log(msg);
@@ -65,6 +62,12 @@ angular.module('mgmApp').controller('NavCtrl', function ($scope, $location, $tim
           angular.copy(job, $scope.task.jobs[job.ID]);
         }
       }
+    });
+  });
+  $scope.$on('JobDeleted', function (event, job){
+    $timeout(function(){
+      delete $scope.task.jobs[job.ID];
+      alertify.log('Job deleted');
     });
   });
 });

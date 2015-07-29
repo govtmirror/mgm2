@@ -95,6 +95,10 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
         self.jobs[message.Message.ID] = message.Message;
         $rootScope.$broadcast('JobUpdate', message.Message);
         break;
+      case 'JobDeleted':
+        delete self.jobs[message.Message.ID]
+        $rootScope.$broadcast('JobDeleted', message.Message)
+        break;
       case 'Config':
         $rootScope.$broadcast('ConfigUpdate', message.Message);
         break;
