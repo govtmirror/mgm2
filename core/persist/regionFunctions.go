@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/m-o-s-e-s/mgm/mgm"
+	"github.com/satori/go.uuid"
 )
 
 func (m mgmDB) persistRegion(region mgm.Region) {
@@ -121,6 +122,15 @@ func (m mgmDB) GetRegions() []mgm.Region {
 		}
 		regions = append(regions, h.(mgm.Region))
 	}
+}
+
+func (m mgmDB) GetRegionByID(id uuid.UUID) (mgm.Region, bool) {
+	for _, r := range m.GetRegions() {
+		if r.UUID == id {
+			return r, true
+		}
+	}
+	return mgm.Region{}, false
 }
 
 func (m mgmDB) GetRegionStats() []mgm.RegionStat {
