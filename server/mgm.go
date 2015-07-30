@@ -115,7 +115,7 @@ func main() {
 	pers := persist.NewMGMDB(db, osdb, sim, logger, notify)
 
 	//Hook up core processing...
-	jMgr := job.NewManager(config.Web.FileStorage, config.MGM.HubRegionUUID, pers, logger)
+	jMgr := job.NewManager(config.Web.FileStorage, config.MGM.MgmURL, config.MGM.HubRegionUUID, pers, logger)
 	rMgr := region.NewManager(config.MGM.MgmURL, config.MGM.SimianURL, pers, osdb, logger)
 	hMgr, err := host.NewManager(config.MGM.NodePort, rMgr, pers, logger)
 	if err != nil {

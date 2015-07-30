@@ -23,11 +23,14 @@ angular.module('mgmApp')
       alertify.error('erase content is not implemented');
     }
 
-    $scope.uploadOar = function () {
+    $scope.uploadOar = function (x, y, merge) {
       alertify.confirm('Are you sure you wish to upload this oar file?  It will overwrite all content currently in the region.', function(e){
         if(e){
           mgm.request('OarUpload', {
-            RegionID: region.UUID,
+            RegionUUID: region.UUID,
+            X: x,
+            Y: y,
+            Merge: merge,
           }, function (success, message) {
             $timeout(function () {
               if (success === true) {

@@ -31,7 +31,9 @@ type Notifier interface {
 type MGMDB interface {
 	//host functions
 	GetHosts() []mgm.Host
+	GetHost(int64) (mgm.Host, bool)
 	GetHostStats() []mgm.HostStat
+	GetHostStat(int64) (mgm.HostStat, bool)
 	AddHost(mgm.Host) mgm.Host
 	UpdateHost(mgm.Host)
 	UpdateHostStat(mgm.HostStat)

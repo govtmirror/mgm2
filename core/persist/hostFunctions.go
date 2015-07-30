@@ -29,7 +29,6 @@ func (m mgmDB) insertHost(host mgm.Host) (int64, error) {
 }
 
 func (m mgmDB) persistHost(host mgm.Host) {
-	m.log.Info("persisting host %v, running: %v", host.ID, host.Running)
 	con, err := m.db.GetConnection()
 	if err == nil {
 		_, err = con.Exec("UPDATE hosts SET externalAddress=?, name=?, slots=? WHERE id=?",
@@ -102,6 +101,15 @@ func (m mgmDB) GetHosts() []mgm.Host {
 	}
 }
 
+func (m mgmDB) GetHost(id int64) (mgm.Host, bool) {
+	for _, h := range m.GetHosts() {
+		if h.ID == id {
+			return h, true
+		}
+	}
+	return mgm.Host{}, false
+}
+
 func (m mgmDB) GetHostStats() []mgm.HostStat {
 	var stats []mgm.HostStat
 	r := mgmReq{}
@@ -115,6 +123,15 @@ func (m mgmDB) GetHostStats() []mgm.HostStat {
 		}
 		stats = append(stats, h.(mgm.HostStat))
 	}
+}
+
+func (m mgmDB) GetHostStat(id int64) (mgm.HostStat, bool) {
+	for _, st := range m.GetHostStats() {
+		if st.ID == id {
+			return st, true
+		}
+	}
+	return mgm.HostStat{}, false
 }
 
 func (m mgmDB) UpdateHost(host mgm.Host) {

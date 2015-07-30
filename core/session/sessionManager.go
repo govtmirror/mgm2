@@ -74,14 +74,13 @@ func (sm sessionMgr) process() {
 					note.RegionUpdated(r)
 				}
 			case r := <-sm.notifier.rDel:
+				sm.jobMgr.RegionDown(r.UUID)
 				for _, note := range userMap {
 					note.RegionDeleted(r)
 				}
 			case s := <-sm.notifier.rStat:
 				if s.Running {
 					sm.jobMgr.RegionUp(s.UUID)
-				} else {
-					sm.jobMgr.RegionDown(s.UUID)
 				}
 				for _, note := range userMap {
 					note.RegionStat(s)

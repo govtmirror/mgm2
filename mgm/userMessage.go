@@ -100,3 +100,18 @@ func (ur UserMessage) ReadCoordinates() (uint, uint, error) {
 	}
 	return c.X, c.Y, nil
 }
+
+// ReadOarMerge parses { X: int, Y: int, Merge: bool} from the message body
+func (ur UserMessage) ReadOarMerge() (uint, uint, bool, error) {
+	type coord struct {
+		X     uint
+		Y     uint
+		Merge bool
+	}
+	c := coord{}
+	err := json.Unmarshal(ur.Message, &c)
+	if err != nil {
+		return 0, 0, false, err
+	}
+	return c.X, c.Y, c.Merge, nil
+}

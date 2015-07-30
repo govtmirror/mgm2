@@ -20,7 +20,7 @@ type Manager interface {
 	GetJobByID(int64) (mgm.Job, bool)
 	DeleteJob(mgm.Job, core.ServiceRequest)
 	CreateLoadIarJob(mgm.User, string) int64
-	CreateLoadOarJob(mgm.User, mgm.Region) int64
+	CreateLoadOarJob(mgm.User, mgm.Region, uint, uint, bool) int64
 
 	RegionUp(uuid.UUID)
 	RegionDown(uuid.UUID)
@@ -32,9 +32,6 @@ type fileUpload struct {
 	File  []byte
 }
 
-type regionCommand struct {
-}
-
 func (jm jobMgr) newRegionCommand() regionCommand {
 	rc := regionCommand{}
 
@@ -42,11 +39,12 @@ func (jm jobMgr) newRegionCommand() regionCommand {
 }
 
 // NewManager constructs a jobManager for use
-func NewManager(filePath string, hubRegion uuid.UUID, pers persist.MGMDB, log logger.Log) Manager {
+func NewManager(filePath string, mgmURL string, hubRegion uuid.UUID, pers persist.MGMDB, log logger.Log) Manager {
 
 	j := jobMgr{}
 	j.fileUp = make(chan fileUpload, 32)
 	j.localPath = filePath
+	j.mgmURL = mgmURL
 	j.log = logger.Wrap("JOB", log)
 	j.mgm = pers
 	j.hub = hubRegion
@@ -71,6 +69,7 @@ type jobMgr struct {
 	log logger.Log
 
 	localPath string
+	mgmURL    string
 }
 
 func (jm jobMgr) FileUploaded(id int, user uuid.UUID, data []byte) {
@@ -240,10 +239,10 @@ func (jm jobMgr) process() {
 					continue
 				}
 
-				ch, ok := regionWorkers[jm.hub]
+				ch, ok := regionWorkers[oarJob.Region]
 				if !ok {
-					jm.log.Error("No worker for region found")
-					oarJob.Status = "No worker found: Hub region not running"
+					jm.log.Error(fmt.Sprintf("No worker for region %v found", oarJob.Region))
+					oarJob.Status = "No worker found: Region not running"
 					data, _ := json.Marshal(oarJob)
 					j.Data = string(data)
 					jm.mgm.UpdateJob(j)

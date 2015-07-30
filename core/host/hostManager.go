@@ -177,13 +177,14 @@ func (nm nm) process(newConns <-chan hostSession) {
 				}
 
 				//place host online
-				c.host.Running = true
-				nm.mgm.UpdateHost(c.host)
-				for id, st := range nm.mgm.GetHostStats() {
-					if int64(id) == c.host.ID {
-						st.Running = true
-						nm.mgm.UpdateHostStat(st)
-					}
+				st, ok := nm.mgm.GetHostStat(c.host.ID)
+				if ok {
+					st.Running = true
+					nm.mgm.UpdateHostStat(st)
+				} else {
+					st.ID = c.host.ID
+					st.Running = true
+					nm.mgm.UpdateHostStat(st)
 				}
 			} else {
 				conns[c.host.ID] = c
@@ -196,16 +197,11 @@ func (nm nm) process(newConns <-chan hostSession) {
 			//a connection went offline
 			if con, ok := conns[id]; ok {
 				con.Running = false
-				con.host.Running = false
-				nm.mgm.UpdateHost(con.host)
 
-				//offline the hsot
-				for id, st := range nm.mgm.GetHostStats() {
-					if int64(id) == con.host.ID {
-						st.Running = false
-						nm.mgm.UpdateHostStat(st)
-					}
-				}
+				//offline the host
+				st, _ := nm.mgm.GetHostStat(con.host.ID)
+				st.Running = false
+				nm.mgm.UpdateHostStat(st)
 
 				//offline regions on the disconnected host
 				for _, reg := range nm.mgm.GetRegions() {

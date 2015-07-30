@@ -14,7 +14,6 @@ type Host struct {
 	Hostname        string
 	Regions         []uuid.UUID
 	Slots           int
-	Running         bool
 }
 
 // Serialize implements UserObject interface Serialize function

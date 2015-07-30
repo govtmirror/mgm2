@@ -75,11 +75,11 @@
         <td>{{hst.Hostname}}</td>
         <td>{{hst.Address}}</td>
         <td><sup>{{hst.Regions? hst.Regions.length : 0}}</sup>/<sub>{{hst.Slots}}</sub></td>
-        <td ng-if="hst.Running === true">
+        <td ng-if="hst.Status.Running === true">
           <div id="cpu-{{$index}}" mgm-chart data="hst.Status.CPUPercent"></div>
         </td>
-        <td ng-if="hst.Running === true">{{hst.Status.MEMPercent.toFixed(2)}}% <br> {{(hst.Status.MEMUsed/1024).toFixed(2)}} MB</td>
-        <td ng-if="hst.Running === true">{{(hst.Status.NetSent/1024).toFixed(2)}} KBps <br> {{(hst.Status.NetRecv/1024).toFixed(2)}} KBps</td>
+        <td ng-if="hst.Status.Running === true">{{hst.Status.MEMPercent.toFixed(2)}}% <br> {{(hst.Status.MEMUsed/1024).toFixed(2)}} MB</td>
+        <td ng-if="hst.Status.Running === true">{{(hst.Status.NetSent/1024).toFixed(2)}} KBps <br> {{(hst.Status.NetRecv/1024).toFixed(2)}} KBps</td>
       </tr>
     </tr>
   </table>

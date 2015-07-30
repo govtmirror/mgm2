@@ -249,6 +249,7 @@ func (node mgmNode) collectHostStatistics(out chan mgm.HostStat) {
 		}
 
 		s := mgm.HostStat{}
+		s.Running = true
 		c, err := pscpu.CPUPercent(time.Second, true)
 		if err != nil {
 			node.logger.Error("Error readin CPU: ", err)

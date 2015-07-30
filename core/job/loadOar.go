@@ -2,6 +2,7 @@ package job
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/m-o-s-e-s/mgm/mgm"
@@ -13,9 +14,12 @@ type loadOarJob struct {
 	Region   uuid.UUID
 	Filename string
 	Status   string
+	X        uint
+	Y        uint
+	Merge    bool
 }
 
-func (jm jobMgr) CreateLoadOarJob(owner mgm.User, r mgm.Region) int64 {
+func (jm jobMgr) CreateLoadOarJob(owner mgm.User, r mgm.Region, x uint, y uint, merge bool) int64 {
 	j := mgm.Job{}
 	j.Type = "load_oar"
 	j.Timestamp = time.Now()
@@ -24,6 +28,9 @@ func (jm jobMgr) CreateLoadOarJob(owner mgm.User, r mgm.Region) int64 {
 	jd := loadOarJob{}
 	jd.Region = r.UUID
 	jd.Status = "Created"
+	jd.X = x
+	jd.Y = y
+	jd.Merge = merge
 
 	encDat, _ := json.Marshal(jd)
 	j.Data = string(encDat)
@@ -60,15 +67,8 @@ func (jm jobMgr) loadOarTask(j mgm.Job, oarJob loadOarJob, ch chan<- regionComma
 	}
 
 	//locate host for region
-	var h mgm.Host
-	found = false
-	for _, host := range jm.mgm.GetHosts() {
-		if host.ID == r.Host {
-			found = true
-			h = host
-		}
-	}
-	if !found {
+	h, ok := jm.mgm.GetHost(r.Host)
+	if !ok {
 		jm.log.Error("Host not found for region...")
 		oarJob.Status = "Host not found"
 		data, _ := json.Marshal(oarJob)
@@ -78,29 +78,53 @@ func (jm jobMgr) loadOarTask(j mgm.Job, oarJob loadOarJob, ch chan<- regionComma
 	}
 
 	//we are pretty sure that the host is running, but lets be certain
-	for _, stat := range jm.mgm.GetHostStats() {
-		if stat.ID == h.ID {
-			if !stat.Running {
-				jm.log.Error("host not running")
-				oarJob.Status = "host not running"
-				data, _ := json.Marshal(oarJob)
-				j.Data = string(data)
-				jm.mgm.UpdateJob(j)
-				return
-			}
-		}
+	stat, ok := jm.mgm.GetHostStat(h.ID)
+	if !ok {
+		jm.log.Error(fmt.Sprintf("host %v stats not found", h.ID))
+		oarJob.Status = "host stats not found"
+		data, _ := json.Marshal(oarJob)
+		j.Data = string(data)
+		jm.mgm.UpdateJob(j)
+		return
+	}
+	if !stat.Running {
+		jm.log.Error(fmt.Sprintf("host %v not running", h.ID))
+		oarJob.Status = "host not running"
+		data, _ := json.Marshal(oarJob)
+		j.Data = string(data)
+		jm.mgm.UpdateJob(j)
+		return
 	}
 
-	//insert admin credential on user in question
+	//generate command
+	url := fmt.Sprintf("http://%v/serve/%v", jm.mgmURL, j.ID)
+	var cmd string
+	if oarJob.Merge {
+		cmd = fmt.Sprintf("load oar --merge --force-terrain --force-parcels --displacement <%v,%v,0> %v",
+			oarJob.X,
+			oarJob.Y,
+			url,
+		)
+	} else {
+		cmd = fmt.Sprintf("load oar --force-terrain --force-parcels --displacement <%v,%v,0> %v",
+			oarJob.X,
+			oarJob.Y,
+			url,
+		)
+	}
 
 	//notify worker
-	ch <- regionCommand{}
-
-	//close console
+	resp := make(chan response)
+	ch <- regionCommand{
+		command: cmd,
+		filter:  "[ARCHIVER]",
+		success: "Successfully",
+		failure: "",
+		respond: resp,
+	}
 
 	//remove loaded iar file
 
 	//update job
 
-	jm.log.Info("Load iar task exit")
 }

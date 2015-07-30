@@ -227,7 +227,8 @@ func (us userSession) process() {
 					continue
 				}
 
-				if !host.Running {
+				st, ok := us.mgm.GetHostStat(host.ID)
+				if !ok || !st.Running {
 					us.client.SignalError(m.MessageID, "Host is not running")
 					continue
 				}
@@ -643,7 +644,7 @@ func (us userSession) process() {
 				}
 				r, ok := us.mgm.GetRegion(regionID)
 				if !ok {
-					us.log.Error("Oar Upload Failed: region not found")
+					us.log.Error(fmt.Sprintf("Oar Upload Failed: region %v not found", regionID))
 					us.client.SignalError(m.MessageID, "Region not found")
 					continue
 				}
@@ -661,7 +662,14 @@ func (us userSession) process() {
 					continue
 				}
 
-				id := us.jMgr.CreateLoadOarJob(user, r)
+				x, y, merge, err := m.ReadOarMerge()
+				if err != nil {
+					us.log.Error("Oar Upload Failed: Invalid format")
+					us.client.SignalError(m.MessageID, "Invalid Format")
+					continue
+				}
+
+				id := us.jMgr.CreateLoadOarJob(user, r, x, y, merge)
 				if id == 0 {
 					us.client.SignalError(m.MessageID, "An error occurred, we could not create the job")
 				} else {
