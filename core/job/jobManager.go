@@ -158,8 +158,6 @@ func (jm jobMgr) process() {
 				continue
 			}
 
-			jm.log.Info("Job %v parsed, examining type: %v", s.JobID, j.Type)
-
 			switch j.Type {
 			case "load_iar":
 				jm.log.Info("Job %v is of type load_iar", s.JobID)
@@ -173,8 +171,6 @@ func (jm jobMgr) process() {
 				iarJob.Filename = path.Join(jm.localPath, uuid.NewV4().String())
 				iarJob.InventoryPath = "/"
 
-				jm.log.Info("Job %v given filename: %v", s.JobID, iarJob.Filename)
-
 				err = ioutil.WriteFile(iarJob.Filename, s.File, 0644)
 				if err != nil {
 					jm.log.Error("Error writing file: ", err)
@@ -184,14 +180,6 @@ func (jm jobMgr) process() {
 					jm.mgm.UpdateJob(j)
 					continue
 				}
-
-				jm.log.Info("Job %v file %v written", s.JobID, iarJob.Filename)
-
-				iarJob.Status = "Iar uploaded to MGM"
-
-				data, _ := json.Marshal(iarJob)
-				j.Data = string(data)
-				jm.mgm.UpdateJob(j)
 
 				ch, ok := jm.regionWorkers[jm.hub]
 				if !ok {
@@ -203,8 +191,12 @@ func (jm jobMgr) process() {
 					continue
 				}
 
+				iarJob.Status = "In process"
+				data, _ := json.Marshal(iarJob)
+				j.Data = string(data)
+				jm.mgm.UpdateJob(j)
+
 				//dispatch task
-				jm.log.Info("Dispatching load_iar to worker")
 				go jm.loadIarTask(j, iarJob, ch)
 			default:
 				jm.log.Error(fmt.Sprintf("Invalid upload for type %v", j.Type))

@@ -29,7 +29,6 @@ func (m mgmDB) insertJob(job mgm.Job) (int64, error) {
 }
 
 func (m mgmDB) persistJob(job mgm.Job) {
-	m.log.Info("persisting job %v", job.ID)
 	con, err := m.db.GetConnection()
 	if err == nil {
 		_, err = con.Exec("UPDATE jobs SET data=? WHERE id=?",
