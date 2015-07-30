@@ -38,7 +38,9 @@ type MGMDB interface {
 	RemoveHost(mgm.Host)
 	//region functions
 	GetRegions() []mgm.Region
+	GetRegion(uuid.UUID) (mgm.Region, bool)
 	GetRegionStats() []mgm.RegionStat
+	GetRegionStat(uuid.UUID) (mgm.RegionStat, bool)
 	UpdateRegion(mgm.Region)
 	UpdateRegionStat(mgm.RegionStat)
 	RemoveRegion(mgm.Region)
@@ -53,6 +55,7 @@ type MGMDB interface {
 	RemoveJob(mgm.Job)
 	//user functions
 	GetUsers() []mgm.User
+	GetUser(uuid.UUID) (mgm.User, bool)
 	UpdateUser(mgm.User)
 	SetPassword(mgm.User, string)
 	GetPendingUsers() []mgm.PendingUser

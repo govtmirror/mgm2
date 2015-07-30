@@ -208,14 +208,7 @@ func (us userSession) process() {
 					}
 				}
 				//we can start the region
-				var region mgm.Region
-				found := false
-				for _, r := range us.mgm.GetRegions() {
-					if r.UUID == regionID {
-						found = true
-						region = r
-					}
-				}
+				region, found := us.mgm.GetRegion(regionID)
 				if !found {
 					us.client.SignalError(m.MessageID, "Region not found")
 					continue
@@ -254,14 +247,7 @@ func (us userSession) process() {
 					continue
 				}
 				//locate region
-				var r mgm.Region
-				found := false
-				for _, reg := range us.mgm.GetRegions() {
-					if reg.UUID == regionID {
-						found = true
-						r = reg
-					}
-				}
+				r, found := us.mgm.GetRegion(regionID)
 				if !found {
 					us.client.SignalError(m.MessageID, "Region does not exist")
 					us.log.Info("User %v requesting stop region %v failed, region not found", uid, regionID)
@@ -311,14 +297,7 @@ func (us userSession) process() {
 					continue
 				}
 				//locate region
-				var region mgm.Region
-				found := false
-				for _, r := range us.mgm.GetRegions() {
-					if r.UUID == regionID {
-						found = true
-						region = r
-					}
-				}
+				region, found := us.mgm.GetRegion(regionID)
 				if !found {
 					us.client.SignalError(m.MessageID, "Region does not exist")
 					us.log.Info("User %v requesting kill region %v failed, region not found", uid, regionID)
@@ -364,15 +343,7 @@ func (us userSession) process() {
 				}
 				us.log.Info("User %v requesting region console %v", uid, regionID)
 
-				var r mgm.Region
-				found := false
-				for _, reg := range us.mgm.GetRegions() {
-					if reg.UUID == regionID {
-						found = true
-						r = reg
-					}
-				}
-
+				r, found := us.mgm.GetRegion(regionID)
 				if !found {
 					us.client.SignalError(m.MessageID, "Region does not exist")
 					us.log.Info("User %v requesting kill region %v failed, region not found", uid, regionID)
@@ -466,14 +437,7 @@ func (us userSession) process() {
 						us.client.SignalError(m.MessageID, "Invalid id format")
 						return
 					}
-					var reg mgm.Region
-					found := false
-					for _, r := range us.mgm.GetRegions() {
-						if r.UUID == regionID {
-							found = true
-							reg = r
-						}
-					}
+					reg, found := us.mgm.GetRegion(regionID)
 					if !found {
 						us.client.SignalError(m.MessageID, "Region not found")
 						return
@@ -509,14 +473,7 @@ func (us userSession) process() {
 						us.client.SignalError(m.MessageID, "Invalid format")
 						return
 					}
-					var region mgm.Region
-					found := false
-					for _, r := range us.mgm.GetRegions() {
-						if r.UUID == regionID {
-							region = r
-							found = true
-						}
-					}
+					region, found := us.mgm.GetRegion(regionID)
 					if !found {
 						us.client.SignalError(m.MessageID, "Region not found")
 						return
@@ -614,16 +571,9 @@ func (us userSession) process() {
 
 					us.log.Info("Requesting add region %v to estate %v", regionID, estateID)
 
-					var region mgm.Region
-					regionFound := false
+					region, regionFound := us.mgm.GetRegion(regionID)
 					var estate mgm.Estate
 					estateFound := false
-					for _, r := range us.mgm.GetRegions() {
-						if r.UUID == regionID {
-							regionFound = true
-							region = r
-						}
-					}
 					if !regionFound {
 						us.client.SignalError(m.MessageID, "Region does not exist")
 						us.log.Error("Add region to estate failed, region not found")
@@ -684,25 +634,50 @@ func (us userSession) process() {
 					})
 				}()
 			case "OarUpload":
-				us.client.SignalError(m.MessageID, "Not Implemented")
-			case "IarUpload":
-				us.log.Info("Requesting iar upload")
-				users := us.mgm.GetUsers()
-				exists := false
-				var user mgm.User
-				for _, u := range users {
-					if u.UserID == uid {
-						exists = true
-						user = u
-					}
+				us.log.Info("Requesting oar upload")
+				regionID, err := m.ReadRegionID()
+				if err != nil {
+					us.log.Error("Oar Upload Failed: Invalid format")
+					us.client.SignalError(m.MessageID, "Invalid Format")
+					continue
 				}
-				if !exists {
-					errMsg := fmt.Sprintf("Cannot create job for load_iar: nonexistant user %v", uid)
-					us.log.Error(errMsg)
-					us.client.SignalError(m.MessageID, "User does not exist")
+				r, ok := us.mgm.GetRegion(regionID)
+				if !ok {
+					us.log.Error("Oar Upload Failed: region not found")
+					us.client.SignalError(m.MessageID, "Region not found")
+					continue
+				}
+				stat, ok := us.mgm.GetRegionStat(r.UUID)
+				if !ok || !stat.Running {
+					us.log.Error("Oar Upload Failed: region not running")
+					us.client.SignalError(m.MessageID, "Region is not running")
+					continue
 				}
 
-				id := us.jMgr.CreateLoadIarJob(user, "")
+				user, ok := us.mgm.GetUser(uid)
+				if !ok {
+					us.log.Error(fmt.Sprintf("Cannot create job for load_iar: nonexistant user %v", uid))
+					us.client.SignalError(m.MessageID, "User does not exist")
+					continue
+				}
+
+				id := us.jMgr.CreateLoadOarJob(user, r)
+				if id == 0 {
+					us.client.SignalError(m.MessageID, "An error occurred, we could not create the job")
+				} else {
+					us.client.SignalSuccess(m.MessageID, fmt.Sprintf("%v", id))
+				}
+
+			case "IarUpload":
+				us.log.Info("Requesting iar upload")
+				user, ok := us.mgm.GetUser(uid)
+				if !ok {
+					us.log.Error(fmt.Sprintf("Cannot create job for load_iar: nonexistant user %v", uid))
+					us.client.SignalError(m.MessageID, "User does not exist")
+					continue
+				}
+
+				id := us.jMgr.CreateLoadIarJob(user, "/")
 				if id == 0 {
 					us.client.SignalError(m.MessageID, "An error occurred, we could not create the job")
 				} else {
@@ -723,12 +698,8 @@ func (us userSession) process() {
 					us.client.SignalError(m.MessageID, "Password Cannot be blank")
 					continue
 				}
-				var user mgm.User
-				for _, u := range us.mgm.GetUsers() {
-					if u.UserID == userID {
-						user = u
-					}
-				}
+
+				user, _ := us.mgm.GetUser(userID)
 				us.mgm.SetPassword(user, password)
 				if err != nil {
 					us.client.SignalError(m.MessageID, err.Error())
@@ -758,14 +729,7 @@ func (us userSession) process() {
 						us.client.SignalError(m.MessageID, "Invalid format")
 						return
 					}
-					var region mgm.Region
-					found := false
-					for _, r := range us.mgm.GetRegions() {
-						if r.UUID == regionID {
-							region = r
-							found = true
-						}
-					}
+					region, found := us.mgm.GetRegion(regionID)
 					if !found {
 						us.client.SignalError(m.MessageID, "Region not found")
 						return

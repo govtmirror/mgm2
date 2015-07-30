@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/m-o-s-e-s/mgm/mgm"
+	"github.com/satori/go.uuid"
 )
 
 func (m mgmDB) GetUsers() []mgm.User {
@@ -22,6 +23,15 @@ func (m mgmDB) GetUsers() []mgm.User {
 		}
 		users = append(users, h.(mgm.User))
 	}
+}
+
+func (m mgmDB) GetUser(id uuid.UUID) (mgm.User, bool) {
+	for _, u := range m.GetUsers() {
+		if u.UserID == id {
+			return u, true
+		}
+	}
+	return mgm.User{}, false
 }
 
 func (m mgmDB) queryPendingUsers() []mgm.PendingUser {

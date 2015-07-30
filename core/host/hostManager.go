@@ -154,7 +154,6 @@ func (nm nm) process(newConns <-chan hostSession) {
 		conns[h.ID] = s
 	}
 
-Processing:
 	for {
 		select {
 		case c := <-newConns:
@@ -211,11 +210,10 @@ Processing:
 				//offline regions on the disconnected host
 				for _, reg := range nm.mgm.GetRegions() {
 					if reg.Host == con.host.ID {
-						for _, st := range nm.mgm.GetRegionStats() {
-							if st.UUID == reg.UUID {
-								st.Running = false
-								nm.mgm.UpdateRegionStat(st)
-							}
+						st, ok := nm.mgm.GetRegionStat(reg.UUID)
+						if ok {
+							st.Running = false
+							nm.mgm.UpdateRegionStat(st)
 						}
 					}
 				}
@@ -261,13 +259,14 @@ Processing:
 			case "UpdateRegion":
 				//regions can only be modified when they are halted
 				go func() {
-					for _, stat := range nm.mgm.GetRegionStats() {
-						if stat.UUID == nc.Region.UUID {
-							if stat.Running {
-								nc.SR(false, "Region cannot be updated while running")
-								return
-							}
-						}
+					stat, ok := nm.mgm.GetRegionStat(nc.Region.UUID)
+					if !ok {
+						nc.SR(false, "Region not found")
+						return
+					}
+					if stat.Running {
+						nc.SR(false, "Region cannot be updated while running")
+						return
 					}
 
 					nm.mgm.UpdateRegion(nc.Region)
@@ -279,13 +278,14 @@ Processing:
 			case "SetEstate":
 				//region-estate relationships can only be modified when the region is halted
 				go func() {
-					for _, stat := range nm.mgm.GetRegionStats() {
-						if stat.UUID == nc.Region.UUID {
-							if stat.Running {
-								nc.SR(false, "Region cannot be updated while running")
-								return
-							}
-						}
+					stat, ok := nm.mgm.GetRegionStat(nc.Region.UUID)
+					if !ok {
+						nc.SR(false, "Region not found")
+						return
+					}
+					if stat.Running {
+						nc.SR(false, "Region cannot be updated while running")
+						return
 					}
 
 					nm.mgm.MoveRegionToEstate(nc.Region, nc.Estate)
@@ -299,17 +299,20 @@ Processing:
 				//make sure region is unassigned, and not running
 				nm.log.Info("Adding region %v to host %v", nc.Region.UUID.String(), nc.Host.ID)
 
-				for _, r := range nm.mgm.GetRegions() {
-					if r.UUID == nc.Region.UUID && r.Host != 0 {
-						nc.SR(false, "Error: The region is on a host")
-						break Processing
-					}
+				r, ok := nm.mgm.GetRegion(nc.Region.UUID)
+				if !ok {
+					nc.SR(false, "Error: the region was not found")
+					continue
 				}
-				for _, stat := range nm.mgm.GetRegionStats() {
-					if stat.UUID == nc.Region.UUID && stat.Running {
-						nc.SR(false, "Error: The region is running")
-						break Processing
-					}
+				if r.Host != 0 {
+					nc.SR(false, "Error, the region is already assigned to a host")
+					continue
+				}
+
+				st, ok := nm.mgm.GetRegionStat(r.UUID)
+				if ok && st.Running {
+					nc.SR(false, "Error: The region is running")
+					continue
 				}
 
 				//persist change
@@ -341,21 +344,23 @@ Processing:
 				if nc.Region.Host == 0 {
 					nc.SR(false, "Error: The region is not on a host")
 					nm.log.Info("Removing region %v from host %v failed.  The region is not on a host.", nc.Region.UUID.String(), nc.Host.ID)
-					break Processing
+					continue
 				}
-				for _, r := range nm.mgm.GetRegions() {
-					if r.UUID == nc.Region.UUID && r.Host != nc.Host.ID {
-						nc.SR(false, "Error: The region is not on that host")
-						nm.log.Info("Removing region %v from host %v failed.  The region is not on that host.", nc.Region.UUID.String(), nc.Host.ID)
-						break Processing
-					}
+				r, ok := nm.mgm.GetRegion(nc.Region.UUID)
+				if !ok {
+					nc.SR(false, "Error: region not found")
+					continue
 				}
-				for _, stat := range nm.mgm.GetRegionStats() {
-					if stat.UUID == nc.Region.UUID && stat.Running {
-						nc.SR(false, "Error: The region is running")
-						nm.log.Info("Removing region %v from host %v failed.  The region is currently running", nc.Region.UUID.String(), nc.Host.ID)
-						break Processing
-					}
+				if r.Host != nc.Host.ID {
+					nc.SR(false, "Error: The region is not on that host")
+					continue
+				}
+
+				stat, ok := nm.mgm.GetRegionStat(r.UUID)
+				if ok && stat.Running {
+					nc.SR(false, "Error: The region is running")
+					nm.log.Info("Removing region %v from host %v failed.  The region is currently running", nc.Region.UUID.String(), nc.Host.ID)
+					continue
 				}
 
 				//persist change
@@ -391,17 +396,21 @@ Processing:
 					nc.SR(false, "Host Not Found")
 				}
 			case "AddHost":
+				present := false
 				for _, h := range conns {
 					if h.host.Address == nc.Host.Address {
 						nc.SR(false, "Error, Host address already present")
-						continue Processing
+						present = true
 					}
+				}
+				if present {
+					continue
 				}
 
 				h := nm.mgm.AddHost(nc.Host)
 				if h.ID == 0 {
 					nc.SR(false, "Error, Host address already present")
-					continue Processing
+					continue
 				}
 				s := hostSession{
 					host: h,

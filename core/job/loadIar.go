@@ -2,29 +2,39 @@ package job
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
-// LoadIarJob is the data field for jobs that are of type load_iar
-type LoadIarJob struct {
+// loadIarJob is the data field for jobs that are of type load_iar
+type loadIarJob struct {
 	InventoryPath string
 	Filename      string
 	Status        string
 }
 
+func (jm jobMgr) CreateLoadIarJob(owner mgm.User, inventoryPath string) int64 {
+	j := mgm.Job{}
+	j.Type = "load_iar"
+	j.Timestamp = time.Now()
+	j.User = owner.UserID
+
+	jd := loadIarJob{}
+	jd.InventoryPath = inventoryPath
+	jd.Status = "Created"
+
+	encDat, _ := json.Marshal(jd)
+	j.Data = string(encDat)
+
+	return jm.mgm.AddJob(j)
+}
+
 //loadIarTask is a coroutine that manages and reports on loading an iar file
-func (jm jobMgr) loadIarTask(j mgm.Job, iarJob LoadIarJob, ch chan<- regionCommand) {
+func (jm jobMgr) loadIarTask(j mgm.Job, iarJob loadIarJob, ch chan<- regionCommand) {
 
 	//locate hub region
-	var r mgm.Region
-	found := false
-	for _, reg := range jm.mgm.GetRegions() {
-		if reg.UUID == jm.hub {
-			found = true
-			r = reg
-		}
-	}
+	r, found := jm.mgm.GetRegion(jm.hub)
 	if !found {
 		jm.log.Error("Hub region not found for job")
 		iarJob.Status = "Hub region not found"
@@ -70,8 +80,8 @@ func (jm jobMgr) loadIarTask(j mgm.Job, iarJob LoadIarJob, ch chan<- regionComma
 	for _, stat := range jm.mgm.GetHostStats() {
 		if stat.ID == h.ID {
 			if !stat.Running {
-				jm.log.Error("Hub region not running")
-				iarJob.Status = "Hub region not running"
+				jm.log.Error("Host not running")
+				iarJob.Status = "Host not running"
 				data, _ := json.Marshal(iarJob)
 				j.Data = string(data)
 				jm.mgm.UpdateJob(j)

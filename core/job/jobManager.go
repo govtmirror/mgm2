@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"time"
 
 	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/logger"
@@ -21,6 +20,10 @@ type Manager interface {
 	GetJobByID(int64) (mgm.Job, bool)
 	DeleteJob(mgm.Job, core.ServiceRequest)
 	CreateLoadIarJob(mgm.User, string) int64
+	CreateLoadOarJob(mgm.User, mgm.Region) int64
+
+	RegionUp(uuid.UUID)
+	RegionDown(uuid.UUID)
 }
 
 type fileUpload struct {
@@ -47,8 +50,8 @@ func NewManager(filePath string, hubRegion uuid.UUID, pers persist.MGMDB, log lo
 	j.log = logger.Wrap("JOB", log)
 	j.mgm = pers
 	j.hub = hubRegion
-
-	j.regionWorkers = make(map[uuid.UUID]chan regionCommand, 8)
+	j.rUp = make(chan uuid.UUID, 32)
+	j.rDn = make(chan uuid.UUID, 32)
 
 	go j.process()
 
@@ -62,9 +65,10 @@ type jobMgr struct {
 	mgm         persist.MGMDB
 	hub         uuid.UUID
 
-	log logger.Log
+	rUp chan uuid.UUID
+	rDn chan uuid.UUID
 
-	regionWorkers map[uuid.UUID]chan regionCommand
+	log logger.Log
 
 	localPath string
 }
@@ -121,27 +125,33 @@ func (jm jobMgr) GetJobsForUser(user mgm.User) []mgm.Job {
 	return userJobs
 }
 
-func (jm jobMgr) CreateLoadIarJob(owner mgm.User, inventoryPath string) int64 {
-	j := mgm.Job{}
-	j.Type = "load_iar"
-	j.Timestamp = time.Now()
-	j.User = owner.UserID
+func (jm jobMgr) RegionUp(id uuid.UUID) {
+	jm.rUp <- id
+}
 
-	jd := LoadIarJob{}
-	jd.InventoryPath = inventoryPath
-	jd.Status = "Created"
-
-	encDat, _ := json.Marshal(jd)
-	j.Data = string(encDat)
-
-	return jm.mgm.AddJob(j)
+func (jm jobMgr) RegionDown(id uuid.UUID) {
+	jm.rDn <- id
 }
 
 func (jm jobMgr) process() {
 
+	regionWorkers := make(map[uuid.UUID]chan regionCommand, 8)
+
 	for {
 		select {
 
+		case id := <-jm.rUp:
+			_, ok := regionWorkers[id]
+			if !ok {
+				regionWorkers[id] = make(chan regionCommand, 32)
+				go jm.processWorker(id, regionWorkers[id])
+			}
+		case id := <-jm.rDn:
+			ch, ok := regionWorkers[id]
+			if ok {
+				close(ch)
+				delete(regionWorkers, id)
+			}
 		case s := <-jm.fileUp:
 			jm.log.Info("Processing File upload for job %v", s.JobID)
 			// look up job
@@ -161,10 +171,15 @@ func (jm jobMgr) process() {
 			switch j.Type {
 			case "load_iar":
 				jm.log.Info("Job %v is of type load_iar", s.JobID)
-				iarJob := LoadIarJob{}
+				iarJob := loadIarJob{}
 				err := json.Unmarshal([]byte(j.Data), &iarJob)
 				if err != nil {
 					jm.log.Info("Error parsing Load Iar job: %v", err.Error())
+					continue
+				}
+
+				if iarJob.Filename != "" {
+					jm.log.Info("Job %v multiple upload rejected", err.Error())
 					continue
 				}
 
@@ -181,10 +196,10 @@ func (jm jobMgr) process() {
 					continue
 				}
 
-				ch, ok := jm.regionWorkers[jm.hub]
+				ch, ok := regionWorkers[jm.hub]
 				if !ok {
 					jm.log.Error("No worker for region found")
-					iarJob.Status = "No worker present"
+					iarJob.Status = "No worker found: Hub region not running"
 					data, _ := json.Marshal(iarJob)
 					j.Data = string(data)
 					jm.mgm.UpdateJob(j)
@@ -198,6 +213,50 @@ func (jm jobMgr) process() {
 
 				//dispatch task
 				go jm.loadIarTask(j, iarJob, ch)
+
+			case "load_oar":
+				jm.log.Info("Job %v is of type load_oar", s.JobID)
+				oarJob := loadOarJob{}
+				err := json.Unmarshal([]byte(j.Data), &oarJob)
+				if err != nil {
+					jm.log.Info("Error parsing Load Oar job: %v", err.Error())
+					continue
+				}
+
+				if oarJob.Filename != "" {
+					jm.log.Info("Job %v multiple upload rejected", err.Error())
+					continue
+				}
+
+				oarJob.Filename = path.Join(jm.localPath, uuid.NewV4().String())
+
+				err = ioutil.WriteFile(oarJob.Filename, s.File, 0644)
+				if err != nil {
+					jm.log.Error("Error writing file: ", err)
+					oarJob.Status = "Error writing file"
+					data, _ := json.Marshal(oarJob)
+					j.Data = string(data)
+					jm.mgm.UpdateJob(j)
+					continue
+				}
+
+				ch, ok := regionWorkers[jm.hub]
+				if !ok {
+					jm.log.Error("No worker for region found")
+					oarJob.Status = "No worker found: Hub region not running"
+					data, _ := json.Marshal(oarJob)
+					j.Data = string(data)
+					jm.mgm.UpdateJob(j)
+					continue
+				}
+
+				oarJob.Status = "In process"
+				data, _ := json.Marshal(oarJob)
+				j.Data = string(data)
+				jm.mgm.UpdateJob(j)
+
+				//dispatch task
+				go jm.loadOarTask(j, oarJob, ch)
 			default:
 				jm.log.Error(fmt.Sprintf("Invalid upload for type %v", j.Type))
 			}

@@ -124,7 +124,7 @@ func (m mgmDB) GetRegions() []mgm.Region {
 	}
 }
 
-func (m mgmDB) GetRegionByID(id uuid.UUID) (mgm.Region, bool) {
+func (m mgmDB) GetRegion(id uuid.UUID) (mgm.Region, bool) {
 	for _, r := range m.GetRegions() {
 		if r.UUID == id {
 			return r, true
@@ -146,6 +146,15 @@ func (m mgmDB) GetRegionStats() []mgm.RegionStat {
 		}
 		stats = append(stats, h.(mgm.RegionStat))
 	}
+}
+
+func (m mgmDB) GetRegionStat(id uuid.UUID) (mgm.RegionStat, bool) {
+	for _, st := range m.GetRegionStats() {
+		if st.UUID == id {
+			return st, true
+		}
+	}
+	return mgm.RegionStat{}, false
 }
 
 func (m mgmDB) UpdateRegion(region mgm.Region) {
