@@ -12,17 +12,10 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-// RestConsole is connection to a regions HTTP Rest console interface
-type RestConsole interface {
-	Write(string)
-	Read() <-chan string
-	Close()
-}
-
 // NewRestConsole constructs and connects a rest console
 func NewRestConsole(r mgm.Region, h mgm.Host) (RestConsole, error) {
-	c := console{
-		read:    make(chan string, 1024),
+	c := RestConsole{
+		read:    make(chan []string, 36),
 		write:   make(chan string, 8),
 		closing: make(chan bool),
 	}
@@ -42,16 +35,22 @@ func NewRestConsole(r mgm.Region, h mgm.Host) (RestConsole, error) {
 	return c, nil
 }
 
-type console struct {
+//RestConsole is an object representing a rest console connection with a remote process
+type RestConsole struct {
 	url         string
 	sessionID   uuid.UUID
-	read        chan string
+	read        chan []string
 	write       chan string
 	closing     chan bool
 	initialized bool
 }
 
-func (c *console) connect(uname string, pass string) error {
+//IsConnected is a simple test if the console is active or not
+func (c RestConsole) IsConnected() bool {
+	return c.initialized
+}
+
+func (c *RestConsole) connect(uname string, pass string) error {
 	resp, err := http.PostForm(c.url+"StartSession/", url.Values{"USER": {uname}, "PASS": {pass}})
 	if err != nil {
 		return err
@@ -77,7 +76,7 @@ func (c *console) connect(uname string, pass string) error {
 	return nil
 }
 
-func (c console) readProcess() {
+func (c RestConsole) readProcess() {
 	for {
 		select {
 		case <-c.closing:
@@ -86,7 +85,7 @@ func (c console) readProcess() {
 			//not closing, lets read
 			resp, err := http.PostForm(c.url+"ReadResponses/"+c.sessionID.String()+"/", url.Values{"ID": {c.sessionID.String()}})
 			if err != nil {
-				c.read <- "Error opening console"
+				c.read <- []string{"Error opening console"}
 				continue
 			}
 			defer resp.Body.Close()
@@ -96,7 +95,7 @@ func (c console) readProcess() {
 			}
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				c.read <- "Error reading from console"
+				c.read <- []string{"Error reading from console"}
 				return
 			}
 
@@ -109,17 +108,15 @@ func (c console) readProcess() {
 
 			err = xml.Unmarshal(body, &ss)
 			if err != nil {
-				c.read <- err.Error()
+				c.read <- []string{err.Error()}
 			}
 
-			for _, line := range ss.Lines {
-				c.read <- line
-			}
+			c.read <- ss.Lines
 		}
 	}
 }
 
-func (c console) writeProcess() {
+func (c RestConsole) writeProcess() {
 	for {
 		select {
 		case <-c.closing:
@@ -134,15 +131,16 @@ func (c console) writeProcess() {
 			)
 			timestamp := time.Now()
 			h, m, s := timestamp.Clock()
-			c.read <- fmt.Sprintf("0:normal:%v:%v:%v - %v", h, m, s, cmd)
+			c.read <- []string{fmt.Sprintf("0:normal:%v:%v:%v - %v", h, m, s, cmd)}
 			if err != nil {
-				c.read <- "Error writing to console"
+				c.read <- []string{"Error writing to console"}
 			}
 		}
 	}
 }
 
-func (c *console) doClose() {
+//Close closes a rest console session with a remote instance
+func (c *RestConsole) Close() {
 	if c.initialized {
 		http.PostForm(c.url+"CloseSession/", url.Values{"ID": {c.sessionID.String()}})
 		close(c.closing)
@@ -150,16 +148,11 @@ func (c *console) doClose() {
 	}
 }
 
-func (c console) Close() {
-	//call internal method, as we need to check and assign the channel
-	c.doClose()
-}
-
-func (c console) Read() <-chan string {
+func (c RestConsole) Read() <-chan []string {
 	return c.read
 }
 
-func (c console) Write(cmd string) {
+func (c RestConsole) Write(cmd string) {
 	if c.initialized {
 		c.write <- cmd
 	}
