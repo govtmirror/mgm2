@@ -12,9 +12,10 @@ type loadIarJob struct {
 	InventoryPath string
 	Filename      string
 	Status        string
+	File          string
 }
 
-func (jm jobMgr) CreateLoadIarJob(owner mgm.User, inventoryPath string) int64 {
+func (jm jobMgr) CreateLoadIarJob(owner mgm.User, inventoryPath string, filename string) int64 {
 	j := mgm.Job{}
 	j.Type = "load_iar"
 	j.Timestamp = time.Now()
@@ -23,6 +24,7 @@ func (jm jobMgr) CreateLoadIarJob(owner mgm.User, inventoryPath string) int64 {
 	jd := loadIarJob{}
 	jd.InventoryPath = inventoryPath
 	jd.Status = "Created"
+	jd.Filename = filename
 
 	encDat, _ := json.Marshal(jd)
 	j.Data = string(encDat)

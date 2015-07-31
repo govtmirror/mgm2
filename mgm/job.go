@@ -16,11 +16,12 @@ type Job struct {
 	Data      string
 }
 
-// JobData is an unfortunate struct for encoding job parts into a singel database field
+// JobData is an unfortunate struct for encoding job parts into a single database field
+// All job data structs have these fields in common for download operations
 type JobData struct {
-	Status string
-	File   string
-	Name   string
+	Status   string
+	Filename string
+	File     string
 }
 
 // ReadData retrieves the JobData struct form our extra data field

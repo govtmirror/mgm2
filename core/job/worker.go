@@ -61,7 +61,13 @@ func (jm jobMgr) processWorker(id uuid.UUID, cmds <-chan regionCommand) {
 		//connect to the console
 		c, err := region.NewRestConsole(r, h)
 		if err != nil {
-			cmd.respond <- response{false, fmt.Sprintf("Could not connecto to console: %v", err.Error())}
+			cmd.respond <- response{false, fmt.Sprintf("Could not connect to console: %v", err.Error())}
+			continue
+		}
+		//read old console messages out of the way
+		_, ok = <-c.Read()
+		if !ok {
+			cmd.respond <- response{false, "Console exited unexpectedly"}
 			continue
 		}
 		c.Write(cmd.command)
@@ -72,23 +78,35 @@ func (jm jobMgr) processWorker(id uuid.UUID, cmds <-chan regionCommand) {
 			if !ok {
 				break
 			}
-			log.Info(msg)
-			if !strings.Contains(msg, cmd.filter) {
-				continue
-			}
-			if strings.Contains(msg, cmd.success) {
-				succeeded = true
-				message = "Completed"
-			}
-			if strings.Contains(msg, cmd.failure) {
-				message = "Failed"
+
+			for _, line := range msg {
+				//log.Info(line)
+
+				if !strings.Contains(line, cmd.filter) {
+					continue
+				}
+				if strings.Contains(line, "System.IO.IOException") {
+					message = "msg"
+					jm.log.Error("IOException on console")
+					c.Close()
+				}
+				if strings.Contains(line, cmd.success) {
+					succeeded = true
+					message = "Completed"
+					jm.log.Error("Success string detected")
+					c.Close()
+				}
+				if strings.Contains(line, cmd.failure) {
+					message = "Failed"
+					jm.log.Error("Failure string detected")
+					c.Close()
+				}
 			}
 		}
-		c.Close()
+
+		jm.log.Info(fmt.Sprintf("Work session %v complete", cmd))
 
 		cmd.respond <- response{succeeded, message}
-
-		jm.log.Info(fmt.Sprintf("Received Command %v", cmd))
 
 	}
 }

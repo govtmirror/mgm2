@@ -373,10 +373,8 @@ func (us userSession) process() {
 					continue
 				}
 
-				if console != nil {
-					us.log.Info("User %v closing existing console session", uid)
-					console.Close()
-				}
+				us.log.Info("User %v closing any existing console session", uid)
+				console.Close()
 
 				console, err = region.NewRestConsole(r, host)
 
@@ -408,7 +406,7 @@ func (us userSession) process() {
 				}
 				us.log.Info("User %v sent console command %v", uid, msg)
 
-				if console == nil {
+				if console.IsConnected() == false {
 					us.log.Info("User %v sending command with no active console", uid)
 					us.client.SignalError(m.MessageID, "No active console")
 					continue
@@ -420,11 +418,7 @@ func (us userSession) process() {
 
 			case "CloseConsole":
 				us.log.Info("User %v requesting close console", uid)
-				go func() {
-					if console != nil {
-						console.Close()
-					}
-				}()
+				console.Close()
 
 			case "SetLocation":
 				go func() {
@@ -669,7 +663,14 @@ func (us userSession) process() {
 					continue
 				}
 
-				id := us.jMgr.CreateLoadOarJob(user, r, x, y, merge)
+				name, err := m.ReadFilename()
+				if err != nil {
+					us.log.Error("Oar Upload Failed: Filename missing")
+					us.client.SignalError(m.MessageID, "Filename missing")
+					continue
+				}
+
+				id := us.jMgr.CreateLoadOarJob(user, r, x, y, merge, name)
 				if id == 0 {
 					us.client.SignalError(m.MessageID, "An error occurred, we could not create the job")
 				} else {
@@ -685,7 +686,14 @@ func (us userSession) process() {
 					continue
 				}
 
-				id := us.jMgr.CreateLoadIarJob(user, "/")
+				name, err := m.ReadFilename()
+				if err != nil {
+					us.log.Error("Iar Upload Failed: Filename missing")
+					us.client.SignalError(m.MessageID, "Filename missing")
+					continue
+				}
+
+				id := us.jMgr.CreateLoadIarJob(user, "/", name)
 				if id == 0 {
 					us.client.SignalError(m.MessageID, "An error occurred, we could not create the job")
 				} else {

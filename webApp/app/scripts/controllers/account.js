@@ -89,6 +89,7 @@ angular.module('mgmApp')
           if (e) {
             mgm.request('IarUpload', {
               UserID: $scope.auth.UUID,
+              Filename: $scope.iarName,
             }, function (success, message) {
               $timeout(function () {
                 if (success === true) {

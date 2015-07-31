@@ -31,6 +31,7 @@ angular.module('mgmApp')
             X: x,
             Y: y,
             Merge: merge,
+            Filename: $scope.oar.filename,
           }, function (success, message) {
             $timeout(function () {
               if (success === true) {

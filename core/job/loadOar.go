@@ -13,13 +13,15 @@ import (
 type loadOarJob struct {
 	Region   uuid.UUID
 	Filename string
+	File     string
 	Status   string
+	Name     string
 	X        uint
 	Y        uint
 	Merge    bool
 }
 
-func (jm jobMgr) CreateLoadOarJob(owner mgm.User, r mgm.Region, x uint, y uint, merge bool) int64 {
+func (jm jobMgr) CreateLoadOarJob(owner mgm.User, r mgm.Region, x uint, y uint, merge bool, filename string) int64 {
 	j := mgm.Job{}
 	j.Type = "load_oar"
 	j.Timestamp = time.Now()
@@ -31,6 +33,7 @@ func (jm jobMgr) CreateLoadOarJob(owner mgm.User, r mgm.Region, x uint, y uint, 
 	jd.X = x
 	jd.Y = y
 	jd.Merge = merge
+	jd.Filename = filename
 
 	encDat, _ := json.Marshal(jd)
 	j.Data = string(encDat)
@@ -97,7 +100,7 @@ func (jm jobMgr) loadOarTask(j mgm.Job, oarJob loadOarJob, ch chan<- regionComma
 	}
 
 	//generate command
-	url := fmt.Sprintf("http://%v/serve/%v", jm.mgmURL, j.ID)
+	url := fmt.Sprintf("http://%v/download/%v", jm.mgmURL, j.ID)
 	var cmd string
 	if oarJob.Merge {
 		cmd = fmt.Sprintf("load oar --merge --force-terrain --force-parcels --displacement <%v,%v,0> %v",
@@ -119,7 +122,7 @@ func (jm jobMgr) loadOarTask(j mgm.Job, oarJob loadOarJob, ch chan<- regionComma
 		command: cmd,
 		filter:  "[ARCHIVER]",
 		success: "Successfully",
-		failure: "",
+		failure: "Aborting",
 		respond: resp,
 	}
 

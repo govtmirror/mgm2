@@ -19,8 +19,8 @@ type Manager interface {
 	FileUploaded(int, uuid.UUID, []byte)
 	GetJobByID(int64) (mgm.Job, bool)
 	DeleteJob(mgm.Job, core.ServiceRequest)
-	CreateLoadIarJob(mgm.User, string) int64
-	CreateLoadOarJob(mgm.User, mgm.Region, uint, uint, bool) int64
+	CreateLoadIarJob(mgm.User, string, string) int64
+	CreateLoadOarJob(mgm.User, mgm.Region, uint, uint, bool, string) int64
 
 	RegionUp(uuid.UUID)
 	RegionDown(uuid.UUID)
@@ -96,16 +96,16 @@ func (jm jobMgr) DeleteJob(j mgm.Job, sr core.ServiceRequest) {
 	}
 
 	type file struct {
-		FileName string
+		File string
 	}
 
 	var f file
 	json.Unmarshal([]byte(j.Data), &f)
-	if f.FileName != "" {
+	if f.File != "" {
 		//delete files from disk
-		err := os.Remove(f.FileName)
+		err := os.Remove(f.File)
 		if err != nil {
-			jm.log.Error(fmt.Sprintf("Error deleting file %v from job %v: %v", f.FileName, j.ID, err.Error()))
+			jm.log.Error(fmt.Sprintf("Error deleting file %v from job %v: %v", f.File, j.ID, err.Error()))
 		}
 	}
 
@@ -177,15 +177,14 @@ func (jm jobMgr) process() {
 					continue
 				}
 
-				if iarJob.Filename != "" {
+				if iarJob.File != "" {
 					jm.log.Info("Job %v multiple upload rejected", err.Error())
 					continue
 				}
 
-				iarJob.Filename = path.Join(jm.localPath, uuid.NewV4().String())
-				iarJob.InventoryPath = "/"
+				iarJob.File = path.Join(jm.localPath, uuid.NewV4().String())
 
-				err = ioutil.WriteFile(iarJob.Filename, s.File, 0644)
+				err = ioutil.WriteFile(iarJob.File, s.File, 0644)
 				if err != nil {
 					jm.log.Error("Error writing file: ", err)
 					iarJob.Status = "Error writing file"
@@ -222,14 +221,14 @@ func (jm jobMgr) process() {
 					continue
 				}
 
-				if oarJob.Filename != "" {
+				if oarJob.File != "" {
 					jm.log.Info("Job %v multiple upload rejected", err.Error())
 					continue
 				}
 
-				oarJob.Filename = path.Join(jm.localPath, uuid.NewV4().String())
+				oarJob.File = path.Join(jm.localPath, uuid.NewV4().String())
 
-				err = ioutil.WriteFile(oarJob.Filename, s.File, 0644)
+				err = ioutil.WriteFile(oarJob.File, s.File, 0644)
 				if err != nil {
 					jm.log.Error("Error writing file: ", err)
 					oarJob.Status = "Error writing file"

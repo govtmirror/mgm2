@@ -127,7 +127,7 @@ func main() {
 
 	_ = session.NewManager(sessionListenerChan, pers, uMgr, jMgr, hMgr, rMgr, sim, logger, notify)
 
-	httpCon := webClient.NewHTTPConnector(config.MGM.SessionSecret, jMgr, sim, uMgr, mailer, logger)
+	httpCon := webClient.NewHTTPConnector(config.MGM.SessionSecret, jMgr, pers, sim, uMgr, mailer, logger)
 	sockCon := webClient.NewWebsocketConnector(httpCon, sessionListenerChan, logger)
 
 	r := mux.NewRouter()

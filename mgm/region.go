@@ -109,8 +109,8 @@ func (rs RegionDeleted) ObjectType() string {
 
 // RegionConsole holds console feedback
 type RegionConsole struct {
-	UUID uuid.UUID
-	Line string
+	UUID  uuid.UUID
+	Lines []string
 }
 
 // Serialize implements UserObject interface Serialize function

@@ -6,7 +6,9 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-//UserMessage is the struct for sending requests to and non-object responses from a user session
+//UserMessage is the struct for receiving commands from the html5 user
+//user messages are composite objects that are decoded in stages to avoid
+//the overhead of maintaining a full list of user sendable objects
 type UserMessage struct {
 	MessageID   int
 	MessageType string
@@ -114,4 +116,17 @@ func (ur UserMessage) ReadOarMerge() (uint, uint, bool, error) {
 		return 0, 0, false, err
 	}
 	return c.X, c.Y, c.Merge, nil
+}
+
+// ReadFilename parses { Filename: string} from the message body
+func (ur UserMessage) ReadFilename() (string, error) {
+	type fn struct {
+		Filename string
+	}
+	c := fn{}
+	err := json.Unmarshal(ur.Message, &c)
+	if err != nil {
+		return "", err
+	}
+	return c.Filename, nil
 }
