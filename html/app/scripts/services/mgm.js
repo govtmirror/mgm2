@@ -41,150 +41,176 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
   self.connect = function () {
     $rootScope.$broadcast('SyncBegin');
     console.log('Connecting to: ' + remoteURL);
-    self.ws = new ReconnectingWebSocket(remoteURL);
 
-    self.ws.onopen = function () {
-      console.log('Socket has been opened!');
-      $rootScope.$broadcast('ServerConnected');
-      self.serverConnected = true;
-      self.request('GetState', '', function () {
-        $rootScope.$broadcast('SyncComplete');
+    self.ws = io({
+      path: '/ws',
+      'force new connection': true
+    });
+
+    self.ws.on('Auth Challenge', function () {
+      console.log('Auth challenge received, sending token');
+      self.ws.emit('Auth Response', self.token, function () {
+        console.log('token accepted');
+
+        $rootScope.$broadcast('ServerConnected');
+        self.serverConnected = true;
+        self.ws.emit('GetState', '', function (data) {
+          data = angular.fromJson(data);
+          //consume state data
+          for(var i = 0; i < data.Users.length; i++){
+            onUser(data.Users[i]);
+          }
+          for(var i = 0; i < data.PendingUsers.length; i++){
+            onPendingUser(data.PendingUsers[i]);
+          }
+          for(var i = 0; i < data.Estates.length; i++){
+            onEstate(data.Estates[i]);
+          }
+          for(var i = 0; i < data.Groups.length; i++){
+            onGroup(data.Groups[i]);
+          }
+          for(var i = 0; i < data.Jobs.length; i++){
+            onJob(data.Jobs[i]);
+          }
+          for(var i = 0; i < data.Hosts.length; i++){
+            onHost(data.Hosts[i]);
+          }
+          for(var i = 0; i < data.HostStats.length; i++){
+            onHostStat(data.HostStats[i]);
+          }
+          for(var i = 0; i < data.Regions.length; i++){
+            onRegion(data.Regions[i]);
+          }
+          for(var i = 0; i < data.RegionStats.length; i++){
+            onRegionStat(data.RegionStats[i]);
+          }
+
+          $rootScope.$broadcast('SyncComplete');
+        });
       });
-    };
+    });
 
-    self.ws.onmessage = function (evt) {
+    self.ws.on('error', function(err){
+      console.log(err);
+    })
+
+    self.ws.on('connect', function () {
+      console.log('Socket has been opened!');
+    });
+
+    self.ws.on('disconnect', function () {
+      console.log('socket has been closed');
+    })
+
+    self.ws.on('User', onUser);
+    self.ws.on('PendingUser', onPendingUser);
+    self.ws.on('Estate', onEstate);
+    self.ws.on('Group', onGroup);
+    self.ws.on('Job', onJob);
+    self.ws.on('Host', onHost);
+    self.ws.on('HostRemoved', onHostRemoved);
+    self.ws.on('HostStat', onHostStat);
+    self.ws.on('Region', onRegion);
+
+    function onUser(data){
+      var user = angular.fromJson(data);
+      if (user.Suspended) {
+        self.suspendedUsers[user.UserID] = user;
+        if (user.UserID in self.activeUsers) {
+          delete self.activeUsers[user.UserID];
+        }
+      } else {
+        self.activeUsers[user.UserID] = user;
+        if (user.UserID in self.suspendedUsers) {
+          delete self.suspendedUsers[user.UserID];
+        }
+      }
+      $rootScope.$broadcast('UserUpdate', user);
+    }
+
+    function onPendingUser(data){
+      var user = angular.fromJson(data);
+      self.pendingUsers[user.UserID] = user;
+      $rootScope.$broadcast('PendingUserUpdate', message.Message);
+    }
+
+    function onRegion(data){
+      var region = angular.fromJson(data);
+      self.regions[region.UUID] = region;
+      $rootScope.$broadcast('RegionUpdate', region);
+    }
+
+    function onRegionStat(data){
+      var rStat = angular.fromJson(data);
+      if (rStat.UUID in self.regions) {
+        self.regions[rStat.UUID].Status = rStat;
+        $rootScope.$broadcast('RegionStatusUpdate', rStat);
+      }
+    }
+
+    function onEstate(data){
+      var estate = angular.fromJson(data);
+      self.estates[estate.ID] = estate;
+      $rootScope.$broadcast('EstateUpdate', estate);
+    }
+
+    function onGroup(data){
+      var group = angular.fromJson(data);
+      self.groups[group.ID] = group;
+      $rootScope.$broadcast('GroupUpdate', group);
+    }
+
+    function onJob(data){
+      var job = angular.fromJson(data);
+      job.Data = angular.fromJson(job.Data);
+      self.jobs[job.ID] = job;
+      $rootScope.$broadcast('JobUpdate', job);
+    }
+
+    function onHost(data){
+      var host = angular.fromJson(data);
+      self.hosts[host.ID] = host;
+      $rootScope.$broadcast('HostUpdate', host);
+    }
+
+    function onHostRemoved(data){
+      delete self.hosts[data];
+      $rootScope.$broadcast('HostRemoved', data);
+    }
+
+    function onHostStat(data){
+      var hStat = angular.fromJson(data);
+      if (hStat.ID in self.hosts) {
+        self.hosts[hStat.ID].Status = hStat;
+        $rootScope.$broadcast('HostStatusUpdate', hStat);
+      }
+    }
+    /*self.ws.onmessage = function (evt) {
       var message = angular.fromJson(evt.data);
       switch (message.MessageType) {
-      case 'User':
-        var user = message.Message;
-        if (user.Suspended) {
-          self.suspendedUsers[user.UserID] = user;
-          if (user.UserID in self.activeUsers) {
-            delete self.activeUsers[user.UserID];
-          }
-        } else {
-          self.activeUsers[user.UserID] = user;
-          if (user.UserID in self.suspendedUsers) {
-            delete self.suspendedUsers[user.UserID];
-          }
-        }
-        $rootScope.$broadcast('UserUpdate', user);
-        break;
-      case 'PendingUser':
-        self.pendingUsers[message.Message.UserID] = message.Message;
-        $rootScope.$broadcast('PendingUserUpdate', message.Message);
-        break;
       case 'RegionDeleted':
         delete self.regions[message.Message.UUID];
         $rootScope.$broadcast('RegionDeleted', message.Message);
-        break;
-      case 'Region':
-        self.regions[message.Message.UUID] = message.Message;
-        $rootScope.$broadcast('RegionUpdate', message.Message);
-        break;
-      case 'Estate':
-        self.estates[message.Message.ID] = message.Message;
-        $rootScope.$broadcast('EstateUpdate', message.Message);
-        break;
-      case 'Group':
-        self.groups[message.Message.ID] = message.Message;
-        $rootScope.$broadcast('GroupUpdate', message.Message);
-        break;
-      case 'Job':
-        message.Message.Data = JSON.parse(message.Message.Data);
-        self.jobs[message.Message.ID] = message.Message;
-        $rootScope.$broadcast('JobUpdate', message.Message);
         break;
       case 'JobDeleted':
         delete self.jobs[message.Message.ID]
         $rootScope.$broadcast('JobDeleted', message.Message)
         break;
-      case 'Config':
-        $rootScope.$broadcast('ConfigUpdate', message.Message);
-        break;
-      case 'HostDeleted':
-        delete self.hosts[message.Message.ID];
-        $rootScope.$broadcast('HostDeleted', message.Message);
-        break;
-      case 'Host':
-        self.hosts[message.Message.ID] = message.Message;
-        $rootScope.$broadcast('HostUpdate', message.Message);
-        break;
-      case 'HostStat':
-        if (message.Message.ID in self.hosts) {
-          self.hosts[message.Message.ID].Status = message.Message;
-          $rootScope.$broadcast('HostStatusUpdate', message.Message);
-        }
-        break;
-      case 'RegionStat':
-        if (message.Message.UUID in self.regions) {
-          self.regions[message.Message.UUID].Status = message.Message;
-          $rootScope.$broadcast('RegionStatusUpdate', message.Message);
-        }
-        break;
       case 'RegionConsole':
         if (message.Message.UUID in self.regions) {
           $rootScope.$broadcast('ConsoleUpdate', message.Message);
         }
-      case 'Success':
-        var msgID = message.MessageID;
-        if (msgID in requestMap) {
-          requestMap[msgID].Callback(true, message.Message);
-          delete requestMap[msgID];
-        } else {
-          if(msgID !== 0){
-            console.log('Invalid success for nonexistant request: ' + msgID);
-            console.log(message.Message);
-          }
-        }
-        break;
-      case 'Progress': //progress on a request
-        var msgID = message.MessageID;
-        if(msgID in requestMap) {
-          requestMap[msgID].Callback(true, message.Message);
-          //do not delete, this is not a final message
-        }
-      case 'Error':
-        msgID = message.MessageID;
-        if (msgID in requestMap) {
-          requestMap[msgID].Callback(false, message.Message);
-          delete requestMap[msgID];
-        } else {
-          console.log('Invalid error for nonexistant request: ' + msgID);
-        }
-        break;
       default:
         console.log('Error parsing message:');
         console.log(message);
       }
 
-    };
-
-    self.ws.onclose = function () {
-      console.log('Connection closed');
-      self.serverConnected = false;
-    };
+    };*/
   };
 
   self.disconnect = function () {
-    self.ws.close();
-  };
-
-  /* Request tracking */
-  var requestNum = 1;
-  var requestMap = {};
-  self.request = function (requestType, reqObject, callback) {
-    var msgId = requestNum;
-    requestNum++;
-    requestMap[msgId] = {
-      'MessageID': msgId,
-      'Callback': callback
-    };
-    self.ws.send(JSON.stringify({
-      'MessageID': msgId,
-      'MessageType': requestType,
-      'Message': reqObject
-    }));
+    self.ws.io.disconnect();
+    //self.ws.close();
   };
 
   /* location tracking */

@@ -32,4 +32,5 @@ type UserConnector interface {
 
 	SetPassword(uuid.UUID, string) error
 	ValidatePassword(uuid.UUID, string) (bool, error)
+	Auth(username string, password string) (bool, uuid.UUID, error)
 }

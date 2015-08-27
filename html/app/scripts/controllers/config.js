@@ -34,9 +34,9 @@ angular.module('mgmApp')
       }
     };
 
-    var populateRegions = function () {
+    function populateRegions() {
       var regions = [];
-      if( $scope.currentEstate !== undefined){
+      if ($scope.currentEstate !== undefined) {
         for (var i = 0; i < $scope.currentEstate.Regions.length; i++) {
           regions.push(mgm.regions[$scope.currentEstate.Regions[i]]);
         }
@@ -44,54 +44,48 @@ angular.module('mgmApp')
       $scope.regions = regions;
     };
 
-    var requestConfig = function (uuid) {
+    function requestConfig(uuid) {
       $scope.config = {};
+      var region = '';
       if (uuid === '00000000-0000-0000-0000-000000000000') {
         console.log('Requesting default configs');
-        mgm.request('GetDefaultConfig', {}, function (success, message) {
-          if (!success){
-            console.log('Error getting default config: ' + message);
-          }
-          //all default configs received
-          $timeout(function(){
-            generateEditConfig();
-          });
-        });
       } else {
-        console.log('Requesting region configs');
-        mgm.request('GetConfig', {
-          'RegionUUID': uuid
-        }, function (success, message) {
-          if (!success){
-            console.log('Error getting config: ' + message);
+        console.log('Requesting configs for ' + uuid);
+        region = uuid;
+      }
+      mgm.ws.emit('GetConfig', region, function (response) {
+        response = angular.fromJson(response);
+        if (response.Success === true) {
+          for (var i = 0; i < response.Configs.length; i++) {
+            processConfig(response.Configs[i]);
           }
-          //all region configs received
-          $timeout(function(){
+          $timeout(function () {
             generateEditConfig();
           });
-        });
-      }
-    };
-    $scope.$on('ConfigUpdate', function (event, cfg) {
-      $timeout(function(){
-        if (cfg.Region === '00000000-0000-0000-0000-000000000000') {
-          if (!(cfg.Section in $scope.defaultConfig)) {
-            $scope.defaultConfig[cfg.Section] = {};
-          }
-          $scope.defaultConfig[cfg.Section][cfg.Item] = cfg.Content;
-        }
-        if (cfg.Region === $scope.currentRegion.UUID) {
-          if (!(cfg.Section in $scope.regionConfig)) {
-            $scope.regionConfig[cfg.Section] = {};
-          }
-          $scope.regionConfig[cfg.Section][cfg.Item] = cfg.Content;
+        } else {
+          alertify.error(response.Message);
         }
       });
-    });
+    };
+
+    function processConfig(cfg) {
+      if (cfg.Region === '00000000-0000-0000-0000-000000000000') {
+        if (!(cfg.Section in $scope.defaultConfig)) {
+          $scope.defaultConfig[cfg.Section] = {};
+        }
+        $scope.defaultConfig[cfg.Section][cfg.Item] = cfg.Content;
+      }
+      if (cfg.Region === $scope.currentRegion.UUID) {
+        if (!(cfg.Section in $scope.regionConfig)) {
+          $scope.regionConfig[cfg.Section] = {};
+        }
+        $scope.regionConfig[cfg.Section][cfg.Item] = cfg.Content;
+      }
+    };
 
     $scope.displayConfig = function () {
-      if($scope.currentEstate !== undefined){
-        if($scope.currentRegion !== undefined){
+      if ($scope.currentEstate !== undefined) {
+        if ($scope.currentRegion !== undefined) {
           $location.url('/config/' + $scope.currentEstate.ID + '/' + $scope.currentRegion.UUID);
         } else {
           $location.url('/config/' + $scope.currentEstate.ID);
@@ -111,7 +105,7 @@ angular.module('mgmApp')
       requestConfig($routeParams.region);
     }
 
-    var generateEditConfig = function () {
+    function generateEditConfig() {
       var newConfig = {};
       //populate default options
       angular.forEach($scope.defaultConfig, function (row, section) {

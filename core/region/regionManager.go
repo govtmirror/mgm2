@@ -3,46 +3,93 @@ package region
 import (
 	"fmt"
 	"strconv"
+	"sync"
 
 	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/mgm"
+	"github.com/satori/go.uuid"
 )
 
-// Manager controls and notifies on region / estate changes and permissions
-type Manager interface {
-	//GetRegionByID(id uuid.UUID) (mgm.Region, bool, error)
-	//GetDefaultConfigs() ([]mgm.ConfigOption, error)
-	//GetConfigs(regionID uuid.UUID) ([]mgm.ConfigOption, error)
-	ServeConfigs(mgm.Region, mgm.Host) []mgm.ConfigOption
+type notifier interface {
 }
 
 // NewManager constructs a RegionManager for use
-func NewManager(mgmURL string, simianURL string, pers persist.MGMDB, osdb persist.Database, log logger.Log) Manager {
-	rMgr := regionMgr{}
+func NewManager(mgmURL string, simianURL string, pers persist.MGMDB, osdb persist.Database, notify notifier, log logger.Log) Manager {
+	rMgr := Manager{}
 	rMgr.simianURL = simianURL
 	rMgr.mgmURL = mgmURL
 	rMgr.mgm = pers
 	rMgr.osdb = osdb
 	rMgr.log = logger.Wrap("REGION", log)
+	rMgr.regions = make(map[uuid.UUID]mgm.Region)
+	rMgr.regionStats = make(map[uuid.UUID]mgm.RegionStat)
+	rMgr.rMutex = &sync.Mutex{}
+	rMgr.rsMutex = &sync.Mutex{}
+	rMgr.notify = notify
+
+	for _, r := range pers.QueryRegions() {
+		rMgr.regions[r.UUID] = r
+		rMgr.regionStats[r.UUID] = mgm.RegionStat{}
+	}
+
 	return rMgr
 }
 
-type regionMgr struct {
-	simianURL string
-	mgmURL    string
-	osdb      persist.Database
-	mgm       persist.MGMDB
-	log       logger.Log
+// Manager is a central access point for Region actions
+type Manager struct {
+	simianURL   string
+	mgmURL      string
+	osdb        persist.Database
+	mgm         persist.MGMDB
+	notify      notifier
+	log         logger.Log
+	regions     map[uuid.UUID]mgm.Region
+	rMutex      *sync.Mutex
+	regionStats map[uuid.UUID]mgm.RegionStat
+	rsMutex     *sync.Mutex
 }
 
-func (rm regionMgr) ServeConfigs(region mgm.Region, host mgm.Host) []mgm.ConfigOption {
+// GetRegions get a slice of all regions from cache
+func (m Manager) GetRegions() []mgm.Region {
+	m.rMutex.Lock()
+	defer m.rMutex.Unlock()
+	t := []mgm.Region{}
+	for _, r := range m.regions {
+		t = append(t, r)
+	}
+	return t
+}
+
+// GetRegionStats get a slice of all region stats from cache
+func (m Manager) GetRegionStats() []mgm.RegionStat {
+	m.rsMutex.Lock()
+	defer m.rsMutex.Unlock()
+	t := []mgm.RegionStat{}
+	for _, r := range m.regionStats {
+		t = append(t, r)
+	}
+	return t
+}
+
+// GetDefaultConfigs retrieves the default region configuration
+func (m Manager) GetDefaultConfigs() []mgm.ConfigOption {
+	return m.mgm.QueryDefaultConfigs()
+}
+
+// GetConfigs retrieves region-specific configuration
+func (m Manager) GetConfigs(id uuid.UUID) []mgm.ConfigOption {
+	return m.mgm.QueryConfigs(id)
+}
+
+// ServeConfigs generates a list of configuration options to feed to a region before it starts
+func (m Manager) ServeConfigs(region mgm.Region, host mgm.Host) []mgm.ConfigOption {
 	var result []mgm.ConfigOption
 
-	gridURL := fmt.Sprintf("http://%v/Grid/", rm.simianURL)
+	gridURL := fmt.Sprintf("http://%v/Grid/", m.simianURL)
 
-	defaultConfigs := rm.mgm.GetDefaultConfigs()
-	regionConfigs := rm.mgm.GetConfigs(region)
+	defaultConfigs := m.mgm.QueryDefaultConfigs()
+	regionConfigs := m.mgm.QueryConfigs(region.UUID)
 
 	configs := make(map[string]map[string]string)
 
@@ -112,8 +159,8 @@ func (rm regionMgr) ServeConfigs(region mgm.Region, host mgm.Host) []mgm.ConfigO
 	configs["Network"]["ExternalHostNameForLSL"] = host.ExternalAddress
 	configs["Network"]["shard"] = "OpenSim"
 
-	configs["ClientStack.LindenCaps"]["Cap_GetTexture"] = fmt.Sprintf("http://%v/GridPublic/GetTexture/", rm.simianURL)
-	configs["ClientStack.LindenCaps"]["Cap_GetMesh"] = fmt.Sprintf("http://%v/GridPublic/GetMesh", rm.simianURL)
+	configs["ClientStack.LindenCaps"]["Cap_GetTexture"] = fmt.Sprintf("http://%v/GridPublic/GetTexture/", m.simianURL)
+	configs["ClientStack.LindenCaps"]["Cap_GetMesh"] = fmt.Sprintf("http://%v/GridPublic/GetMesh", m.simianURL)
 	configs["ClientStack.LindenCaps"]["Cap_AvatarPickerSearch"] = "localhost"
 	configs["ClientStack.LindenCaps"]["Cap_GetDisplayNames"] = "localhost"
 
@@ -154,7 +201,7 @@ func (rm regionMgr) ServeConfigs(region mgm.Region, host mgm.Host) []mgm.ConfigO
 	configs["Architecture"]["Include-Architecture"] = "config-include/SimianGrid.ini"
 
 	configs["DatabaseService"]["StorageProvider"] = "OpenSim.Data.MySQL.dll"
-	configs["DatabaseService"]["ConnectionString"] = rm.osdb.GetConnectionString()
+	configs["DatabaseService"]["ConnectionString"] = m.osdb.GetConnectionString()
 
 	configs["Modules"]["AssetCaching"] = "FlotsamAssetCache"
 	configs["Modules"]["Include-FlotsamCache"] = "config-include/FlotsamCache.ini"
@@ -165,7 +212,7 @@ func (rm regionMgr) ServeConfigs(region mgm.Region, host mgm.Host) []mgm.ConfigO
 
 	configs["InventoryService"]["InventoryServerURI"] = gridURL
 
-	configs["GridInfo"]["GridInfoURI"] = rm.mgmURL
+	configs["GridInfo"]["GridInfoURI"] = m.mgmURL
 
 	configs["GridService"]["GridServerURI"] = gridURL
 

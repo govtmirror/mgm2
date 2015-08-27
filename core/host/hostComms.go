@@ -6,7 +6,6 @@ import (
 	"net"
 	"syscall"
 
-	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
@@ -22,15 +21,15 @@ type Comms struct {
 type Message struct {
 	ID          uint
 	MessageType string
-	Region      mgm.Region          `json:",omitempty"`
-	Message     string              `json:",omitempty"`
-	Register    Registration        `json:",omitempty"`
-	HStats      mgm.HostStat        `json:",omitempty"`
-	RStats      mgm.RegionStat      `json:",omitempty"`
-	Configs     []mgm.ConfigOption  `json:",omitempty"`
-	Host        mgm.Host            `json:"-"`
-	Estate      mgm.Estate          `json:"-"`
-	SR          core.ServiceRequest `json:"-"`
+	response    chan<- error
+	Region      mgm.Region         `json:",omitempty"`
+	Message     string             `json:",omitempty"`
+	Register    Registration       `json:",omitempty"`
+	HStats      mgm.HostStat       `json:",omitempty"`
+	RStats      mgm.RegionStat     `json:",omitempty"`
+	Configs     []mgm.ConfigOption `json:",omitempty"`
+	Host        mgm.Host           `json:"-"`
+	Estate      mgm.Estate         `json:"-"`
 }
 
 // Registration holds mgmNode information for MGM

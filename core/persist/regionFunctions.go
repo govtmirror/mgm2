@@ -8,8 +8,9 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-func (m mgmDB) persistRegion(region mgm.Region) {
-	con, err := m.db.GetConnection()
+// PersistRegion commits a region record to the database
+func (m MGMDB) PersistRegion(region mgm.Region) {
+	con, err := m.db.getConnection()
 	if err != nil {
 		errMsg := fmt.Sprintf("Error connecting to database: %v", err.Error())
 		log.Fatal(errMsg)
@@ -36,9 +37,10 @@ func (m mgmDB) persistRegion(region mgm.Region) {
 	}
 }
 
-func (m mgmDB) queryRegions() []mgm.Region {
+// QueryRegions reads all region records from the database
+func (m MGMDB) QueryRegions() []mgm.Region {
 	var regions []mgm.Region
-	con, err := m.db.GetConnection()
+	con, err := m.db.getConnection()
 	if err != nil {
 		errMsg := fmt.Sprintf("Error connecting to database: %v", err.Error())
 		log.Fatal(errMsg)
@@ -78,120 +80,68 @@ func (m mgmDB) queryRegions() []mgm.Region {
 	return regions
 }
 
-func (m mgmDB) GetDefaultConfigs() []mgm.ConfigOption {
-	var configs []mgm.ConfigOption
-	r := mgmReq{}
-	r.request = "GetDefaultConfigs"
-	r.result = make(chan interface{}, 64)
-	m.reqs <- r
-	for {
-		h, ok := <-r.result
-		if !ok {
-			return configs
-		}
-		configs = append(configs, h.(mgm.ConfigOption))
+// QueryDefaultConfigs reads the current default configs from the database
+func (m MGMDB) QueryDefaultConfigs() []mgm.ConfigOption {
+	cfgs := []mgm.ConfigOption{}
+	con, err := m.db.getConnection()
+	if err != nil {
+		log.Fatal(fmt.Sprintf("Error connecting to database: %v", err.Error()))
+		return cfgs
 	}
-}
+	defer con.Close()
 
-func (m mgmDB) GetConfigs(region mgm.Region) []mgm.ConfigOption {
-	var configs []mgm.ConfigOption
-	r := mgmReq{}
-	r.request = "GetConfigs"
-	r.object = region
-	r.result = make(chan interface{}, 64)
-	m.reqs <- r
-	for {
-		h, ok := <-r.result
-		if !ok {
-			return configs
-		}
-		configs = append(configs, h.(mgm.ConfigOption))
+	rows, err := con.Query("SELECT section, item, content FROM iniConfig WHERE region IS NULL")
+	if err != nil {
+		log.Fatal(fmt.Sprintf("Error getting default configs: %v", err.Error()))
+		return cfgs
 	}
-}
+	defer rows.Close()
 
-func (m mgmDB) GetRegions() []mgm.Region {
-	var regions []mgm.Region
-	r := mgmReq{}
-	r.request = "GetRegions"
-	r.result = make(chan interface{}, 64)
-	m.reqs <- r
-	for {
-		h, ok := <-r.result
-		if !ok {
-			return regions
+	for rows.Next() {
+		c := mgm.ConfigOption{}
+		err = rows.Scan(
+			&c.Section,
+			&c.Item,
+			&c.Content,
+		)
+		if err != nil {
+			log.Fatal(fmt.Sprintf("Error parsing default configs: %v", err.Error()))
+			return cfgs
 		}
-		regions = append(regions, h.(mgm.Region))
+		cfgs = append(cfgs, c)
 	}
+	return cfgs
 }
 
-func (m mgmDB) GetRegion(id uuid.UUID) (mgm.Region, bool) {
-	for _, r := range m.GetRegions() {
-		if r.UUID == id {
-			return r, true
+// QueryConfigs reads the current specific configs for a given region
+func (m MGMDB) QueryConfigs(r uuid.UUID) []mgm.ConfigOption {
+	cfgs := []mgm.ConfigOption{}
+	con, err := m.db.getConnection()
+	if err != nil {
+		log.Fatal(fmt.Sprintf("Error connecting to database: %v", err.Error()))
+		return cfgs
+	}
+	defer con.Close()
+
+	rows, err := con.Query("SELECT section, item, content FROM iniConfig WHERE region=?", r.String())
+	if err != nil {
+		log.Fatal(fmt.Sprintf("Error getting configs for %v: %v", r.String(), err.Error()))
+		return cfgs
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		c := mgm.ConfigOption{}
+		err = rows.Scan(
+			&c.Section,
+			&c.Item,
+			&c.Content,
+		)
+		if err != nil {
+			log.Fatal(fmt.Sprintf("Error parsing configs for %v: %v", r.String(), err.Error()))
+			return cfgs
 		}
+		cfgs = append(cfgs, c)
 	}
-	return mgm.Region{}, false
-}
-
-func (m mgmDB) GetRegionStats() []mgm.RegionStat {
-	var stats []mgm.RegionStat
-	r := mgmReq{}
-	r.request = "GetRegionStats"
-	r.result = make(chan interface{}, 64)
-	m.reqs <- r
-	for {
-		h, ok := <-r.result
-		if !ok {
-			return stats
-		}
-		stats = append(stats, h.(mgm.RegionStat))
-	}
-}
-
-func (m mgmDB) GetRegionStat(id uuid.UUID) (mgm.RegionStat, bool) {
-	for _, st := range m.GetRegionStats() {
-		if st.UUID == id {
-			return st, true
-		}
-	}
-	return mgm.RegionStat{}, false
-}
-
-func (m mgmDB) UpdateRegion(region mgm.Region) {
-	r := mgmReq{}
-	r.request = "UpdateRegion"
-	r.object = region
-	m.reqs <- r
-}
-
-func (m mgmDB) UpdateRegionStat(stat mgm.RegionStat) {
-	r := mgmReq{}
-	r.request = "UpdateRegionStat"
-	r.object = stat
-	m.reqs <- r
-}
-
-func (m mgmDB) RemoveRegion(region mgm.Region) {
-	r := mgmReq{}
-	r.request = "RemoveRegion"
-	r.object = region
-	m.reqs <- r
-}
-
-func (m mgmDB) MoveRegionToHost(r mgm.Region, h mgm.Host) {
-	req := mgmReq{}
-	req.request = "MoveRegionToHost"
-	req.object = r
-	req.target = h
-	req.result = make(chan interface{}, 4)
-	m.reqs <- req
-}
-
-func (m mgmDB) MoveRegionToEstate(r mgm.Region, e mgm.Estate) {
-	req := mgmReq{}
-	req.request = "MoveRegionToEstate"
-	req.object = r
-	req.target = e
-	req.result = make(chan interface{}, 4)
-	m.reqs <- req
+	return cfgs
 }

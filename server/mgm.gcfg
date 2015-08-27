@@ -1,7 +1,7 @@
 [mgm]
   MgmUrl = 127.0.0.1
   SimianUrl = 127.0.0.1
-  SessionSecret = 35FA4ACE5EF326AE5474AE14EF143
+  SecretKey = 35FA4ACE5EF326AE5474AE14EF143
   OpensimPort = 8000
   WebPort = 8080
   NodePort = 3000

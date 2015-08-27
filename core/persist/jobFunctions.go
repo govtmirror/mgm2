@@ -8,8 +8,8 @@ import (
 )
 
 // hosts are created by clients inserting an ip address, that is all we can insert
-func (m mgmDB) insertJob(job mgm.Job) (int64, error) {
-	con, err := m.db.GetConnection()
+func (m MGMDB) insertJob(job mgm.Job) (int64, error) {
+	con, err := m.db.getConnection()
 	var id int64
 	if err != nil {
 		return 0, err
@@ -28,8 +28,8 @@ func (m mgmDB) insertJob(job mgm.Job) (int64, error) {
 	return id, nil
 }
 
-func (m mgmDB) persistJob(job mgm.Job) {
-	con, err := m.db.GetConnection()
+func (m MGMDB) persistJob(job mgm.Job) {
+	con, err := m.db.getConnection()
 	if err == nil {
 		_, err = con.Exec("UPDATE jobs SET data=? WHERE id=?",
 			job.Data, job.ID)
@@ -40,8 +40,9 @@ func (m mgmDB) persistJob(job mgm.Job) {
 	}
 }
 
-func (m mgmDB) purgeJob(job mgm.Job) {
-	con, err := m.db.GetConnection()
+// PurgeJob remove a job from the database
+func (m MGMDB) PurgeJob(job mgm.Job) {
+	con, err := m.db.getConnection()
 	if err == nil {
 		_, err = con.Exec("DELETE FROM jobs WHERE id=?", job.ID)
 	}
@@ -51,9 +52,10 @@ func (m mgmDB) purgeJob(job mgm.Job) {
 	}
 }
 
-func (m mgmDB) queryJobs() []mgm.Job {
+// QueryJobs reads all job records from the database
+func (m MGMDB) QueryJobs() []mgm.Job {
 	var jobs []mgm.Job
-	con, err := m.db.GetConnection()
+	con, err := m.db.getConnection()
 	if err != nil {
 		errMsg := fmt.Sprintf("Error connecting to database: %v", err.Error())
 		log.Fatal(errMsg)
@@ -84,44 +86,4 @@ func (m mgmDB) queryJobs() []mgm.Job {
 		jobs = append(jobs, j)
 	}
 	return jobs
-}
-
-func (m mgmDB) GetJobs() []mgm.Job {
-	var jobs []mgm.Job
-	r := mgmReq{}
-	r.request = "GetJobs"
-	r.result = make(chan interface{}, 64)
-	m.reqs <- r
-	for {
-		h, ok := <-r.result
-		if !ok {
-			return jobs
-		}
-		jobs = append(jobs, h.(mgm.Job))
-	}
-}
-
-func (m mgmDB) AddJob(j mgm.Job) int64 {
-	r := mgmReq{}
-	r.request = "AddJob"
-	r.object = j
-	r.result = make(chan interface{}, 2)
-	m.reqs <- r
-	obj := <-r.result
-	job := obj.(mgm.Job)
-	return job.ID
-}
-
-func (m mgmDB) UpdateJob(j mgm.Job) {
-	r := mgmReq{}
-	r.request = "UpdateJob"
-	r.object = j
-	m.reqs <- r
-}
-
-func (m mgmDB) RemoveJob(j mgm.Job) {
-	r := mgmReq{}
-	r.request = "RemoveJob"
-	r.object = j
-	m.reqs <- r
 }

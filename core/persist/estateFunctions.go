@@ -8,11 +8,11 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-func (m mgmDB) persistRegionEstate(region mgm.Region, estate mgm.Estate) {
-	con, err := m.osdb.GetConnection()
+func (m MGMDB) persistRegionEstate(region mgm.Region, estate mgm.Estate) {
+	con, err := m.osdb.getConnection()
 	if err != nil {
-		errMsg := fmt.Sprintf("Error connecting to database: %v", err.Error())
-		log.Fatal(errMsg)
+		log.Fatal(fmt.Sprintf("Error connecting to database: %v", err.Error()))
+		return
 	}
 	defer con.Close()
 
@@ -23,9 +23,10 @@ func (m mgmDB) persistRegionEstate(region mgm.Region, estate mgm.Estate) {
 	}
 }
 
-func (m mgmDB) queryEstates() []mgm.Estate {
+// QueryEstates retrieves all current estate records from mysql
+func (m MGMDB) QueryEstates() []mgm.Estate {
 	var estates []mgm.Estate
-	con, err := m.osdb.GetConnection()
+	con, err := m.osdb.getConnection()
 	if err != nil {
 		errMsg := fmt.Sprintf("Error connecting to database: %v", err.Error())
 		log.Fatal(errMsg)
@@ -96,19 +97,4 @@ func (m mgmDB) queryEstates() []mgm.Estate {
 		}
 	}
 	return estates
-}
-
-func (m mgmDB) GetEstates() []mgm.Estate {
-	var estates []mgm.Estate
-	r := mgmReq{}
-	r.request = "GetEstates"
-	r.result = make(chan interface{}, 64)
-	m.reqs <- r
-	for {
-		h, ok := <-r.result
-		if !ok {
-			return estates
-		}
-		estates = append(estates, h.(mgm.Estate))
-	}
 }

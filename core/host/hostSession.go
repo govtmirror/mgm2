@@ -1,6 +1,7 @@
 package host
 
 import (
+	"errors"
 	"fmt"
 	"net"
 
@@ -47,14 +48,14 @@ func (ns hostSession) process(closing chan<- int64, register chan<- registration
 		case msg := <-ns.cmdMsgs:
 			// Messages coming from MGM
 			if !ns.Running {
-				msg.SR(false, "Operation ignored, host is offline")
+				msg.response <- errors.New("Operation ignored, host is offline")
 				ns.log.Info("Ignoring request of type %v, host is not connected", msg.MessageType)
 				continue
 			}
 			// confirm we are not pending on an identical request
 			for _, req := range pendingRequests {
 				if req.MessageType == msg.MessageType && req.Region.UUID == msg.Region.UUID {
-					msg.SR(false, fmt.Sprintf("Pending operation of type %v already in progress", req.MessageType))
+					msg.response <- fmt.Errorf("Pending operation of type %v already in progress", req.MessageType)
 					ns.log.Info("Ignoring request of type %v, matching request already in progress", req.MessageType)
 					continue
 				}
@@ -92,13 +93,13 @@ func (ns hostSession) process(closing chan<- int64, register chan<- registration
 			case "Success":
 				//an MGM request has succeeded
 				if req, ok := pendingRequests[nmsg.ID]; ok {
-					req.SR(true, nmsg.Message)
+					close(req.response)
 					delete(pendingRequests, nmsg.ID)
 				}
 			case "Failure":
 				//an MGM request has failed
 				if req, ok := pendingRequests[nmsg.ID]; ok {
-					req.SR(false, nmsg.Message)
+					req.response <- errors.New(nmsg.Message)
 					delete(pendingRequests, nmsg.ID)
 				}
 			default:

@@ -12,7 +12,7 @@ angular.module('mgmApp')
 
     if ($scope.auth === undefined) {
       //attempt to resume session
-      mgmPublic.resumeSession();
+      //mgmPublic.resumeSession();
     }
 
     $scope.$on('ResumeFailed', function (/*event*/) {

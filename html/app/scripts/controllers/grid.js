@@ -8,7 +8,7 @@
  * Controller of the mgmApp
  */
 angular.module('mgmApp')
-  .controller('GridCtrl', function($scope, mgm, $location, $routeParams, $timeout, $modal) {
+  .controller('GridCtrl', function ($scope, mgm, $location, $routeParams, $timeout, $modal) {
 
     if ($scope.auth === undefined || $scope.auth === {}) {
       mgm.pushLocation($location.url());
@@ -21,48 +21,25 @@ angular.module('mgmApp')
       $scope.section = 'estates';
     }
 
-    $scope.isActive = function(section) {
+    $scope.isActive = function (section) {
       return this.section === section;
     };
 
     $scope.host = {
-      delete: function(host) {
-        host.RunningRegions = 0;
-        if (host.Regions !== null) {
-          var regions = mgm.regions;
-          for (var uuid in host.Regions) {
-            if (regions[uuid].Running) {
-              host.RunningRegions++;
-            }
+      delete: function (host) {
+        alertify.confirm('Are you sure you want to remove this host?', function (e) {
+          if (e) {
+            console.log('Requesting host ' + host.ID + ' be removed');
+            mgm.ws.emit('RemoveHost', '' + host.ID, function (response) {
+              response = angular.fromJson(response);
+              if (response.Success === false) {
+                alertify.error(response.Message);
+              }
+            });
           }
-        }
-        var modInst = $modal.open({
-          animation: false,
-          templateUrl: 'removeHostModal.html',
-          backdrop: 'static',
-          keyboard: false,
-          controller: 'ConfirmCtrl',
-          resolve: {
-            object: function() {
-              return host;
-            },
-          }
-        });
-        modInst.result.then(function() {
-          mgm.request('RemoveHost', {
-            'ID': host.ID
-          }, function(done, message) {
-            if (done) {
-              //host is deleted
-              console.log('Success: ' + message);
-            } else {
-              //an error occurred
-              console.log('Error: ' + message);
-            }
-          });
         });
       },
-      new: function() {
+      new: function () {
         var newHost = {};
         var modInst = $modal.open({
           animation: false,
@@ -71,26 +48,22 @@ angular.module('mgmApp')
           keyboard: false,
           controller: 'ConfirmCtrl',
           resolve: {
-            object: function() {
+            object: function () {
               return newHost;
             },
           }
         });
-        modInst.result.then(function() {
-          mgm.request('AddHost', {
-            'Address': newHost.address
-          }, function(done, message) {
-            if (done) {
-              //host is deleted
-              console.log('Success: ' + message);
-            } else {
-              //an error occurred
-              console.log('Error: ' + message);
+        modInst.result.then(function () {
+          console.log("Requesting new host at " + newHost.address);
+          mgm.ws.emit('AddHost', newHost.address, function (response) {
+            response = angular.fromJson(response);
+            if (response.Success === false) {
+              alertify.error(response.Message);
             }
           });
         });
       },
-      countRunning: function(host) {
+      countRunning: function (host) {
         var running = 0;
         for (var uuid in host.Regions) {
           console.log(uuid);
@@ -104,8 +77,8 @@ angular.module('mgmApp')
     $scope.groups = mgm.groups;
     $scope.hosts = mgm.hosts;
 
-    $scope.$on('EstateUpdate', function(event, estate) {
-      $timeout(function() {
+    $scope.$on('EstateUpdate', function (event, estate) {
+      $timeout(function () {
         if (!(estate.ID in $scope.estates)) {
           $scope.estates[estate.ID] = estate;
         } else {
@@ -116,8 +89,8 @@ angular.module('mgmApp')
       });
     });
 
-    $scope.$on('GroupUpdate', function(event, group) {
-      $timeout(function() {
+    $scope.$on('GroupUpdate', function (event, group) {
+      $timeout(function () {
         if (!(group.ID in $scope.groups)) {
           $scope.groups[group.ID] = group;
         } else {
@@ -129,8 +102,8 @@ angular.module('mgmApp')
       });
     });
 
-    $scope.$on('HostUpdate', function(event, host) {
-      $timeout(function() {
+    $scope.$on('HostUpdate', function (event, host) {
+      $timeout(function () {
         if (!(host.ID in $scope.hosts)) {
           $scope.hosts[host.ID] = host;
         } else {
@@ -141,24 +114,22 @@ angular.module('mgmApp')
       });
     });
 
-    $scope.$on('HostStatusUpdate', function(event, stat) {
+    $scope.$on('HostStatusUpdate', function (event, stat) {
       if (stat.ID in $scope.hosts) {
-        $timeout(function() {
+        $timeout(function () {
           $scope.hosts[stat.ID].Status = stat;
         });
       }
     });
 
-    $scope.$on('HostDeleted', function(event, stat) {
-      if (stat.ID in $scope.hosts) {
-        console.log('Deleting host from display');
-        $timeout(function() {
-          delete $scope.hosts[stat.ID];
-        });
-      }
+    $scope.$on('HostRemoved', function (event, stat) {
+      console.log('Deleting host ' + stat + ' from display');
+      $timeout(function () {
+        delete $scope.hosts[stat];
+      });
     });
 
-    $scope.getUserNameFromID = function(uuid) {
+    $scope.getUserNameFromID = function (uuid) {
       if (uuid in mgm.activeUsers) {
         return mgm.activeUsers[uuid].Name;
       }
@@ -167,7 +138,7 @@ angular.module('mgmApp')
       }
       return '';
     };
-    $scope.getUserNamesFromIDs = function(uuids) {
+    $scope.getUserNamesFromIDs = function (uuids) {
       var users = [];
       for (var i = 0; i < uuids.length; i++) {
         var uuid = uuids[i];

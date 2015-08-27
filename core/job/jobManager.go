@@ -3,28 +3,14 @@ package job
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path"
+	"sync"
 
-	"github.com/m-o-s-e-s/mgm/core"
 	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/satori/go.uuid"
 )
-
-// Manager manages jobs, updating database, and notifying subscribed parties
-type Manager interface {
-	FileUploaded(int, uuid.UUID, []byte)
-	GetJobByID(int64) (mgm.Job, bool)
-	DeleteJob(mgm.Job, core.ServiceRequest)
-	CreateLoadIarJob(mgm.User, string, string) int64
-	CreateLoadOarJob(mgm.User, mgm.Region, uint, uint, bool, string) int64
-
-	RegionUp(uuid.UUID)
-	RegionDown(uuid.UUID)
-}
 
 type fileUpload struct {
 	JobID int64
@@ -32,16 +18,19 @@ type fileUpload struct {
 	File  []byte
 }
 
-func (jm jobMgr) newRegionCommand() regionCommand {
+func (jm Manager) newRegionCommand() regionCommand {
 	rc := regionCommand{}
 
 	return rc
 }
 
-// NewManager constructs a jobManager for use
-func NewManager(filePath string, mgmURL string, hubRegion uuid.UUID, pers persist.MGMDB, log logger.Log) Manager {
+type notifier interface {
+}
 
-	j := jobMgr{}
+// NewManager constructs a jobManager for use
+func NewManager(filePath string, mgmURL string, hubRegion uuid.UUID, pers persist.MGMDB, notify notifier, log logger.Log) Manager {
+
+	j := Manager{}
 	j.fileUp = make(chan fileUpload, 32)
 	j.localPath = filePath
 	j.mgmURL = mgmURL
@@ -50,18 +39,29 @@ func NewManager(filePath string, mgmURL string, hubRegion uuid.UUID, pers persis
 	j.hub = hubRegion
 	j.rUp = make(chan uuid.UUID, 32)
 	j.rDn = make(chan uuid.UUID, 32)
+	j.notify = notify
+
+	j.jobs = make(map[int64]mgm.Job)
+	for _, t := range pers.QueryJobs() {
+		j.jobs[t.ID] = t
+	}
+	j.jMutex = &sync.Mutex{}
 
 	go j.process()
 
 	return j
 }
 
-type jobMgr struct {
+// Manager is a central access point for Job operations
+type Manager struct {
 	fileUp      chan fileUpload
 	subscribe   chan chan<- mgm.Job
 	unsubscribe chan chan<- mgm.Job
 	mgm         persist.MGMDB
 	hub         uuid.UUID
+	jobs        map[int64]mgm.Job
+	jMutex      *sync.Mutex
+	notify      notifier
 
 	rUp chan uuid.UUID
 	rDn chan uuid.UUID
@@ -72,29 +72,32 @@ type jobMgr struct {
 	mgmURL    string
 }
 
-func (jm jobMgr) FileUploaded(id int, user uuid.UUID, data []byte) {
+// FileUploaded is a handler for uploaded files from clients or nodes
+func (jm Manager) FileUploaded(id int, user uuid.UUID, data []byte) {
 	jm.log.Info("Received file upload for job %v", id)
 	jm.fileUp <- fileUpload{int64(id), user, data}
 }
 
-func (jm jobMgr) GetJobByID(id int64) (mgm.Job, bool) {
-	jobs := jm.mgm.GetJobs()
-	for _, j := range jobs {
-		if j.ID == id {
-			return j, true
-		}
-	}
-	return mgm.Job{}, false
+// GetJobByID retrieves a job record matching a specific id
+func (jm Manager) GetJobByID(id int64) (mgm.Job, bool) {
+	jm.jMutex.Lock()
+	defer jm.jMutex.Unlock()
+	t, ok := jm.jobs[id]
+	return t, ok
 }
 
-func (jm jobMgr) DeleteJob(j mgm.Job, sr core.ServiceRequest) {
-	//perform any file level maintenance, etc...
-	for _, job := range jm.mgm.GetJobs() {
-		if job.ID == j.ID {
-			j = job
-		}
+// DeleteJob purges a job from the cache and database
+func (jm Manager) DeleteJob(j mgm.Job) {
+	jm.jMutex.Lock()
+	defer jm.jMutex.Unlock()
+	j, ok := jm.jobs[j.ID]
+	if !ok {
+		return
 	}
+	delete(jm.jobs, j.ID)
+	jm.mgm.PurgeJob(j)
 
+	//perform any file level maintenance, etc...
 	type file struct {
 		File string
 	}
@@ -108,31 +111,22 @@ func (jm jobMgr) DeleteJob(j mgm.Job, sr core.ServiceRequest) {
 			jm.log.Error(fmt.Sprintf("Error deleting file %v from job %v: %v", f.File, j.ID, err.Error()))
 		}
 	}
-
-	jm.mgm.RemoveJob(j)
-	sr(true, "Job deleted")
 }
 
-func (jm jobMgr) GetJobsForUser(user mgm.User) []mgm.Job {
-	jobs := jm.mgm.GetJobs()
-	var userJobs []mgm.Job
-	for _, j := range jobs {
-		if j.User == user.UserID {
+// GetJobsForUser retrieves all jobs owned by a specified user
+func (jm Manager) GetJobsForUser(user uuid.UUID) []mgm.Job {
+	jm.jMutex.Lock()
+	defer jm.jMutex.Unlock()
+	userJobs := []mgm.Job{}
+	for _, j := range jm.jobs {
+		if j.User == user {
 			userJobs = append(userJobs, j)
 		}
 	}
 	return userJobs
 }
 
-func (jm jobMgr) RegionUp(id uuid.UUID) {
-	jm.rUp <- id
-}
-
-func (jm jobMgr) RegionDown(id uuid.UUID) {
-	jm.rDn <- id
-}
-
-func (jm jobMgr) process() {
+func (jm Manager) process() {
 
 	regionWorkers := make(map[uuid.UUID]chan regionCommand, 8)
 
@@ -169,7 +163,7 @@ func (jm jobMgr) process() {
 
 			switch j.Type {
 			case "load_iar":
-				jm.log.Info("Job %v is of type load_iar", s.JobID)
+			/*	jm.log.Info("Job %v is of type load_iar", s.JobID)
 				iarJob := loadIarJob{}
 				err := json.Unmarshal([]byte(j.Data), &iarJob)
 				if err != nil {
@@ -211,9 +205,9 @@ func (jm jobMgr) process() {
 
 				//dispatch task
 				go jm.loadIarTask(j, iarJob, ch)
-
+			*/
 			case "load_oar":
-				jm.log.Info("Job %v is of type load_oar", s.JobID)
+			/*	jm.log.Info("Job %v is of type load_oar", s.JobID)
 				oarJob := loadOarJob{}
 				err := json.Unmarshal([]byte(j.Data), &oarJob)
 				if err != nil {
@@ -255,6 +249,7 @@ func (jm jobMgr) process() {
 
 				//dispatch task
 				go jm.loadOarTask(j, oarJob, ch)
+			*/
 			default:
 				jm.log.Error(fmt.Sprintf("Invalid upload for type %v", j.Type))
 			}
