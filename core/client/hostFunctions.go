@@ -29,3 +29,17 @@ func (m Manager) HostRemoved(id int64) {
 		}(c, id)
 	}
 }
+
+// HostStat notifies connected clients that a host has been removed
+func (m Manager) HostStat(hs mgm.HostStat) {
+	m.clientMutex.Lock()
+	defer m.clientMutex.Unlock()
+
+	for _, c := range m.clients {
+		go func(conn userConn, stat mgm.HostStat) {
+			if m.uMgr.UserIsAdmin(conn.uid) {
+				conn.sio.Emit("HostStat", stat)
+			}
+		}(c, hs)
+	}
+}

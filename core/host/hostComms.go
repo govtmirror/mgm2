@@ -1,7 +1,6 @@
 package host
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gorilla/websocket"
@@ -52,14 +51,6 @@ func (m Manager) WShandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	go process(&m, conn)
-
-	for {
-		t, msg, err := conn.ReadMessage()
-		if err != nil {
-			break
-		}
-		conn.WriteMessage(t, msg)
-	}
 }
 
 func process(m *Manager, c *websocket.Conn) {
@@ -88,8 +79,12 @@ func process(m *Manager, c *websocket.Conn) {
 			log.Info("Processing loop exiting")
 			return
 		case msg := <-in:
-			fmt.Println(msg)
-			c.WriteJSON(msg)
+			switch msg.MessageType {
+			case "HostStats":
+				m.UpdateHostStats(msg.HStats)
+			default:
+				log.Error("Unexpected message type %v:", msg.MessageType)
+			}
 		}
 	}
 }

@@ -46,6 +46,8 @@ func listen(m *Manager, n Notifier) {
 			m.HostRemoved(id)
 		case h := <-n.hUp:
 			m.HostAdded(h)
+		case hs := <-n.hStat:
+			m.HostStat(hs)
 		}
 	}
 }
