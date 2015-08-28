@@ -9,7 +9,8 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-func (sc simian) GetUserByEmail(email string) (mgm.User, bool, error) {
+// GetUserByEmail retrieves a user identified by the given email
+func (sc Connector) GetUserByEmail(email string) (mgm.User, bool, error) {
 	m := mgm.User{}
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
@@ -18,7 +19,7 @@ func (sc simian) GetUserByEmail(email string) (mgm.User, bool, error) {
 		})
 
 	if err != nil {
-		return m, false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+		return m, false, fmt.Errorf("Error communicating with simian: %v", err)
 	}
 
 	var rq userRequest
@@ -32,7 +33,8 @@ func (sc simian) GetUserByEmail(email string) (mgm.User, bool, error) {
 	return m, false, nil
 }
 
-func (sc simian) GetUserByName(name string) (mgm.User, bool, error) {
+// GetUserByName retrieves a user identified by the given name
+func (sc Connector) GetUserByName(name string) (mgm.User, bool, error) {
 	m := mgm.User{}
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
@@ -41,7 +43,7 @@ func (sc simian) GetUserByName(name string) (mgm.User, bool, error) {
 		})
 
 	if err != nil {
-		return m, false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+		return m, false, fmt.Errorf("Error communicating with simian: %v", err)
 	}
 
 	var rq userRequest
@@ -55,7 +57,8 @@ func (sc simian) GetUserByName(name string) (mgm.User, bool, error) {
 	return m, false, nil
 }
 
-func (sc simian) GetUserByID(id uuid.UUID) (mgm.User, bool, error) {
+// GetUserByID retrieves a user identified by the given uuid
+func (sc Connector) GetUserByID(id uuid.UUID) (mgm.User, bool, error) {
 	m := mgm.User{}
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
@@ -74,7 +77,8 @@ func (sc simian) GetUserByID(id uuid.UUID) (mgm.User, bool, error) {
 	return m, false, nil
 }
 
-func (sc simian) GetUsers() ([]mgm.User, error) {
+// GetUsers retrieves all users present in Simian
+func (sc Connector) GetUsers() ([]mgm.User, error) {
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
 			"RequestMethod": {"GetUsers"},
@@ -87,7 +91,7 @@ func (sc simian) GetUsers() ([]mgm.User, error) {
 		return nil, err
 	}
 	if !m.Success {
-		return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
+		return nil, fmt.Errorf("Error communicating with simian: %v", m.Message)
 	}
 	//lookup suspension status for each user
 	users := m.Users
@@ -109,7 +113,8 @@ func (sc simian) GetUsers() ([]mgm.User, error) {
 	return users, nil
 }
 
-func (sc simian) RemoveUser(userID uuid.UUID) error {
+// RemoveUser removes a user record from Simian
+func (sc Connector) RemoveUser(userID uuid.UUID) error {
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
 			"RequestMethod": {"RemoveUser"},
@@ -117,13 +122,14 @@ func (sc simian) RemoveUser(userID uuid.UUID) error {
 		})
 
 	if err != nil {
-		return &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+		return fmt.Errorf("Error communicating with simian: %v", err)
 	}
 
 	return sc.confirmRequest(response)
 }
 
-func (sc simian) SetUserLastLocation(userID uuid.UUID, uri string) error {
+// SetUserLastLocation utility function to ensure users last location is set
+func (sc Connector) SetUserLastLocation(userID uuid.UUID, uri string) error {
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
 			"RequestMethod": {"AddUserData"},
@@ -132,13 +138,14 @@ func (sc simian) SetUserLastLocation(userID uuid.UUID, uri string) error {
 		})
 
 	if err != nil {
-		return &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+		return fmt.Errorf("Error communicating with simian: %v", err)
 	}
 
 	return sc.confirmRequest(response)
 }
 
-func (sc simian) SetUserHomeLocation(userID uuid.UUID, uri string) error {
+// SetUserHomeLocation update a given users home location
+func (sc Connector) SetUserHomeLocation(userID uuid.UUID, uri string) error {
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
 			"RequestMethod": {"AddUserData"},
@@ -147,13 +154,14 @@ func (sc simian) SetUserHomeLocation(userID uuid.UUID, uri string) error {
 		})
 
 	if err != nil {
-		return &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+		return fmt.Errorf("Error communicating with simian: %v", err)
 	}
 
 	return sc.confirmRequest(response)
 }
 
-func (sc simian) UpdateUser(name string, email string, userID uuid.UUID, level int) error {
+// UpdateUser updates a user record
+func (sc Connector) UpdateUser(name string, email string, userID uuid.UUID, level int) error {
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
 			"RequestMethod": {"AddUser"},
@@ -164,7 +172,7 @@ func (sc simian) UpdateUser(name string, email string, userID uuid.UUID, level i
 		})
 
 	if err != nil {
-		return &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+		return fmt.Errorf("Error communicating with simian: %v", err)
 	}
 
 	return sc.confirmRequest(response)

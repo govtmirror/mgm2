@@ -11,7 +11,7 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-func (sc simian) Auth(username string, password string) (bool, uuid.UUID, error) {
+func (sc Connector) Auth(username string, password string) (bool, uuid.UUID, error) {
 	hasher := md5.New()
 	hasher.Write([]byte(password))
 
@@ -27,7 +27,7 @@ func (sc simian) Auth(username string, password string) (bool, uuid.UUID, error)
 		if err.Error() == "Missing identity or invalid credentials" {
 			return false, uuid.UUID{}, nil
 		}
-		return false, uuid.UUID{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+		return false, uuid.UUID{}, fmt.Errorf("Error communicating with simian: %v", err)
 	}
 
 	type tmpStruct struct {
@@ -47,7 +47,8 @@ func (sc simian) Auth(username string, password string) (bool, uuid.UUID, error)
 	return false, uuid.UUID{}, nil
 }
 
-func (sc simian) EnableIdentity(username string, identityType string, credential string, userID uuid.UUID) error {
+// EnableIdentity overwrites a given identity with Enabled=1
+func (sc Connector) EnableIdentity(username string, identityType string, credential string, userID uuid.UUID) error {
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
 			"RequestMethod": {"AddIdentity"},
@@ -59,13 +60,14 @@ func (sc simian) EnableIdentity(username string, identityType string, credential
 		})
 
 	if err != nil {
-		return &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+		return fmt.Errorf("Error communicating with simian: %v", err)
 	}
 
 	return sc.confirmRequest(response)
 }
 
-func (sc simian) DisableIdentity(username string, identityType string, credential string, userID uuid.UUID) error {
+// DisableIdentity overwrites a given identity with Enabled=0
+func (sc Connector) DisableIdentity(username string, identityType string, credential string, userID uuid.UUID) error {
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
 			"RequestMethod": {"AddIdentity"},
@@ -77,13 +79,14 @@ func (sc simian) DisableIdentity(username string, identityType string, credentia
 		})
 
 	if err != nil {
-		return &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+		return fmt.Errorf("Error communicating with simian: %v", err)
 	}
 
 	return sc.confirmRequest(response)
 }
 
-func (sc simian) InsertPasswordHash(username string, credential string, userID uuid.UUID) error {
+//InsertPasswordHash inserts a specified password hash into Simian
+func (sc Connector) InsertPasswordHash(username string, credential string, userID uuid.UUID) error {
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
 			"RequestMethod": {"AddIdentity"},
@@ -94,13 +97,14 @@ func (sc simian) InsertPasswordHash(username string, credential string, userID u
 		})
 
 	if err != nil {
-		return &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+		return fmt.Errorf("Error communicating with simian: %v", err)
 	}
 
 	return sc.confirmRequest(response)
 }
 
-func (sc simian) SetPassword(userID uuid.UUID, password string) error {
+// SetPassword hashes and inserts a plain password into Simian
+func (sc Connector) SetPassword(userID uuid.UUID, password string) error {
 	hasher := md5.New()
 	hasher.Write([]byte(password))
 
@@ -116,13 +120,14 @@ func (sc simian) SetPassword(userID uuid.UUID, password string) error {
 		})
 
 	if err != nil {
-		return &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+		return fmt.Errorf("Error communicating with simian: %v", err)
 	}
 
 	return sc.confirmRequest(response)
 }
 
-func (sc simian) ValidatePassword(userID uuid.UUID, password string) (bool, error) {
+// ValidatePassword tests a given password against the users credential in Simian
+func (sc Connector) ValidatePassword(userID uuid.UUID, password string) (bool, error) {
 	user, exists, err := sc.GetUserByID(userID)
 	if err != nil {
 		return false, err
@@ -142,7 +147,8 @@ func (sc simian) ValidatePassword(userID uuid.UUID, password string) (bool, erro
 	return false, nil
 }
 
-func (sc simian) GetIdentities(userID uuid.UUID) ([]core.Identity, error) {
+// GetIdentities queries all given identities for a given user
+func (sc Connector) GetIdentities(userID uuid.UUID) ([]core.Identity, error) {
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
 			"RequestMethod": {"GetIdentities"},
@@ -150,7 +156,7 @@ func (sc simian) GetIdentities(userID uuid.UUID) ([]core.Identity, error) {
 		})
 
 	if err != nil {
-		return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+		return nil, fmt.Errorf("Error communicating with simian: %v", err)
 	}
 
 	type req struct {
@@ -166,10 +172,11 @@ func (sc simian) GetIdentities(userID uuid.UUID) ([]core.Identity, error) {
 	if m.Success {
 		return m.Identities, nil
 	}
-	return nil, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
+	return nil, fmt.Errorf("Error communicating with simian: %v", m.Message)
 }
 
-func (sc simian) IsNameTaken(name string) (bool, error) {
+// IsNameTaken tests whether a given name is already present in Simian
+func (sc Connector) IsNameTaken(name string) (bool, error) {
 	_, exists, err := sc.GetUserByName(name)
 	if err != nil {
 		return true, err
@@ -180,7 +187,8 @@ func (sc simian) IsNameTaken(name string) (bool, error) {
 	return false, nil
 }
 
-func (sc simian) IsEmailTaken(email string) (bool, error) {
+// IsEmailTaken tests whether a given email is already present in simian
+func (sc Connector) IsEmailTaken(email string) (bool, error) {
 	_, exists, err := sc.GetUserByEmail(email)
 	if err != nil {
 		return true, err

@@ -8,7 +8,8 @@ import (
 	"github.com/satori/go.uuid"
 )
 
-func (sc simian) EmailIsRegistered(email string) (exists bool, err error) {
+// EmailIsRegistered tests whether a given email address is already present in Simian
+func (sc Connector) EmailIsRegistered(email string) (exists bool, err error) {
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
 			"RequestMethod": {"GetUser"},
@@ -16,7 +17,7 @@ func (sc simian) EmailIsRegistered(email string) (exists bool, err error) {
 		})
 
 	if err != nil {
-		return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+		return false, fmt.Errorf("Error communicating with simian: %v", err)
 	}
 
 	var m confirmRequest
@@ -27,10 +28,11 @@ func (sc simian) EmailIsRegistered(email string) (exists bool, err error) {
 	if m.Success {
 		return true, nil
 	}
-	return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
+	return false, fmt.Errorf("Error communicating with simian: %v", m.Message)
 }
 
-func (sc simian) CreateUserEntry(username string, email string) (uuid.UUID, error) {
+// CreateUserEntry inserts a new user record into Simian
+func (sc Connector) CreateUserEntry(username string, email string) (uuid.UUID, error) {
 	userID := uuid.NewV4()
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
@@ -42,7 +44,7 @@ func (sc simian) CreateUserEntry(username string, email string) (uuid.UUID, erro
 		})
 
 	if err != nil {
-		return uuid.UUID{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", err)}
+		return uuid.UUID{}, fmt.Errorf("Error communicating with simian: %v", err)
 	}
 
 	var m confirmRequest
@@ -53,10 +55,11 @@ func (sc simian) CreateUserEntry(username string, email string) (uuid.UUID, erro
 	if m.Success {
 		return userID, nil
 	}
-	return uuid.UUID{}, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
+	return uuid.UUID{}, fmt.Errorf("Error communicating with simian: %v", m.Message)
 }
 
-func (sc simian) CreateUserInventory(userID uuid.UUID, template string) (bool, error) {
+// CreateUserInventory initializes a new inventory for a given user record
+func (sc Connector) CreateUserInventory(userID uuid.UUID, template string) (bool, error) {
 	response, err := sc.handleRequest(sc.url,
 		url.Values{
 			"RequestMethod": {"AddInventory"},
@@ -72,5 +75,5 @@ func (sc simian) CreateUserInventory(userID uuid.UUID, template string) (bool, e
 	if m.Success {
 		return true, nil
 	}
-	return false, &errorString{fmt.Sprintf("Error communicating with simian: %v", m.Message)}
+	return false, fmt.Errorf("Error communicating with simian: %v", m.Message)
 }
