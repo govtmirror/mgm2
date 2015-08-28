@@ -1,18 +1,17 @@
 package host
 
 import (
-	"encoding/json"
-	"io"
-	"net"
-	"syscall"
+	"fmt"
+	"net/http"
 
+	"github.com/gorilla/websocket"
 	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/mgm"
 )
 
 // Comms is a structure of shared read/write functions between MGM and MGMNode
 type Comms struct {
-	Connection net.Conn
+	Connection *websocket.Conn
 	Closing    chan bool
 	Log        logger.Log
 }
@@ -39,41 +38,58 @@ type Registration struct {
 	Slots           int
 }
 
-// ReadConnection is a processing loop for reading a socket and parsing messages
-func (node Comms) ReadConnection(readMsgs chan<- Message) {
-	d := json.NewDecoder(node.Connection)
+var wsupgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+// WShandler is a websocket entry point for host connections
+func (m Manager) WShandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := wsupgrader.Upgrade(w, r, nil)
+	if err != nil {
+		m.log.Info("Failed to set websocket upgrade: %+v", err)
+		return
+	}
+
+	go process(&m, conn)
 
 	for {
-		nmsg := Message{}
-		err := d.Decode(&nmsg)
+		t, msg, err := conn.ReadMessage()
 		if err != nil {
-			oe, ok := err.(*net.OpError)
-			if err == io.EOF || ok && oe.Err == syscall.ECONNRESET {
-				close(node.Closing)
-				node.Connection.Close()
-				return
-			}
-			node.Log.Error("Error decoding mgm message: ", err)
+			break
 		}
-
-		readMsgs <- nmsg
+		conn.WriteMessage(t, msg)
 	}
 }
 
-// WriteConnection is a processing loop for json encoding messages to a socket
-func (node Comms) WriteConnection(writeMsgs <-chan Message) {
-
-	for {
-		select {
-		case <-node.Closing:
-			return
-		case msg := <-writeMsgs:
-			data, _ := json.Marshal(msg)
-			_, err := node.Connection.Write(data)
-			if oe, ok := err.(*net.OpError); ok && (oe.Err == syscall.EPIPE || oe.Err == syscall.ECONNRESET) {
-				node.Connection.Close()
+func process(m *Manager, c *websocket.Conn) {
+	log := logger.Wrap("comms", m.log)
+	//signal channel
+	ch := make(chan bool)
+	in := make(chan Message, 32)
+	//read on the socket
+	go func() {
+		for {
+			msg := Message{}
+			err := c.ReadJSON(&msg)
+			if err != nil {
+				log.Error(err.Error())
 				return
 			}
+			in <- msg
+		}
+	}()
+	//do not write on the socket, that happens elsewhere
+
+	//process packets
+	for {
+		select {
+		case <-ch:
+			log.Info("Processing loop exiting")
+			return
+		case msg := <-in:
+			fmt.Println(msg)
+			c.WriteJSON(msg)
 		}
 	}
 }

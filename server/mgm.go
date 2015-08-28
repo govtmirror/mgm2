@@ -97,13 +97,13 @@ func main() {
 	httpCon := webClient.NewHTTPConnector(jMgr, pers, sim, uMgr, mailer, logger)
 
 	//Create a socket.io websocket server to listed for client connections
-	server, err := socketio.NewServer(nil)
+	cServer, err := socketio.NewServer(nil)
 	if err != nil {
-		logger.Error("Error creating websocket server: ", err)
+		logger.Fatal("Error creating websocket server: ", err)
 		return
 	}
 	//We have a connecting client
-	server.On("connection", func(so socketio.Socket) {
+	cServer.On("connection", func(so socketio.Socket) {
 		// a new client has connected
 
 		log.Println("on connection")
@@ -131,7 +131,7 @@ func main() {
 			}
 		})
 	})
-	server.On("error", func(so socketio.Socket, err error) {
+	cServer.On("error", func(so socketio.Socket, err error) {
 		log.Println("error:", err)
 	})
 
@@ -189,7 +189,8 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/ws/", server)
+	mux.Handle("/ws/", cServer)
+	mux.HandleFunc("/host/", hMgr.WShandler)
 	mux.HandleFunc("/auth", loginHandler)
 	mux.HandleFunc("/auth/register", cMgr.RegisterHandler)
 	mux.HandleFunc("/auth/passwordToken", httpCon.PasswordTokenHandler)

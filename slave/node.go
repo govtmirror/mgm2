@@ -4,18 +4,19 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"net"
 	"os"
 	"time"
 
 	"code.google.com/p/gcfg"
 
+	"github.com/gorilla/websocket"
 	"github.com/jcelliott/lumber"
+	"github.com/satori/go.uuid"
+
 	"github.com/m-o-s-e-s/mgm/core/host"
 	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/m-o-s-e-s/mgm/remote"
-	"github.com/satori/go.uuid"
 	pscpu "github.com/shirou/gopsutil/cpu"
 	psmem "github.com/shirou/gopsutil/mem"
 	psnet "github.com/shirou/gopsutil/net"
@@ -84,23 +85,32 @@ func main() {
 
 	for {
 		n.logger.Info("Connecting to MGM")
-		conn, err := net.Dial("tcp", config.Node.MGMAddress)
+		//conn, err := net.Dial("tcp", config.Node.MGMAddress)
+		conn, _, err := websocket.DefaultDialer.Dial(fmt.Sprintf("ws://%v/host/", config.Node.MGMAddress), nil)
 		if err != nil {
-			n.logger.Fatal("Cannot connect to MGM")
+			n.logger.Fatal(fmt.Sprintf("Cannot connect to MGM %v", err.Error()))
 			time.Sleep(10 * time.Second)
 			continue
 		}
 		n.logger.Info("MGM Node connected to MGM")
 
 		receiveChan := make(chan host.Message, 32)
-		sendChan := make(chan host.Message, 32)
 		nc := host.Comms{
 			Connection: conn,
 			Closing:    make(chan bool),
 			Log:        n.logger,
 		}
-		go nc.ReadConnection(receiveChan)
-		go nc.WriteConnection(sendChan)
+		go func() {
+			for {
+				msg := host.Message{}
+				err = conn.ReadJSON(&msg)
+				if err != nil {
+					nc.Closing <- true
+					return
+				}
+				receiveChan <- msg
+			}
+		}()
 
 		if !connectedAtLeastOnce {
 			//new connection
@@ -109,9 +119,9 @@ func main() {
 			reg.ExternalAddress = config.Opensim.ExternalAddress
 			reg.Name = hostname
 			reg.Slots = int(config.Opensim.MaxRegionPort-config.Opensim.MinRegionPort) + 1
-			sendChan <- host.Message{MessageType: "Register", Register: reg}
+			conn.WriteJSON(host.Message{MessageType: "Register", Register: reg})
 			//check for region changes since startup
-			sendChan <- host.Message{MessageType: "GetRegions"}
+			conn.WriteJSON(host.Message{MessageType: "GetRegions"})
 
 			connectedAtLeastOnce = true
 		}
@@ -127,12 +137,12 @@ func main() {
 				nmsg := host.Message{}
 				nmsg.MessageType = "HostStats"
 				nmsg.HStats = stats
-				sendChan <- nmsg
+				conn.WriteJSON(nmsg)
 			case stats := <-rStats:
 				nmsg := host.Message{}
 				nmsg.MessageType = "RegionStats"
 				nmsg.RStats = stats
-				sendChan <- nmsg
+				conn.WriteJSON(nmsg)
 			case msg := <-receiveChan:
 				switch msg.MessageType {
 				case "AddRegion":
@@ -158,7 +168,7 @@ func main() {
 							m.Message = "Region added"
 						}
 					}
-					sendChan <- m
+					conn.WriteJSON(m)
 					n.logger.Info("AddRegion: %v Complete", r.UUID.String())
 				case "RemoveRegion":
 					r := msg.Region
@@ -171,13 +181,13 @@ func main() {
 						if err != nil {
 							m.MessageType = "Failure"
 							m.Message = err.Error()
-							sendChan <- m
+							conn.WriteJSON(m)
 							continue
 						}
 						delete(regions, r.UUID)
 						m.MessageType = "Success"
 						m.Message = "Region removed"
-						sendChan <- m
+						conn.WriteJSON(m)
 						n.logger.Info("RemoveRegion: %v Complete", r.UUID.String())
 					} else {
 						n.logger.Info("RemoveRegion: %v failed, not present", r.UUID.String())
@@ -194,7 +204,7 @@ func main() {
 							n.logger.Error(errMsg)
 							m.MessageType = "Failure"
 							m.Message = errMsg
-							sendChan <- m
+							conn.WriteJSON(m)
 							continue
 						}
 						err = r.WriteOpensimINI(msg.Configs)
@@ -203,13 +213,13 @@ func main() {
 							n.logger.Error(errMsg)
 							m.MessageType = "Failure"
 							m.Message = errMsg
-							sendChan <- m
+							conn.WriteJSON(m)
 							continue
 						}
 						r.Start()
 						m.MessageType = "Success"
 						m.Message = "Region started"
-						sendChan <- m
+						conn.WriteJSON(m)
 					}
 				case "KillRegion":
 					reg := msg.Region
@@ -220,7 +230,7 @@ func main() {
 						r.Kill()
 						m.MessageType = "Success"
 						m.Message = "Region killed"
-						sendChan <- m
+						conn.WriteJSON(m)
 					}
 				case "RemoveHost":
 					n.logger.Info("Received RemoveHost command from MGM, terminating")
@@ -237,7 +247,6 @@ func main() {
 			}
 		}
 	}
-
 }
 
 func (node mgmNode) collectHostStatistics(out chan mgm.HostStat) {
