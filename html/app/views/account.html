@@ -30,10 +30,8 @@
     <span class="input-group-addon">Confirm:</span>
     <input class="btn btn-default" type="password" ng-model="password.confirm" />
   </div>
-        <button class="btn btn-primary" type="submit" ng-disabled="password.password==='' || password.confirm===''||password.password!==password.confirm">Submit reset</button>
-        <br>
-        <strong style="color:red">{{password.passwordError}}</strong>
-        <strong style="color:green">{{password.passwordResult}}</strong>
+  <button class="btn btn-primary" type="submit" ng-disabled="password.password==='' || password.confirm===''||password.password!==password.confirm">Submit reset</button>
+
 </form>
 <hr>
 <h3>Load IAR File</h3>
@@ -55,7 +53,8 @@
 
 <hr>
 <h3>Save IAR File</h3>
-<p>Please enter your password to save an IAR file. This file will include your entire inventory. This is a long-running asynchronous task. You will be sent an email when it completes. The file will be listed in your taskbar at the bottom of the Account tab, which is where you will download it from.</p>
+<p>Please enter your password to save an IAR file. This file will include your entire inventory. This is a long-running asynchronous task. You will be sent an email when it completes. The file will be listed in your taskbar at the bottom of the Account tab,
+  which is where you will download it from.</p>
 <form>
   <button class="btn btn-primary" ng-click="iar.save()">Schedule</button>
 </form>

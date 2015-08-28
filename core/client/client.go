@@ -128,11 +128,37 @@ func (m Manager) NewClient(so socketio.Socket, guid uuid.UUID) {
 	})
 
 	so.On("SetPassword", func(msg string) string {
-		return string(permissionDenied)
+		type credentials struct {
+			UserID   uuid.UUID
+			Password string
+		}
+		creds := credentials{}
+		err := json.Unmarshal([]byte(msg), &creds)
+		if err != nil {
+			resp, _ := json.Marshal(userResponse{false, "Invalid data packet"})
+			return string(resp)
+		}
+
+		c.log.Info("Requesting change password for %v", creds.UserID.String())
+
+		//only admins may change other users passwords
+		if !m.uMgr.UserIsAdmin(c.uid) && creds.UserID != c.uid {
+			return string(permissionDenied)
+		}
+
+		err = m.uMgr.SetPassword(creds.UserID, creds.Password)
+		if err != nil {
+			resp, _ := json.Marshal(userResponse{false, err.Error()})
+			return string(resp)
+		}
+		return string(success)
 	})
 
 	so.On("GetConfig", func(guid string) string {
 		c.log.Info("Requesting config %v", guid)
+		if !m.uMgr.UserIsAdmin(c.uid) {
+			return string(permissionDenied)
+		}
 		type response struct {
 			Success bool
 			Message string

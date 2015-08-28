@@ -1,10 +1,12 @@
 package user
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/m-o-s-e-s/mgm/mgm"
+	"github.com/satori/go.uuid"
 )
 
 // Auth performs user lookup and authentication steps
@@ -43,4 +45,13 @@ func (um Manager) Auth(username string, password string) (mgm.User, bool) {
 	}
 	um.log.Info("User %v auth successful", username)
 	return user, true
+}
+
+// SetPassword updates the credentials of the specified user
+func (um Manager) SetPassword(userID uuid.UUID, password string) error {
+	_, exists := um.GetUser(userID)
+	if !exists {
+		return errors.New("User not found")
+	}
+	return um.conn.SetPassword(userID, password)
 }

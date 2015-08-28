@@ -74,10 +74,3 @@ func (m Manager) UpdateUser(user mgm.User) {
 	m.users[user.UserID] = user
 	//not implemented m.mgm.UpdateUser(user)
 }
-
-// SetPassword modifies the credentials for a specified user
-func (m Manager) SetPassword(user mgm.User, password string) {
-	hasher := md5.New()
-	hasher.Write([]byte(password))
-	m.conn.SetPassword(user.UserID, "$1$"+hex.EncodeToString(hasher.Sum(nil)))
-}

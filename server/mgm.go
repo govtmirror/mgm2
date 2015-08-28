@@ -35,6 +35,7 @@ func main() {
 	cfgPtr := flag.String("config", "/opt/mgm/mgm.gcfg", "path to config file")
 	flag.Parse()
 
+	logger.Info("Reading configuration file")
 	//read configuration file
 	config := core.MgmConfig{}
 	err := gcfg.ReadFileInto(&config, *cfgPtr)
@@ -46,6 +47,7 @@ func main() {
 	//instantiate our email module
 	mailer := email.NewClientMailer(config.Email, config.Web.Hostname)
 
+	logger.Info("Connecting to the database")
 	//create our database connector
 	db := persist.NewDatabase(
 		config.MySQL.Username,
@@ -82,6 +84,7 @@ func main() {
 	//create our client notifier
 	notifier := client.NewNotifier()
 
+	logger.Info("Populating caches")
 	//Hook up core processing...
 	jMgr := job.NewManager(config.Web.FileStorage, config.MGM.MgmURL, config.MGM.HubRegionUUID, pers, notifier, logger)
 	rMgr := region.NewManager(config.MGM.MgmURL, config.MGM.SimianURL, pers, osdb, notifier, logger)

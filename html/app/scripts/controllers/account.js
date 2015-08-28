@@ -22,9 +22,6 @@ angular.module('mgmApp')
     };
 
     $scope.password = {
-      passwordError: '',
-      disablePasswordSubmit: false,
-      passwordResult: '',
       password: '',
       confirm: ''
     };
@@ -59,24 +56,21 @@ angular.module('mgmApp')
         $scope.password.passwordError = 'Passwords do not match';
         return;
       }
-      $scope.password.disablePasswordSubmit = true;
-      mgm.request('SetPassword', {
+
+      mgm.ws.emit('SetPassword', angular.toJson({
         UserID: $scope.auth.UUID,
         Password: $scope.password.password
-      }, function (success, message) {
-        $timeout(function () {
-          if (success === true) {
-            $scope.password.passwordResult = 'password updated successfuly';
+      }), function (response) {
+        response = angular.fromJson(response);
+        if(response.Success === true){
+          alertify.success('Password updated successfully');
+          $timeout(function(){
             $scope.password.password = '';
             $scope.password.confirm = '';
-            $timeout(function () {
-              $scope.password.passwordResult = '';
-            }, 5 * 1000);
-          } else {
-            $scope.password.passwordError = message;
-          }
-          $scope.password.disablePasswordSubmit = false;
-        });
+          });
+        } else {
+          alertify.error(response.Message);
+        }
       });
     };
 
