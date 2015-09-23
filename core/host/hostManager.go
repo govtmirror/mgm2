@@ -6,9 +6,9 @@ import (
 	"sync"
 
 	"github.com/m-o-s-e-s/mgm/core/logger"
-	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/core/region"
 	"github.com/m-o-s-e-s/mgm/mgm"
+	"github.com/m-o-s-e-s/mgm/sql"
 )
 
 type notifier interface {
@@ -25,7 +25,7 @@ func (hc hostConn) Close() {
 }
 
 // NewManager constructs NodeManager instances
-func NewManager(port int, rMgr region.Manager, pers persist.MGMDB, notify notifier, log logger.Log) Manager {
+func NewManager(port int, rMgr region.Manager, pers sql.MGMDB, notify notifier, log logger.Log) Manager {
 	mgr := Manager{}
 	mgr.listenPort = port
 	mgr.mgm = pers
@@ -65,7 +65,7 @@ type Manager struct {
 	listenPort      int
 	log             logger.Log
 	listener        net.Listener
-	mgm             persist.MGMDB
+	mgm             sql.MGMDB
 	rMgr            region.Manager
 	notify          notifier
 	hosts           map[int64]mgm.Host

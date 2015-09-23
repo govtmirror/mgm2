@@ -6,10 +6,10 @@ import (
 
 	"github.com/m-o-s-e-s/mgm/core/job"
 	"github.com/m-o-s-e-s/mgm/core/logger"
-	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/core/user"
 	"github.com/m-o-s-e-s/mgm/email"
 	"github.com/m-o-s-e-s/mgm/simian"
+	"github.com/m-o-s-e-s/mgm/sql"
 	"github.com/satori/go.uuid"
 )
 
@@ -20,11 +20,11 @@ type HTTPConnector struct {
 	userMgr       user.Manager
 	mailer        email.ClientEmailer
 	jMgr          job.Manager
-	mgm           persist.MGMDB
+	mgm           sql.MGMDB
 }
 
 // NewHTTPConnector constructs an http connector for use
-func NewHTTPConnector(jobMgr job.Manager, mgm persist.MGMDB, authenticator simian.Connector, userMgr user.Manager, mailer email.ClientEmailer, log logger.Log) HTTPConnector {
+func NewHTTPConnector(jobMgr job.Manager, mgm sql.MGMDB, authenticator simian.Connector, userMgr user.Manager, mailer email.ClientEmailer, log logger.Log) HTTPConnector {
 	gob.Register(uuid.UUID{})
 
 	return HTTPConnector{authenticator, logger.Wrap("HTTP", log), userMgr, mailer, jobMgr, mgm}

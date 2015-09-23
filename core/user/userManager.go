@@ -7,9 +7,9 @@ import (
 	"github.com/m-o-s-e-s/mgm/core/host"
 	"github.com/m-o-s-e-s/mgm/core/job"
 	"github.com/m-o-s-e-s/mgm/core/logger"
-	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/core/region"
 	"github.com/m-o-s-e-s/mgm/mgm"
+	"github.com/m-o-s-e-s/mgm/sql"
 	"github.com/satori/go.uuid"
 )
 
@@ -17,7 +17,7 @@ type notifier interface {
 }
 
 // NewManager constructs a user.Manager for use
-func NewManager(rMgr region.Manager, hMgr host.Manager, jMgr job.Manager, userConnector core.UserConnector, pers persist.MGMDB, notify notifier, log logger.Log) Manager {
+func NewManager(rMgr region.Manager, hMgr host.Manager, jMgr job.Manager, userConnector core.UserConnector, pers sql.MGMDB, notify notifier, log logger.Log) Manager {
 	um := Manager{}
 	um.log = logger.Wrap("USER", log)
 	um.conn = userConnector
@@ -69,7 +69,7 @@ func NewManager(rMgr region.Manager, hMgr host.Manager, jMgr job.Manager, userCo
 // Manager is a central access point for user functions
 type Manager struct {
 	rMgr         region.Manager
-	mgm          persist.MGMDB
+	mgm          sql.MGMDB
 	hMgr         host.Manager
 	jMgr         job.Manager
 	notify       notifier

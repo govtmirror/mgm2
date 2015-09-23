@@ -7,8 +7,8 @@ import (
 	"sync"
 
 	"github.com/m-o-s-e-s/mgm/core/logger"
-	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/mgm"
+	"github.com/m-o-s-e-s/mgm/sql"
 	"github.com/satori/go.uuid"
 )
 
@@ -28,7 +28,7 @@ type notifier interface {
 }
 
 // NewManager constructs a jobManager for use
-func NewManager(filePath string, mgmURL string, hubRegion uuid.UUID, pers persist.MGMDB, notify notifier, log logger.Log) Manager {
+func NewManager(filePath string, mgmURL string, hubRegion uuid.UUID, pers sql.MGMDB, notify notifier, log logger.Log) Manager {
 
 	j := Manager{}
 	j.fileUp = make(chan fileUpload, 32)
@@ -57,7 +57,7 @@ type Manager struct {
 	fileUp      chan fileUpload
 	subscribe   chan chan<- mgm.Job
 	unsubscribe chan chan<- mgm.Job
-	mgm         persist.MGMDB
+	mgm         sql.MGMDB
 	hub         uuid.UUID
 	jobs        map[int64]mgm.Job
 	jMutex      *sync.Mutex

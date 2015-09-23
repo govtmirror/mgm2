@@ -13,11 +13,11 @@ import (
 	"github.com/m-o-s-e-s/mgm/core/client"
 	"github.com/m-o-s-e-s/mgm/core/host"
 	"github.com/m-o-s-e-s/mgm/core/job"
-	"github.com/m-o-s-e-s/mgm/core/persist"
 	"github.com/m-o-s-e-s/mgm/core/region"
 	"github.com/m-o-s-e-s/mgm/core/user"
 	"github.com/m-o-s-e-s/mgm/email"
 	"github.com/m-o-s-e-s/mgm/simian"
+	"github.com/m-o-s-e-s/mgm/sql"
 	"github.com/m-o-s-e-s/mgm/webClient"
 	"github.com/satori/go.uuid"
 
@@ -49,7 +49,7 @@ func main() {
 
 	logger.Info("Connecting to the database")
 	//create our database connector
-	db := persist.NewDatabase(
+	db := sql.NewDatabase(
 		config.MySQL.Username,
 		config.MySQL.Password,
 		config.MySQL.Database,
@@ -60,7 +60,7 @@ func main() {
 		logger.Error("Connecting to mysql: ", err)
 		return
 	}
-	osdb := persist.NewDatabase(
+	osdb := sql.NewDatabase(
 		config.Opensim.Username,
 		config.Opensim.Password,
 		config.Opensim.Database,
@@ -79,7 +79,7 @@ func main() {
 	}
 
 	//instantiate our persistance handler
-	pers := persist.NewMGMDB(db, osdb, sim, logger)
+	pers := sql.NewMGMDB(db, osdb, sim, logger)
 
 	//create our client notifier
 	notifier := client.NewNotifier()

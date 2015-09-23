@@ -1,4 +1,4 @@
-package persist
+package sql
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ func (m MGMDB) QueryPendingUsers() []mgm.PendingUser {
 		return users
 	}
 	defer con.Close()
-	rows, err := con.Query("Select * from users")
+	rows, err := con.Query("Select * from pendingusers")
 	if err != nil {
 		log.Fatal(fmt.Sprintf("Error getting pending users: %v", err.Error()))
 		return users
@@ -29,6 +29,7 @@ func (m MGMDB) QueryPendingUsers() []mgm.PendingUser {
 			&u.Email,
 			&u.Gender,
 			&u.PasswordHash,
+			&u.Registered,
 			&u.Summary,
 		)
 		if err != nil {
