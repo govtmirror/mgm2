@@ -81,6 +81,9 @@ func main() {
 	//instantiate our persistance handler
 	pers := sql.NewMGMDB(db, osdb, sim, logger)
 
+	//perform any necessary migrations
+	pers.migrate(config.MGM.FilesDirectory)
+
 	//create our client notifier
 	notifier := client.NewNotifier()
 

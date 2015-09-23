@@ -1,8 +1,6 @@
 package sql
 
 import (
-	"fmt"
-
 	"github.com/m-o-s-e-s/mgm/core/logger"
 	"github.com/m-o-s-e-s/mgm/mgm"
 	"github.com/m-o-s-e-s/mgm/simian"
@@ -24,7 +22,7 @@ type Notifier interface {
 }
 
 // NewMGMDB constructs an MGMDB instance for use
-func NewMGMDB(db Database, osdb Database, sim simian.Connector, log logger.Log) MGMDB {
+func NewMGMDB(db Database, osdb Database, sim simian.Connector, log logger.Log) *MGMDB {
 	mgm := MGMDB{
 		db:   db,
 		osdb: osdb,
@@ -33,9 +31,7 @@ func NewMGMDB(db Database, osdb Database, sim simian.Connector, log logger.Log) 
 		reqs: make(chan mgmReq, 64),
 	}
 
-	go mgm.process()
-
-	return mgm
+	return &mgm
 }
 
 type mgmReq struct {
@@ -54,6 +50,12 @@ type MGMDB struct {
 	reqs chan mgmReq
 }
 
+// Migrate tests the database version and performs any neccesary migrations
+func (m MGMDB) Migrate(resourceFolder string) {
+	m.log.Info("Testing databse migration")
+}
+
+/*
 func (m MGMDB) process() {
 
 	for {
@@ -94,7 +96,7 @@ func (m MGMDB) process() {
 				req.result <- true
 				req.result <- "estate updated"
 				close(req.result)
-				*/
+
 			case "GetConfigs":
 				go func() {
 					region := req.object.(mgm.Region)
@@ -140,4 +142,4 @@ func (m MGMDB) process() {
 			}
 		}
 	}
-}
+}*/

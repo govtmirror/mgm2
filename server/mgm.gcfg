@@ -6,6 +6,7 @@
   WebPort = 8080
   NodePort = 3000
   HubRegionUUID = 00000000-0000-0000-0000-000000000000
+  FilesDirectory = /opt/mgm/resources
 
 [Web]
   Root = /path/to/mgm/web/dist

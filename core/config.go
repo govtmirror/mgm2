@@ -8,13 +8,14 @@ import (
 // MgmConfig is a struct for parsing the gcfg main config file
 type MgmConfig struct {
 	MGM struct {
-		MgmURL        string
-		SimianURL     string
-		SecretKey     string
-		OpensimPort   string
-		WebPort       int
-		NodePort      int
-		HubRegionUUID uuid.UUID
+		MgmURL         string
+		SimianURL      string
+		SecretKey      string
+		OpensimPort    string
+		WebPort        int
+		NodePort       int
+		HubRegionUUID  uuid.UUID
+		FilesDirectory string
 	}
 
 	Web struct {
