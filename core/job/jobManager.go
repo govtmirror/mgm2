@@ -28,7 +28,7 @@ type notifier interface {
 }
 
 // NewManager constructs a jobManager for use
-func NewManager(filePath string, mgmURL string, hubRegion uuid.UUID, pers sql.MGMDB, notify notifier, log logger.Log) Manager {
+func NewManager(filePath string, mgmURL string, hubRegion uuid.UUID, pers *sql.MGMDB, notify notifier, log logger.Log) *Manager {
 
 	j := Manager{}
 	j.fileUp = make(chan fileUpload, 32)
@@ -49,7 +49,7 @@ func NewManager(filePath string, mgmURL string, hubRegion uuid.UUID, pers sql.MG
 
 	go j.process()
 
-	return j
+	return &j
 }
 
 // Manager is a central access point for Job operations
@@ -57,7 +57,7 @@ type Manager struct {
 	fileUp      chan fileUpload
 	subscribe   chan chan<- mgm.Job
 	unsubscribe chan chan<- mgm.Job
-	mgm         sql.MGMDB
+	mgm         *sql.MGMDB
 	hub         uuid.UUID
 	jobs        map[int64]mgm.Job
 	jMutex      *sync.Mutex

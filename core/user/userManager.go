@@ -17,7 +17,7 @@ type notifier interface {
 }
 
 // NewManager constructs a user.Manager for use
-func NewManager(rMgr region.Manager, hMgr host.Manager, jMgr job.Manager, userConnector core.UserConnector, pers sql.MGMDB, notify notifier, log logger.Log) Manager {
+func NewManager(rMgr *region.Manager, hMgr *host.Manager, jMgr *job.Manager, userConnector core.UserConnector, pers *sql.MGMDB, notify notifier, log logger.Log) *Manager {
 	um := Manager{}
 	um.log = logger.Wrap("USER", log)
 	um.conn = userConnector
@@ -63,15 +63,15 @@ func NewManager(rMgr region.Manager, hMgr host.Manager, jMgr job.Manager, userCo
 		um.groups[g.ID] = g
 	}
 
-	return um
+	return &um
 }
 
 // Manager is a central access point for user functions
 type Manager struct {
-	rMgr         region.Manager
-	mgm          sql.MGMDB
-	hMgr         host.Manager
-	jMgr         job.Manager
+	rMgr         *region.Manager
+	mgm          *sql.MGMDB
+	hMgr         *host.Manager
+	jMgr         *job.Manager
 	notify       notifier
 	conn         core.UserConnector
 	log          logger.Log

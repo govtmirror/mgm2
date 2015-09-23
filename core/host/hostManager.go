@@ -25,7 +25,7 @@ func (hc hostConn) Close() {
 }
 
 // NewManager constructs NodeManager instances
-func NewManager(port int, rMgr region.Manager, pers sql.MGMDB, notify notifier, log logger.Log) Manager {
+func NewManager(port int, rMgr *region.Manager, pers *sql.MGMDB, notify notifier, log logger.Log) *Manager {
 	mgr := Manager{}
 	mgr.listenPort = port
 	mgr.mgm = pers
@@ -34,9 +34,6 @@ func NewManager(port int, rMgr region.Manager, pers sql.MGMDB, notify notifier, 
 	mgr.requestChan = make(chan Message, 32)
 	mgr.rMgr = rMgr
 	mgr.notify = notify
-	//ch := make(chan hostSession, 32)
-
-	//go mgr.listen(ch)
 
 	regions := rMgr.GetRegions()
 	mgr.hosts = make(map[int64]mgm.Host)
@@ -57,7 +54,7 @@ func NewManager(port int, rMgr region.Manager, pers sql.MGMDB, notify notifier, 
 		}
 	}
 
-	return mgr
+	return &mgr
 }
 
 // Manager is a central access point for Host operations
@@ -65,8 +62,8 @@ type Manager struct {
 	listenPort      int
 	log             logger.Log
 	listener        net.Listener
-	mgm             sql.MGMDB
-	rMgr            region.Manager
+	mgm             *sql.MGMDB
+	rMgr            *region.Manager
 	notify          notifier
 	hosts           map[int64]mgm.Host
 	hMutex          *sync.Mutex

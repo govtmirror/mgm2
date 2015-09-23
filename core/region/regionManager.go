@@ -15,7 +15,7 @@ type notifier interface {
 }
 
 // NewManager constructs a RegionManager for use
-func NewManager(mgmURL string, simianURL string, pers sql.MGMDB, osdb sql.Database, notify notifier, log logger.Log) Manager {
+func NewManager(mgmURL string, simianURL string, pers *sql.MGMDB, osdb sql.Database, notify notifier, log logger.Log) *Manager {
 	rMgr := Manager{}
 	rMgr.simianURL = simianURL
 	rMgr.mgmURL = mgmURL
@@ -33,7 +33,7 @@ func NewManager(mgmURL string, simianURL string, pers sql.MGMDB, osdb sql.Databa
 		rMgr.regionStats[r.UUID] = mgm.RegionStat{}
 	}
 
-	return rMgr
+	return &rMgr
 }
 
 // Manager is a central access point for Region actions
@@ -41,7 +41,7 @@ type Manager struct {
 	simianURL   string
 	mgmURL      string
 	osdb        sql.Database
-	mgm         sql.MGMDB
+	mgm         *sql.MGMDB
 	notify      notifier
 	log         logger.Log
 	regions     map[uuid.UUID]mgm.Region

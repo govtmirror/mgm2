@@ -12,7 +12,7 @@ import (
 )
 
 // NewManager constructs a session manager for use
-func NewManager(uMgr user.Manager, hMgr host.Manager, rMgr region.Manager, jMgr job.Manager, notify Notifier, log logger.Log) Manager {
+func NewManager(uMgr *user.Manager, hMgr *host.Manager, rMgr *region.Manager, jMgr *job.Manager, notify Notifier, log logger.Log) *Manager {
 	m := Manager{}
 	m.log = logger.Wrap("CLIENT", log)
 	m.uMgr = uMgr
@@ -25,15 +25,15 @@ func NewManager(uMgr user.Manager, hMgr host.Manager, rMgr region.Manager, jMgr 
 
 	go listen(&m, notify)
 
-	return m
+	return &m
 }
 
 // Manager is a central management point for client connections
 type Manager struct {
-	uMgr        user.Manager
-	hMgr        host.Manager
-	rMgr        region.Manager
-	jMgr        job.Manager
+	uMgr        *user.Manager
+	hMgr        *host.Manager
+	rMgr        *region.Manager
+	jMgr        *job.Manager
 	clients     map[uuid.UUID]userConn
 	clientMutex *sync.Mutex
 	log         logger.Log

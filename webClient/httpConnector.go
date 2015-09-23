@@ -17,14 +17,14 @@ import (
 type HTTPConnector struct {
 	authenticator simian.Connector
 	logger        logger.Log
-	userMgr       user.Manager
+	userMgr       *user.Manager
 	mailer        email.ClientEmailer
-	jMgr          job.Manager
-	mgm           sql.MGMDB
+	jMgr          *job.Manager
+	mgm           *sql.MGMDB
 }
 
 // NewHTTPConnector constructs an http connector for use
-func NewHTTPConnector(jobMgr job.Manager, mgm sql.MGMDB, authenticator simian.Connector, userMgr user.Manager, mailer email.ClientEmailer, log logger.Log) HTTPConnector {
+func NewHTTPConnector(jobMgr *job.Manager, mgm *sql.MGMDB, authenticator simian.Connector, userMgr *user.Manager, mailer email.ClientEmailer, log logger.Log) HTTPConnector {
 	gob.Register(uuid.UUID{})
 
 	return HTTPConnector{authenticator, logger.Wrap("HTTP", log), userMgr, mailer, jobMgr, mgm}
