@@ -115,10 +115,11 @@ func main() {
 
 		log.Println("on connection")
 
+		guid := ""
+
 		//query client for their jwt token
 		so.Emit("Auth Challenge")
 		so.On("Auth Response", func(inputToken string) {
-
 			//validate token
 			token, err := jwt.Parse(inputToken, func(token *jwt.Token) (interface{}, error) {
 				if token.Method.Alg() == "HS256" {
@@ -129,13 +130,34 @@ func main() {
 
 			if err == nil && token.Valid {
 				//Valid token, accept socket
-				uid, _ := uuid.FromString(token.Claims["guid"].(string))
+				logger.Info("Token Accepted")
+				guid = token.Claims["guid"].(string)
+				uid, _ := uuid.FromString(guid)
 				cMgr.NewClient(so, uid)
 			} else {
 				//invalid token, deny socket
 				logger.Info("token invalid ", err.Error())
 				so.Emit("disconnect")
 			}
+		})
+		so.On("RefreshToken", func(arg string) string {
+			logger.Info("%v Requesting new auth token", guid)
+			token := jwt.New(jwt.SigningMethodHS256)
+			token.Claims["guid"] = guid
+			token.Claims["exp"] = time.Now().Add(time.Minute * 60).Unix()
+
+			tokenString, err := token.SignedString([]byte(config.MGM.SecretKey))
+			if err != nil {
+				logger.Error("Error in Auth: ", err.Error())
+				return err.Error()
+			}
+			type userResponse struct {
+				Success bool
+				Token   string
+			}
+			buf, _ := json.Marshal(userResponse{true, tokenString})
+			logger.Info("%v Auth token granted", guid)
+			return string(buf)
 		})
 	})
 	cServer.On("error", func(so socketio.Socket, err error) {

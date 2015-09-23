@@ -55,6 +55,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
         $rootScope.$broadcast('ServerConnected');
         self.serverConnected = true;
         self.ws.emit('GetState', '', function (data) {
+          console.log('state received');
           data = angular.fromJson(data);
           //consume state data
           for(var i = 0; i < data.Users.length; i++){
@@ -131,7 +132,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
     function onPendingUser(data){
       var user = angular.fromJson(data);
       self.pendingUsers[user.UserID] = user;
-      $rootScope.$broadcast('PendingUserUpdate', message.Message);
+      $rootScope.$broadcast('PendingUserUpdate', user);
     }
 
     function onRegion(data){

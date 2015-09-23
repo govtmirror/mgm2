@@ -20,7 +20,8 @@ angular
     'pageslide-directive',
     'ui.bootstrap',
     'ngScrollGlue',
-    'angularFileUpload'
+    'angularFileUpload',
+    'ngStorage'
   ])
   .config(function ($routeProvider) {
     $routeProvider

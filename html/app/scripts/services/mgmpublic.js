@@ -8,15 +8,55 @@
  * Service in the mgmApp.
  */
 angular.module('mgmApp')
-  .service('mgmPublic', function ($q, $http, $rootScope, mgm) {
+  .service('mgmPublic', function ($q, $http, $rootScope, mgm, $timeout, $localStorage) {
 
     var self = this;
+    var token = null;
+    var tokenTimer = null;
     self.loggedIn = false;
+
+    var $store = $localStorage.$default({
+      valid: false
+    });
+
+    //if we have a saved token, attempt to resume session
+    if ($store.valid) {
+      $timeout(function(){
+        console.log('Resuming connection');
+        $rootScope.auth = {
+          UUID: $store.uuid,
+          AccessLevel: $store.accessLevel
+        };
+        mgm.token = $store.token
+        $rootScope.$broadcast('AuthChange', true);
+      });
+    }
+
+    function refreshToken(){
+      mgm.ws.emit('RefreshToken', '', function(data){
+        if(data.Success){
+          $store.token = data.Token;
+          mgm.token = data.Token;
+        }
+      })
+    }
+
+    // token expires after 60 minutes, refresh every 30
+    $rootScope.$on('ServerConnected', function(){
+      //shortcut a refresh now, in case we are refreshing often and this timer is not firing
+      refreshToken();
+      tokenTimer = setInterval(refreshToken, 1800000);
+    })
 
     this.logout = function () {
       self.loggedIn = false;
       $rootScope.auth = {};
       mgm.token = '';
+      $store.valid = false;
+      delete $store.uuid;
+      delete $store.accessLevel;
+      delete $store.token;
+      clearTimeout(tokenTimer);
       $rootScope.$broadcast('AuthChange', false);
     }
 
@@ -35,6 +75,10 @@ angular.module('mgmApp')
               UUID: data.UUID,
               AccessLevel: data.AccessLevel
             };
+            $store.valid = true;
+            $store.uuid = data.UUID;
+            $store.accessLevel = data.AccessLevel;
+            $store.token = data.Token;
             mgm.token = data.Token;
             $rootScope.$broadcast('AuthChange', true);
             resolve('login successfull');
@@ -108,23 +152,4 @@ angular.module('mgmApp')
         });
       });
     };
-
-    /*this.resumeSession = function () {
-      console.log('resuming session...');
-      //resume session functionality
-      $rootScope.auth = {};
-      $http.get('/auth').success(function (data) {
-        if (data.Success) {
-          console.log('session resume successfull');
-          self.loggedIn = true;
-          $rootScope.$broadcast('AuthChange', true);
-          $rootScope.auth = {
-            UUID: data.UUID,
-            AccessLevel: data.AccessLevel
-          };
-        } else {
-          $rootScope.$broadcast('ResumeFailed');
-        }
-      });
-    };*/
   });

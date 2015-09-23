@@ -36,6 +36,7 @@ module.exports = function(config) {
       'bower_components/bootstrap-sass-official/assets/javascripts/bootstrap.js',
       'bower_components/d3/d3.js',
       'bower_components/ng-scroll-glue/dist/scrollglue.js',
+      'bower_components/ngstorage/ngStorage.js',
       'bower_components/socket-io-client/socket.io.js',
       'bower_components/angular-mocks/angular-mocks.js',
       // endbower
