@@ -82,7 +82,11 @@ func main() {
 	pers := sql.NewMGMDB(db, osdb, sim, logger)
 
 	//perform any necessary migrations
-	pers.Migrate(config.MGM.FilesDirectory)
+	err = pers.Migrate(config.MGM.FilesDirectory)
+	if err != nil {
+		logger.Error("Migrating database: ", err)
+		return
+	}
 
 	//create our client notifier
 	notifier := client.NewNotifier()

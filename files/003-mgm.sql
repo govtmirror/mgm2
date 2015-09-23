@@ -27,4 +27,6 @@ ALTER TABLE `regions`
   DROP `isRunning`,
   DROP `status`;
 
+DROP TABLE `migrations`;
+
 INSERT IGNORE INTO `mgmDb` (`version`, `description`) VALUES (3, '003-mgm.sql');

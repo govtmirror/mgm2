@@ -50,11 +50,6 @@ type MGMDB struct {
 	reqs chan mgmReq
 }
 
-// Migrate tests the database version and performs any neccesary migrations
-func (m MGMDB) Migrate(resourceFolder string) {
-	m.log.Info("Testing databse migration")
-}
-
 /*
 func (m MGMDB) process() {
 
