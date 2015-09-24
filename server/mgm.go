@@ -137,6 +137,7 @@ func main() {
 			} else {
 				//invalid token, deny socket
 				logger.Info("token invalid ", err.Error())
+				so.Emit("rejected")
 				so.Emit("disconnect")
 			}
 		})

@@ -35,6 +35,7 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
       self.groups = {};
       self.hosts = {};
       self.serverConnected = false;
+      self.disconnect();
     }
   });
 
@@ -45,6 +46,10 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
     self.ws = io({
       path: '/ws',
       'force new connection': true
+    });
+
+    self.ws.on('rejected', function(){
+      $rootScope.$broadcast('ServerRejected');
     });
 
     self.ws.on('Auth Challenge', function () {
@@ -211,7 +216,6 @@ angular.module('mgmApp').service('mgm', function ($location, $rootScope, $q, $ht
 
   self.disconnect = function () {
     self.ws.io.disconnect();
-    //self.ws.close();
   };
 
   /* location tracking */

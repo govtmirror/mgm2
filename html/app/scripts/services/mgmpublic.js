@@ -41,14 +41,7 @@ angular.module('mgmApp')
       })
     }
 
-    // token expires after 60 minutes, refresh every 30
-    $rootScope.$on('ServerConnected', function(){
-      //shortcut a refresh now, in case we are refreshing often and this timer is not firing
-      refreshToken();
-      tokenTimer = setInterval(refreshToken, 1800000);
-    })
-
-    this.logout = function () {
+    function terminateSession() {
       self.loggedIn = false;
       $rootScope.auth = {};
       mgm.token = '';
@@ -58,6 +51,21 @@ angular.module('mgmApp')
       delete $store.token;
       clearTimeout(tokenTimer);
       $rootScope.$broadcast('AuthChange', false);
+    }
+
+    // token expires after 60 minutes, refresh every 30
+    $rootScope.$on('ServerConnected', function(){
+      //shortcut a refresh now, in case we are refreshing often and this timer is not firing
+      refreshToken();
+      tokenTimer = setInterval(refreshToken, 1800000);
+    })
+
+    $rootScope.$on('ServerRejected', function(){
+      terminateSession();
+    })
+
+    this.logout = function () {
+      terminateSession();
     }
 
     this.login = function (username, password) {
