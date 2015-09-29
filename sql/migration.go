@@ -12,7 +12,6 @@ import (
 
 // Migrate tests the database version and performs any neccesary migrations
 func (m MGMDB) Migrate(resourceFolder string) error {
-	m.log.Info("Testing database migration")
 
 	// list migration files we should have access to
 	mgmFiles := map[int]string{

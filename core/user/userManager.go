@@ -1,6 +1,7 @@
 package user
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/m-o-s-e-s/mgm/core"
@@ -83,4 +84,40 @@ type Manager struct {
 	estateMutex  *sync.Mutex
 	groups       map[uuid.UUID]mgm.Group
 	groupMutex   *sync.Mutex
+}
+
+// TestAdminAccess ensures that at least one admin account exists, creating a default if none is found
+func (m *Manager) TestAdminAccess() error {
+	m.uMutex.Lock()
+	defer m.uMutex.Unlock()
+	adminCount := 0
+	for _, u := range m.users {
+		if u.AccessLevel >= 250 {
+			adminCount++
+		}
+	}
+	if adminCount > 0 {
+		m.log.Info("Administrative users present")
+		return nil
+	}
+	name := "mgm admin"
+	email := "~"
+	m.log.Info("No administrative access found, creating default admin account")
+	uuid, err := m.conn.CreateUserEntry(name, email)
+	if err != nil {
+		return err
+	}
+	success, err := m.conn.CreateUserInventory(uuid, "default")
+	if err != nil {
+		return err
+	}
+	if !success {
+		return fmt.Errorf("Cannot create admin user inventory")
+	}
+	err = m.conn.SetPassword(uuid, "password")
+	if err != nil {
+		return err
+	}
+	err = m.conn.UpdateUser(name, email, uuid, 250)
+	return err
 }

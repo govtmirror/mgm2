@@ -30,6 +30,11 @@ type UserConnector interface {
 	GetUsers() ([]mgm.User, error)
 	GetGroups() ([]mgm.Group, error)
 
+	CreateUserEntry(string, string) (uuid.UUID, error)
+	CreateUserInventory(uuid.UUID, string) (bool, error)
+
+	UpdateUser(string, string, uuid.UUID, int) error
+
 	SetPassword(uuid.UUID, string) error
 	ValidatePassword(uuid.UUID, string) (bool, error)
 	Auth(username string, password string) (bool, uuid.UUID, error)

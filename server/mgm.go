@@ -82,6 +82,7 @@ func main() {
 	pers := sql.NewMGMDB(db, osdb, sim, logger)
 
 	//perform any necessary migrations
+	logger.Info("Checking Database Structures")
 	err = pers.Migrate(config.MGM.FilesDirectory)
 	if err != nil {
 		logger.Error("Migrating database: ", err)
@@ -97,8 +98,10 @@ func main() {
 	rMgr := region.NewManager(config.MGM.MgmURL, config.MGM.SimianURL, pers, osdb, notifier, logger)
 	hMgr := host.NewManager(config.MGM.NodePort, rMgr, pers, notifier, logger)
 	uMgr := user.NewManager(rMgr, hMgr, jMgr, sim, pers, notifier, logger)
-
 	cMgr := client.NewManager(uMgr, hMgr, rMgr, jMgr, notifier, logger)
+
+	logger.Info("Testing administrative access")
+	uMgr.TestAdminAccess()
 
 	// http function handler
 	httpCon := webClient.NewHTTPConnector(jMgr, pers, sim, uMgr, mailer, logger)
