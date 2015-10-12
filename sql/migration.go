@@ -31,7 +31,7 @@ func (m MGMDB) Migrate(resourceFolder string) error {
 	}
 	defer conn.Close()
 
-	r := conn.QueryRow("SELECT MAX(version) AS current FROM mgmdb")
+	r := conn.QueryRow("SELECT MAX(version) AS current FROM mgmDb")
 	_ = r.Scan(&currentVersion)
 	m.log.Info("MGM is currently at version %v", currentVersion)
 	if currentVersion == maxVersion {
